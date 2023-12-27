@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sr_stock_inventory_fns_report_view" model="ir.ui.view">
+        <field name="name">Inventory FNS Analyse Report</field>
+        <field name="model">stock.inventory.fns.report</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="Date Filter">
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group string="Domain">
+                             <field name="product_ids" widget="many2many_tags"/>
+                            <field name="categ_ids" widget="many2many_tags"/>
+                            <field name="fns_base_on" widget="radio"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="report_generate_pdf" string="Print Pdf" type="object"/>
+                    <button name="report_generate_excel" string="Print Excel" type="object"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

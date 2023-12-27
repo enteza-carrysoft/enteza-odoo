@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <template id="average_stay">
+            <table class="table table-sm o_main_table">
+                <thead>
+                    <tr>
+                        <th name="th_product" class="text-left">
+                            <span>Product</span>
+                        </th>
+                        <th name="th_average_stay" class="text-right">
+                            <span>Average Stay</span>
+                        </th>
+                        <th name="th_cum_average_stay" class="text-right">
+                            <span>Cum. Average Stay</span>
+                        </th>
+                        <th name="th_per_average_stay" class="text-right">
+                            <span>% Average Stay</span>
+                        </th>
+                        <th name="fns_classification" class="text-right">
+                            <span>FNS Classification</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="fns_data" t-as="fns">
+                        <tr>
+                            <td class="text-right">
+                                <span t-esc="fns['prod_name']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['average_stay']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['cum_rate']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['percentage_rate']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="fns['fns_classification']"/>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+        <template id="consumption_rate_table">
+            <table class="table table-sm o_main_table">
+                <thead>
+                    <tr>
+                        <th name="th_product" class="text-left">
+                            <span>Product</span>
+                        </th>
+                        <th name="th_average_stay" class="text-right">
+                            <span>Consumption Rate</span>
+                        </th>
+                        <th name="th_cum_average_stay" class="text-right">
+                            <span>Cum. Consumption Rate</span>
+                        </th>
+                        <th name="th_per_average_stay" class="text-right">
+                            <span>% Consumption Rate</span>
+                        </th>
+                        <th name="fns_classification" class="text-right">
+                            <span>FNS Classification</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="fns_data" t-as="fns">
+                        <tr>
+                            <td class="text-right">
+                                <span t-esc="fns['prod_name']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['average_stay']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['cum_rate']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="'%.2f'% fns['percentage_rate']"/>
+                            </td>
+                            <td class="text-right">
+                                <span t-esc="fns['fns_classification']"/>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <template id="fns_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.internal_layout">
+                        <div class="page">
+                            <div class="row mt32 mb32" id="informations">
+                                <div t-if="o.start_date" class="col-auto col-3 mw-100 mb-2">
+                                    <strong>Start Date:</strong>
+                                    <p class="m-0" t-field="o.start_date"/>
+                                </div>
+                                <div t-if="o.end_date" class="col-auto col-3 mw-100 mb-2">
+                                    <strong>End Date:</strong>
+                                    <p class="m-0" t-field="o.end_date"/>
+                                </div>
+                                <div t-if="o.categ_ids" class="col-auto col-3 mw-100 mb-2">
+                                    <strong>Categories:</strong>
+                                    <p class="m-0" t-field="o.categ_ids"/>
+                                </div>
+                                <div t-if="o.product_ids" class="col-auto col-3 mw-100 mb-2">
+                                    <strong>Products:</strong>
+                                    <p class="m-0" t-field="o.product_ids"/>
+                                </div>
+                                 <div t-if="o.fns_base_on" class="col-auto text-right col-3 mw-100 mb-2">
+                                    <strong style="padding-left:100px;">FNS based on:</strong>
+                                    <p class="m-0" style="text-align:right;" t-field="o.fns_base_on"/>
+                                </div>
+                            </div>
+                            <t t-if="docs.fns_base_on == 'average_stay'">
+                                <t t-call="sr_inventory_fns_analysis_report.average_stay"/>
+                            </t>
+                            <t t-else="">
+                                <t t-call="sr_inventory_fns_analysis_report.consumption_rate_table"/>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

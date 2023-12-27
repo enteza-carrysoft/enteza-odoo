@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_wizards_report_stock,wizards.report.stock,model_wizards_report_stock,base.group_user,1,1,1,1
+access_wizards_create_sale,wizards.create.sale,model_wizards_create_sale,base.group_user,1,1,1,1

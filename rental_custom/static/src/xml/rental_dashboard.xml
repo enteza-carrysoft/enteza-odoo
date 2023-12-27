@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="RentalDashboard">
+        <div class="oh_dashboards">
+            <div class="container-fluid o_pos_dashboard">
+            </div>
+        </div>
+    </t>
+    <t t-name="RentalOrders">
+        <div class="o_content">
+            <div class="col-md-12">
+                <div class="o_control_panel">
+                    <div class="o_cp_left">
+                        <div aria-label="Control panel toolbar" class="o_cp_buttons" role="toolbar">
+                            <!-- <button class="btn btn-primary export_analy_xlsx" action="print_xlsx" type="button" >Exportar (XLSX)</button> -->
+                        </div>
+                        <aside class="o_cp_sidebar"></aside>
+                    </div>
+                </div>
+                <div class="o_account_reports_header">
+                   <h2>REPORTE DE EXISTENCIA</h2>
+                </div>
+                <div class="col-sm-12 col-lg-12" >
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Existencia</th>
+                                <th>En Renta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="widget.product_stok" t-as="product">
+                                <td> <t t-esc="product['name']"/></td>
+                                <td> <t t-esc="product['qty']"/></td>
+                                <td> <t t-esc="product['date_start']"/>:  <t t-esc="product['rent']"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </t>
+</templates>

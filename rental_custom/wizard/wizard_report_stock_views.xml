@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <record id="wizard_stock_rental_report_form" model="ir.ui.view">
+      <field name="name">wizards.report.stock.form</field>
+      <field name="model">wizards.report.stock</field>
+      <field name="priority">1</field>
+      <field name="arch" type="xml">
+        <form string="Reporte">
+          <group>
+            <group>
+                <field name="options"/>
+                <field name="product_ids" widget="many2many_tags" options="{'no_create_edit': True}" attrs="{'invisible': [('options','!=','product')]}" 
+                  domain="[('rental', '=', True),('type', '=','product')]"/>
+                <field name="categ_id"  options="{'no_create_edit': True}" attrs="{'invisible': [('options','!=','category')]}"/>
+                <field name="warehouse_id"/>
+            </group>
+            <group>
+                <field name="date_start"/>
+                <field name="date_stop"/>
+            </group>
+          </group>
+          <footer>
+            <button name="export_action" type="object" string="Ver Reporte" class="oe_highlight"/>
+            or
+            <button string="Cancel" class="oe_link" special="cancel"/>
+          </footer>
+        </form>
+      </field>
+    </record>
+
+    <record model='ir.actions.act_window' id='wizard_report_rental'>
+        <field name="name">Reporte de Existencia</field>
+        <field name="res_model">wizards.report.stock</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="wizard_stock_rental_report_form"/>
+        <field name="target">new</field>
+        <field name="type">ir.actions.act_window</field>
+    </record>
+
+    <menuitem name="Reporte de Existencia"
+                  parent="menu_master_data_report"
+                  id="layout_import_report_rent"
+                  action="wizard_report_rental"/>
+
+    <record id="wizard_create_sale_form" model="ir.ui.view">
+      <field name="name">wizards.create.sale.form</field>
+      <field name="model">wizards.create.sale</field>
+      <field name="priority">1</field>
+      <field name="arch" type="xml">
+        <form string="Reporte">
+          <group>
+            <field name="name" readonly="1" invisible="1"/>
+          </group>
+          <footer>
+            <button name="action_create_sale" type="object" string="Crear Orden" class="oe_highlight"/>
+            or
+            <button string="Cancel" class="oe_link" special="cancel"/>
+          </footer>
+          
+        </form>
+      </field>
+    </record>
+
+    <record model='ir.actions.act_window' id='action_wizard_sale_form'>
+        <field name="name">Crear Orden de Venta</field>
+        <field name="res_model">wizards.create.sale</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="wizard_create_sale_form"/>
+        <field name="target">new</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="binding_model_id" ref="stock.model_stock_picking" />
+        <field name="binding_view_types">list,form</field>
+    </record>
+
+</odoo>
