@@ -9,7 +9,6 @@
                 <!-- <label for="product_qty_rent" string="En existencia" style="color:#008f39" attrs="{'invisible': [('rental','=',False)]}"/> -->
                 <field name="product_qty_rent_str" nolabel="1"  widget="badge" decoration-success="product_qty_rent_str!=False"  style="color:#FFF; font-weight: bold;" 
 			attrs="{'invisible': [('rental','=',False)]}"/>
-		<field name="event_date" string="Fecha Evento" />
             </xpath>
         </field>
     </record>
