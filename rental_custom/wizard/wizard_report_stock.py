@@ -48,13 +48,14 @@ class WizardCreateSale(models.TransientModel):
         for line in picking_id.move_ids_without_package:
             data.append((0,0,{
                 'product_id':line.product_id.id,
+                'display_product_id':line.product_id.id,
                 'price_unit':line.sale_line_id.price_unit,
                 'warehouses_id':line.sale_line_id.warehouses_id.id or False,
                 'product_uom_qty':line.product_uom_qty
                 }))
         values={
             'partner_id':picking_id.partner_id.id,
-            'type_id':2,
+            'type_id':1,
             'order_line':data
         }
         sale_id=self.env['sale.order'].create(values)
