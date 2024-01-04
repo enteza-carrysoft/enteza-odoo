@@ -49,7 +49,8 @@ class WizardCreateSale(models.TransientModel):
             data.append((0,0,{
                 'product_id':line.product_id.id,
                 'display_product_id':line.product_id.id,
-                'price_unit':line.sale_line_id.price_unit,
+#               'price_unit':line.sale_line_id.product_id.list_price,#line.sale_line_id.price_unit,
+                'price_unit':line.sale_line_id.product_id.rented_product_tmpl_id.list_price,#line.sale_line_id.price_unit,
                 'warehouses_id':line.sale_line_id.warehouses_id.id or False,
                 'product_uom_qty':line.product_uom_qty
                 }))
