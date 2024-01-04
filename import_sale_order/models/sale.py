@@ -46,12 +46,12 @@ class gen_sale(models.TransientModel):
 	sequence_opt = fields.Selection([('custom', 'Use Excel/CSV Sequence Number'), ('system', 'Use System Default Sequence Number')], string='Sequence Option',default='custom')
 	import_option = fields.Selection([('csv', 'CSV File'),('xls', 'XLS File')],string='Select',default='csv')
 	stage = fields.Selection([('draft','Import Draft Quotation'),('confirm','Confirm Quotation Automatically With Import')], string="Quotation Stage Option",default='draft')
-	import_prod_option = fields.Selection([('name', 'Name'),('code', 'Code'),('barcode', 'Barcode')],string='Import Product By ',default='name')        
+	import_prod_option = fields.Selection([('name', 'Name'),('code', 'Code'),('barcode', 'Barcode')],string='Import Product By ',default='name')
 
 	sample_option = fields.Selection([('csv', 'CSV'),('xls', 'XLS')],string='Sample Type',default='csv')
 	down_samp_file = fields.Boolean(string='Download Sample Files')
-	
-	
+
+
 	def make_sale(self, values):
 		sale_id=self.env["sale.order.type"].search([('name','=','Rental Order'),("company_id", "in", [self.env.company.id, False])], limit=1)
 		sale_obj = self.env['sale.order']
@@ -65,7 +65,7 @@ class gen_sale(models.TransientModel):
 			])
 		if sale_search:
 			sale_search = sale_search[0]
-							
+
 			if sale_search.partner_id.name == values.get('customer'):
 				if  sale_search.pricelist_id.name == values.get('pricelist'):
 					if sale_search.client_order_ref == values.get('customer_ref'):
@@ -76,7 +76,7 @@ class gen_sale(models.TransientModel):
 				else:
 					raise ValidationError(_('Pricelist is different for "%s" .\n Please define same.') % values.get('order'))
 			else:
-				raise ValidationError(_('Customer name is different for "%s" .\n Please define same.') % values.get('order'))		
+				raise ValidationError(_('Customer name is different for "%s" .\n Please define same.') % values.get('order'))
 		else:
 			if values.get('seq_opt') == 'system':
 				name = self.env['ir.sequence'].next_by_code('sale.order')
@@ -107,12 +107,12 @@ class gen_sale(models.TransientModel):
 				'custom_seq': True if values.get('seq_opt') == 'custom' else False,
 				'system_seq': True if values.get('seq_opt') == 'system' else False,
 				'sale_name' : values.get('order'),
-				'type_id':sale_id.id or False
+				'type_id': 2, #Rental Order
 			})
 			lines = self.make_order_line(values, sale_id)
 			return sale_id
 
-	
+
 	def make_order_line(self, values, sale_id):
 		product_obj = self.env['product.product']
 		order_line_obj = self.env['sale.order.line']
@@ -121,13 +121,13 @@ class gen_sale(models.TransientModel):
 		if self.import_prod_option == 'barcode':
 			prefix = values['product'].startswith('0')
 			if prefix:
-				product_search = product_obj.search([('barcode', '=', values['product'])]) 
+				product_search = product_obj.search([('barcode', '=', values['product'])])
 			else:
-				res = values['product'].replace('.', '', 1).isdigit() 
+				res = values['product'].replace('.', '', 1).isdigit()
 				if res == True:
 					product_search = product_obj.search([('barcode','=',int(float(values['product'])))])
 				else:
-					product_search = product_obj.search([('barcode', '=', values['product'])]) 
+					product_search = product_obj.search([('barcode', '=', values['product'])])
 
 		elif self.import_prod_option == 'code':
 			product_search = product_obj.search([('default_code', '=',values['product'])])
@@ -137,7 +137,7 @@ class gen_sale(models.TransientModel):
 		product_uom = self.env['uom.uom'].search([('name', '=', values.get('uom'))])
 		if product_uom.id == False:
 			raise ValidationError(_(' "%s" Product UOM category is not available.') % values.get('uom'))
-		
+
 		if product_search:
 			product_id = product_search[0]
 		else:
@@ -176,6 +176,23 @@ class gen_sale(models.TransientModel):
 						raise ValidationError(_('"%s" Tax not in your system') % name)
 					tax_ids.append(tax.id)
 
+		print({
+											'order_id':sale_id.id,
+											'product_id':product_id.product_rental_day_id.id,
+											'name':values.get('description'),
+											'product_uom_qty':values.get('quantity'),
+											'rental_qty':values.get('quantity'),
+											'product_uom':product_uom.id,
+											'price_unit':values.get('price'),
+											'discount':values.get('discount'),
+											'product_template_id':product_id.product_tmpl_id.id,
+											'display_product_id':product_id.id,
+											'rental':True,
+											'rental_type':'new_rental',
+											'start_date':values.get('start_date'),
+											'end_date':values.get('end_date'),
+											})
+
 		so_order_lines = order_line_obj.create({
 											'order_id':sale_id.id,
 											#'product_id':product_id.id,
@@ -186,20 +203,18 @@ class gen_sale(models.TransientModel):
 											'product_uom':product_uom.id,
 											'price_unit':values.get('price'),
 											'discount':values.get('discount'),
-
 											'product_template_id':product_id.product_tmpl_id.id,
 											'display_product_id':product_id.id,
 											'rental':True,
 											'rental_type':'new_rental',
 											'start_date':values.get('start_date'),
 											'end_date':values.get('end_date'),
-
 											})
 		if tax_ids:
 			so_order_lines.write({'tax_id':([(6,0,tax_ids)])})
 		return True
 
-	
+
 	def make_order_date(self, date):
 		DATETIME_FORMAT = "%Y-%m-%d"
 		try:
@@ -208,7 +223,7 @@ class gen_sale(models.TransientModel):
 		except Exception:
 			raise ValidationError(_('Wrong Date Format. Date Should be in format YYYY-MM-DD.'))
 
-	
+
 	def find_user(self, name):
 		user_obj = self.env['res.users']
 		user_search = user_obj.search([('name', '=', name)])
@@ -267,7 +282,7 @@ class gen_sale(models.TransientModel):
 						values.update({'option':self.import_option,'seq_opt':self.sequence_opt})
 						res = self.make_sale(values)
 						sale_ids.append(res)
-			
+
 			confirmed_string = ''
 			canceled_string = ''
 			for rec in sale_ids:
@@ -275,31 +290,31 @@ class gen_sale(models.TransientModel):
 					if rec.name not in confirmed_list:
 						if len(confirmed_list) == 0:
 							confirmed_string+= rec.name
-						else:	
+						else:
 							confirmed_string+= ','+rec.name
-						confirmed_list.append(rec.name)	
+						confirmed_list.append(rec.name)
 				elif rec.state == 'cancel':
 					if rec.name not in canceled_list:
 						if len(canceled_list) == 0:
 							canceled_string+= rec.name
-						else:	
+						else:
 							canceled_string+= ','+rec.name
-						canceled_list.append(rec.name)	
-			
+						canceled_list.append(rec.name)
+
 			if len(confirmed_list) > 0 and len(canceled_list) > 0 :
 				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state and %s are in canceled state in the system.') % (confirmed_string,canceled_string))
 
 			elif len(confirmed_list) > 0 and len(canceled_list) == 0 :
-				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state in the system.') % confirmed_string)	
-			
+				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state in the system.') % confirmed_string)
+
 			elif len(confirmed_list) == 0 and len(canceled_list) > 0 :
 				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in canceled state in the system.') % canceled_string)
 
 			if self.stage == 'confirm':
-				for res in sale_ids: 
+				for res in sale_ids:
 					if res.state in ['draft', 'sent']:
 						res.action_confirm()
-	
+
 		else:
 			try:
 				fp = tempfile.NamedTemporaryFile(delete= False,suffix=".xlsx")
@@ -330,7 +345,7 @@ class gen_sale(models.TransientModel):
 						a1 = int(float(line[10]))
 						a1_as_datetime = datetime(*xlrd.xldate_as_tuple(a1, workbook.datemode))
 						date_string = a1_as_datetime.date().strftime('%Y-%m-%d')
-						#############inicio 
+						#############inicio
 						inicio = int(float(line[14]))
 						inicio_as_datetime = datetime(*xlrd.xldate_as_tuple(inicio, workbook.datemode))
 						date_string_inicio = inicio_as_datetime.date().strftime('%Y-%m-%d')
@@ -348,7 +363,7 @@ class gen_sale(models.TransientModel):
 									raise ValidationError(_('Wrong Date Format. Date Should be in format YYYY-MM-DD.'))
 								if len(line[13]) > 8 or len(line[13]) < 5:
 									raise ValidationError(_('Wrong Date Format. Date Should be in format YYYY-MM-DD.'))
-						
+
 						a2 = int(float(line[13]))
 						a2_as_datetime = datetime(*xlrd.xldate_as_tuple(a2, workbook.datemode))
 						date_string2 = a2_as_datetime.date().strftime('%Y-%m-%d')
@@ -383,28 +398,28 @@ class gen_sale(models.TransientModel):
 					if rec.name not in confirmed_list:
 						if len(confirmed_list) == 0:
 							confirmed_string+= rec.name
-						else:	
+						else:
 							confirmed_string+= ','+rec.name
-						confirmed_list.append(rec.name)	
+						confirmed_list.append(rec.name)
 				elif rec.state == 'cancel':
 					if rec.name not in canceled_list:
 						if len(canceled_list) == 0:
 							canceled_string+= rec.name
-						else:	
+						else:
 							canceled_string+= ','+rec.name
-						canceled_list.append(rec.name)	
-		
+						canceled_list.append(rec.name)
+
 			if len(confirmed_list) > 0 and len(canceled_list) > 0 :
 				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state and %s are in canceled state in the system.') % (confirmed_string,canceled_string))
 
 			elif len(confirmed_list) > 0 and len(canceled_list) == 0 :
-				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state in the system.') % confirmed_string)	
-			
+				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in confirmed state in the system.') % confirmed_string)
+
 			elif len(confirmed_list) == 0 and len(canceled_list) > 0 :
 				raise ValidationError(_('Only draft sale orders can be imported. Sale orders %s are in canceled state in the system.') % canceled_string)
-			
+
 			if self.stage == 'confirm':
-				for res in sale_ids: 
+				for res in sale_ids:
 					if res.state in ['draft', 'sent']:
 						res.action_confirm()
 
