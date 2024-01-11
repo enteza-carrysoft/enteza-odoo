@@ -109,6 +109,37 @@ class SaleOrderLine(models.Model):
             res = self._check_rental_availability()
         return res
 
+    #Añadimos estas funciones
+    def _prepare_new_rental_procurement_values(self, group=False):
+        vals = {
+            "company_id": self.order_id.company_id,
+            "group_id": group,
+            "sale_line_id": self.id,
+            "date_planner": self.start_date,
+            "route_ids": self.route_id od self.warehouse_id.rental_route_id,
+            "warehouse_id": self.warehouse_id or False,
+            "partner_id": self.order_id.partner_shipping_id.id,
+        }
+        return vals
+
+    def _run_rental_procurement(self, vals):
+        self.ensure_one()
+        procurements = [
+            self.env["procurement.group"].Procurement(
+                self.product_id.rented_product_id,
+                self.rental_qty,
+                self.product_id.rented_product_id.uom_id,
+                self.warehouse_id.rental_out_location_id,
+                self.name,
+                self.order_id.name,
+                self.order_id.company_id,
+                vals,
+            }
+        ]
+        self.env["procurement.group"].run(procurements)
+
+    #hasta aqui
+
 
 
     # def _check_rental_availability(self):
