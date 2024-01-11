@@ -134,7 +134,7 @@ class SaleOrderLine(models.Model):
                 self.order_id.name,
                 self.order_id.company_id,
                 vals,
-            }
+            )
         ]
         self.env["procurement.group"].run(procurements)
 
