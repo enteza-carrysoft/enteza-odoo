@@ -87,6 +87,7 @@ class SaleOrder(models.Model):
         return max_qty
     
     event_date = fields.Date(string="Fecha Evento")
+    NumPlazas = fields.integer(string="Numero Plazas")
 #    lista_stock = fields.Char(string="Listado Nuevo")
 
 
