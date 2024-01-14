@@ -173,5 +173,6 @@ class SaleOrderLine(models.Model):
     #     res=super(SaleOrderLine,self).onchange_start_end_date()
     #     return res
 
+    event_date = fields.Date(string="Fecha Evento")
     product_qty_rent_str=fields.Char(string="En existencia")
 
