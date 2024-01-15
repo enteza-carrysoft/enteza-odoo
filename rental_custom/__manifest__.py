@@ -9,19 +9,21 @@
     "author": "Fco Jose Carrion",
     "maintainers": [],
     "license": "AGPL-3",
-    "depends": ["sale",'sale_rental','rental_base'],
+    "depends": [
+        'sale',
+        'sale_rental',
+        'rental_base',
+    ],
     "data": [
         'security/ir.model.access.csv',
         'views/sale_line_views.xml',
         'views/dashboard_rental_views.xml',
+        'views/sale_order_views.xml',
         'wizard/wizard_report_stock_views.xml',
-        
     ],
     'assets': {
         'web.assets_backend': [
             'rental_custom/static/src/js/rental_dashboard.js',
-            #'dashboard_pos/static/src/css/pos_dashboard.css',
-            #'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js',
         ],
         'web.assets_qweb': [
             'rental_custom/static/src/xml/rental_dashboard.xml',

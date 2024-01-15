@@ -9,13 +9,18 @@ from datetime import datetime, timedelta
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    event_date = fields.Date(
+        string="Fecha Evento",
+    )
+    place_number = fields.Integer(
+        string="Número Plazas",
+    )
+
     @api.onchange("event_date")
     def event_date_change(self):
-        res = {}
         if self.event_date:
-            self.default_start_date=self.event_date-timedelta(days=1)
-            self.default_end_date=self.event_date+timedelta(days=1)
-        return res
+            self.default_start_date = self.event_date - timedelta(days=1)
+            self.default_end_date = self.event_date + timedelta(days=1)
 
     @api.model
     def get_report_product(self,data):
@@ -85,14 +90,39 @@ class SaleOrder(models.Model):
             if tmp_qty > max_qty:
                 max_qty = tmp_qty
         return max_qty
-    
-    event_date = fields.Date(string="Fecha Evento")
-    NumPlazas = fields.Integer(string="Numero Plazas")
-#    lista_stock = fields.Char(string="Listado Nuevo")
 
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
+
+    event_date = fields.Date(
+        related="order_id.event_date",
+    )
+    product_qty_rent_str = fields.Char(
+        string="En existencia",
+    )
+
+    def _prepare_new_rental_procurement_values(self, group=False):
+        vals = super()._prepare_new_rental_procurement_values(group=group)
+        vals["route_ids"] = self.route_id or self.warehouses_id.rental_route_id
+        vals["warehouse_id"] = self.warehouses_id or False
+        return vals
+
+    def _run_rental_procurement(self, vals):
+        self.ensure_one()
+        procurements = [
+            self.env["procurement.group"].Procurement(
+                self.product_id.rented_product_id,
+                self.rental_qty,
+                self.product_id.rented_product_id.uom_id,
+                self.warehouses_id.rental_out_location_id,
+                self.name,
+                self.order_id.name,
+                self.order_id.company_id,
+                vals,
+            )
+        ]
+        self.env["procurement.group"].run(procurements)
 
     def _get_number_of_time_unit(self):
         self.ensure_one()
@@ -165,15 +195,12 @@ class SaleOrderLine(models.Model):
     # @api.onchange('product_id')
     # def product_id_change(self):
     #     res=super(SaleOrderLine,self).product_id_change()
-    #     self.compute_stock()     
+    #     self.compute_stock()
     #     return res
 
     # @api.onchange("start_date", "end_date", "product_uom")
     # def onchange_start_end_date(self):
-    #     self.compute_stock()  
+    #     self.compute_stock()
     #     res=super(SaleOrderLine,self).onchange_start_end_date()
     #     return res
-
-    event_date = fields.Date(string="Fecha Evento")
-    product_qty_rent_str=fields.Char(string="En existencia")
 
