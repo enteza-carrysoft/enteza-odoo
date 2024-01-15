@@ -13,6 +13,17 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             </xpath>
         </field>
     </record>
+    <record id="view_sale_order_calendar_inherit" model="ir.ui.view">
+        <field name="name">sale.order.calendar.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sale_order_calendar"/>
+        <field name="arch" type="xml">
+            <calendar>
+            <!-- Cambia date_start por event_date -->
+                <field name="date_start" position="replace"/>
+                <field name="event_date"/>
+            </calendar>
+        </field>
+    </record>
 </odoo>
-
 
