@@ -13,4 +13,22 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             </xpath>
         </field>
     </record>
+
+    <record id="view_sale_order_calendar_rental_custom" model="ir.ui.view">
+        <field name="name">sale.order.calendar</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_calendar" />
+	<field name="arch" type="xml">
+	    <calendar string="Sales Orders" date_start="event_date" color="state" hide_time="true" event_limit="50" quick_add="False">
+		<field name="currency_id" invisible="1"/>
+                <field name="partner_id" avatar_field="avatar_128"/>
+                <field name="amount_total" widget="monetary" />
+                <field name="payment_term_id" />
+                <field name="state" filters="1" invisible="1" />
+            </calendar>
+        </field>
+    </record>
+
 </odoo>
+
+
