@@ -10,33 +10,26 @@ class SaleOrder(models.Model):
 
     @api.onchange('order_line')
     def _onchange_order_line(self):
-        print("/"*100)
-        print("onchange order line")
-        print("/"*100)
         self._get_used_categories()
 
     @api.model
     def _get_used_categories(self):
-        print("*"*100)
-        print("get used categories")
-        print("*"*100)
         categories = []
         for line in self.order_line:
             categories.append(line.product_id.categ_id.id)
-            print("-"*100)
         used_categories =self.env["product.category"].search([('id', 'in', categories)])
         self.used_categories = used_categories
-        print("used categories", self.used_categories)
-        print("-" * 100)
 
 
+    @api.depends('order_line.product_id.categ_id')
+    def _compute_used_categories(self):
+        for order in self:
+            categories = order.order_line.mapped('product_id.categ_id')
+            order.used_categories = [(6, 0, categories.ids)]
 
-
-        #return self.env["product.category"].search([('id', '>', 0)])
 
     used_categories = fields.Many2many(
         'product.category',
         string='Categoria',
-        default=lambda self: self._get_used_categories(),
-        store=True,
+        compute=_compute_used_categories,
     )
