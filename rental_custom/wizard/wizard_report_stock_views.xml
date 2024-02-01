@@ -10,7 +10,7 @@
           <group>
             <group>
                 <field name="options"/>
-                <field name="product_ids" widget="many2many_tags" options="{'no_create_edit': True}" attrs="{'invisible': [('options','!=','product')]}" 
+                <field name="product_ids" widget="many2many_tags" options="{'no_create_edit': True}" attrs="{'invisible': [('options','!=','product')]}"
                   domain="[('rental', '=', True),('type', '=','product')]"/>
                 <field name="categ_id"  options="{'no_create_edit': True}" attrs="{'invisible': [('options','!=','category')]}"/>
                 <field name="warehouse_id"/>
@@ -57,7 +57,7 @@
             or
             <button string="Cancel" class="oe_link" special="cancel"/>
           </footer>
-          
+
         </form>
       </field>
     </record>

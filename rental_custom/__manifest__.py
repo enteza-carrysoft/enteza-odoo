@@ -6,13 +6,15 @@
     "category": "Product",
     "summary": "This module rental custom",
     "website": "",
-    "author": "Fco Jose Carrion",
+    "author": "Fco Jose Carrion, Daniel Dominguez - Xtendoo (https://xtendoo.es)",
     "maintainers": [],
     "license": "AGPL-3",
     "depends": [
         'sale',
         'sale_rental',
         'rental_base',
+        'rental_product_set',
+        'sale_product_set',
     ],
     "data": [
         'security/ir.model.access.csv',
@@ -20,6 +22,7 @@
         'views/dashboard_rental_views.xml',
         'views/sale_order_views.xml',
         'wizard/wizard_report_stock_views.xml',
+        'wizard/product_set_add.xml',
     ],
     'assets': {
         'web.assets_backend': [

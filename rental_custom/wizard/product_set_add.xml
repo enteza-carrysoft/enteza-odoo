@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="product_set_add_form_view_rental" model="ir.ui.view">
+        <field name="name">product.set.add.form.view.rental</field>
+        <field name="model">product.set.add</field>
+        <field name="inherit_id" ref="sale_product_set.product_set_add_form_view" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_set_id']" position="before">
+                <field name="warehouse_id" attrs="{'invisible': [('rental_ok', '=', False)]}"/>
+            </xpath>
+      </field>
+  </record>
+</odoo>
