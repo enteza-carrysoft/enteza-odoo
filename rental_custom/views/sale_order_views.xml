@@ -9,7 +9,8 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="arch" type="xml">
             <xpath expr="//field[@name='date_order']" position="after">
                 <field name="event_date" />
-                <field name="place_number" />
+		<field name="place_number" />
+		<field name="not_reserved" />
             </xpath>
         </field>
     </record>
