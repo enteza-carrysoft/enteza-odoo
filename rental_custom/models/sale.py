@@ -12,6 +12,9 @@ class SaleOrder(models.Model):
     event_date = fields.Date(
         string="Fecha Evento",
     )
+    not_reserved = fields.Boolean(
+        string="No Reservado",
+    )
     place_number = fields.Integer(
         string="Número Plazas",
     )
@@ -97,6 +100,9 @@ class SaleOrderLine(models.Model):
 
     event_date = fields.Date(
         related="order_id.event_date",
+    )
+    not_reserved = fields.Boolean(
+        related="order_id.not_reserved",
     )
     product_qty_rent_str = fields.Char(
         string="En existencia",
