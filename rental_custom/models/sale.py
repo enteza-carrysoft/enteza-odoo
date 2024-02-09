@@ -109,7 +109,7 @@ class SaleOrderLine(models.Model):
     )
     product_qty_rent = fields.Float(
         string="Cantidad disponible"
-    }
+    )
 
     def _prepare_new_rental_procurement_values(self, group=False):
         vals = super()._prepare_new_rental_procurement_values(group=group)
