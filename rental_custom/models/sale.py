@@ -165,7 +165,7 @@ class SaleOrderLine(models.Model):
         max_ol_qty = self._get_max_overlapping_rental_qty()
         avail_qty = total_qty - max_ol_qty
         self.product_qty_rent=avail_qty
-        self.product_qty_rent_str="En Existencia "+st(avail_qty)
+        self.product_qty_rent_str="En Existencia "+str(avail_qty)
         if self.rental_qty > avail_qty:
             res = self._get_concurrent_orders()
             if total_qty == 0:
