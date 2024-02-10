@@ -77,6 +77,7 @@ class SaleOrder(models.Model):
                     ("id", "in", lines.ids),
                     ("start_date", "<=", data.get('date_stop')),
                     ("end_date", ">=",data.get('date_stop')),
+                    ("not_reserved", "=", False), # Condicion adicional para que no incluya a los que tengan esta marca 
                 ]
             )
             tmp_qty = sum(line.rental_qty for line in ol_lines)
@@ -87,6 +88,7 @@ class SaleOrder(models.Model):
                     ("id", "in", lines.ids),
                     ("start_date", "<=", data.get('date_stop')),
                     ("end_date", ">=",data.get('date_stop')),
+                    ("not_reserved", "=", False), # Condicion adicional para que no incluya a los que tengan esta marca 
                 ]
             )
             tmp_qty = sum(line.rental_qty for line in ol_lines)
