@@ -211,3 +211,15 @@ class SaleOrderLine(models.Model):
         res = super(SaleOrderLine,self).onchange_start_end_date()
         return res
 
+    class SaleOrderChecker(models.Model):
+        _name = 'sale.order.checker'
+
+        @api.model
+        def check_orders(self):
+            today = fields.Date.today()
+            orders = self.env['sale.order'].search([('state', '=', 'draft'), ('date_order', '>', today)])
+
+            for order in orders:
+                for line in order.order_line:
+                    line._check_rental_availability()
+
