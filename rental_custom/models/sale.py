@@ -18,6 +18,25 @@ class SaleOrder(models.Model):
     place_number = fields.Integer(
         string="Número Plazas",
     )
+    concurrent_orders = fields.Selection(
+        selection=[
+            ("none", "None"),
+            ("any", "Any"),
+        ],
+        default="none",
+        compute="_compute_concurrent_orders",
+        store=True,
+    )
+
+    @api.depends("order_line.concurrent_orders")
+    def _compute_concurrent_orders(self):
+        for order in self:
+            if any(
+                line.concurrent_orders != "none" for line in order.order_line
+            ):
+                order.concurrent_orders = "any"
+            else:
+                order.concurrent_orders = "none"
 
     @api.onchange("event_date")
     def event_date_change(self):
