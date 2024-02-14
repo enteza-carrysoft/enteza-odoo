@@ -26,75 +26,22 @@ class SaleOrder(models.Model):
             self.default_end_date = self.event_date + timedelta(days=1)
 
     @api.model
-    def get_report_product(self,data):
-        product_ids=[]
-        date_start=data.get('date_start',False)
-        date_stop=data.get('date_stop',False)
-        product_ids_rent=data.get('product_ids',[])
+    def get_report_product(self, data):
+        product_ids = []
+        date_start = data.get('date_start',False)
+        date_stop = data.get('date_stop',False)
+        product_ids_rent = data.get('product_ids',[])
         if data:
-            product_obj = self.env['product.product'].search([('id','in',product_ids_rent)])
+            product_obj = self.env['product.product'].search([('id', 'in', product_ids_rent)])
             for line in product_obj:
-                rental=self.get_stock_rental(line,data)
+                rental=self.get_stock_rental(line, data)
                 product_ids.append({
-                    'name':line.name,
-                    'qty':line.qty_available,
-                    'date_start':date_start,
-                    'rent':rental
+                    'name': line.name,
+                    'qty': line.qty_available,
+                    'date_start': date_start,
+                    'rent': rental
                 })
-
-        return {'product_ids':product_ids}
-
-    def get_stock_rental(self,product_id,data):
-        date_start=data.get('date_start',False)
-        date_stop=data.get('date_stop',False)
-        warehouse_id=self.env['stock.warehouse'].browse(data.get('warehouse_id',False))
-        total_qty =product_id.with_context({"location": warehouse_id.rental_view_location_id.id}).qty_available
-        max_ol_qty = self._get_max_overlapping_rental_qty_cus(product_id,data)
-        return max_ol_qty
-
-    def _get_concurrent_order_lines_cust(self,product_id,data):
-        domain = []
-        domain += [
-            ("state", "!=", "cancel"),
-            ("display_product_id", "=", product_id.id),
-            "|",
-            "&",
-            ("start_date", "<=", data.get('date_stop')),
-            ("end_date", ">=",data.get('date_stop')),
-            "&",
-            ("start_date", "<=", data.get('date_stop')),
-            ("end_date", ">=", data.get('date_stop')),
-        ]
-        res = self.env['sale.order.line'].search(domain)
-        return res
-
-    def _get_max_overlapping_rental_qty_cus(self,product_id,data):
-        lines = self._get_concurrent_order_lines_cust(product_id,data)
-        max_qty = 0
-        for line in lines:
-            ol_lines = self.env['sale.order.line'].search(
-                [
-                    ("id", "in", lines.ids),
-                    ("start_date", "<=", data.get('date_stop')),
-                    ("end_date", ">=",data.get('date_stop')),
-                    ("not_reserved", "=", False), # Condicion adicional para que no incluya a los que tengan esta marca 
-                ]
-            )
-            tmp_qty = sum(line.rental_qty for line in ol_lines)
-            if tmp_qty > max_qty:
-                max_qty = tmp_qty
-            ol_lines = self.env['sale.order.line'].search(
-                [
-                    ("id", "in", lines.ids),
-                    ("start_date", "<=", data.get('date_stop')),
-                    ("end_date", ">=",data.get('date_stop')),
-                    ("not_reserved", "=", False), # Condicion adicional para que no incluya a los que tengan esta marca 
-                ]
-            )
-            tmp_qty = sum(line.rental_qty for line in ol_lines)
-            if tmp_qty > max_qty:
-                max_qty = tmp_qty
-        return max_qty
+        return {'product_ids': product_ids}
 
 
 class SaleOrderLine(models.Model):
@@ -166,8 +113,8 @@ class SaleOrderLine(models.Model):
         ).qty_available
         max_ol_qty = self._get_max_overlapping_rental_qty()
         avail_qty = total_qty - max_ol_qty
-        self.product_qty_rent=avail_qty
-        self.product_qty_rent_str="En Existencia "+str(avail_qty)
+        self.product_qty_rent = avail_qty
+        self.product_qty_rent_str = "En Existencia "+str(avail_qty)
         if self.rental_qty > avail_qty:
             res = self._get_concurrent_orders()
             if total_qty == 0:
@@ -193,26 +140,54 @@ class SaleOrderLine(models.Model):
             self.concurrent_orders = "none"
         return res
 
+    def _get_max_overlapping_rental_qty(self):
+        self.ensure_one()
+        lines = self._get_concurrent_order_lines()
+        max_qty = 0
+        for line in lines:
+            ol_lines = self.search(
+                [
+                    ("id", "in", lines.ids),
+                    ("start_date", "<=", line.start_date),
+                    ("end_date", ">=", line.start_date),
+                    ("not_reserved", "=", False),
+                ]
+            )
+            tmp_qty = sum(line.rental_qty for line in ol_lines)
+            if tmp_qty > max_qty:
+                max_qty = tmp_qty
+            ol_lines = self.search(
+                [
+                    ("id", "in", lines.ids),
+                    ("start_date", "<=", line.end_date),
+                    ("end_date", ">=", line.end_date),
+                    ("not_reserved", "=", False),
+                ]
+            )
+            tmp_qty = sum(line.rental_qty for line in ol_lines)
+            if tmp_qty > max_qty:
+                max_qty = tmp_qty
+        return max_qty
+
     def compute_stock(self):
-        total_qty=0
         if self.product_id and self.product_id.rented_product_id:
             total_qty = self.product_id.rented_product_id.with_context(
                 {"location": self.warehouses_id.rental_view_location_id.id}
             ).qty_available
             max_ol_qty = self._get_max_overlapping_rental_qty()
             avail_qty = total_qty - max_ol_qty
-            self.product_qty_rent=avail_qty
-            self.product_qty_rent_str="En Existencia "+str(avail_qty)
+            self.product_qty_rent = avail_qty
+            self.product_qty_rent_str = "En Existencia "+str(avail_qty)
 
     @api.onchange('product_id')
     def product_id_change(self):
-        res=super(SaleOrderLine,self).product_id_change()
+        res = super(SaleOrderLine,self).product_id_change()
         self.compute_stock()
         return res
 
     @api.onchange("start_date", "end_date", "product_uom")
     def onchange_start_end_date(self):
         self.compute_stock()
-        res=super(SaleOrderLine,self).onchange_start_end_date()
+        res = super(SaleOrderLine,self).onchange_start_end_date()
         return res
 
