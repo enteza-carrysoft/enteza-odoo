@@ -26,6 +26,7 @@ class SaleOrder(models.Model):
         default="none",
         compute="_compute_concurrent_orders",
         store=True,
+        string="Sobreventas",
     )
 
     @api.depends("order_line.concurrent_orders")
