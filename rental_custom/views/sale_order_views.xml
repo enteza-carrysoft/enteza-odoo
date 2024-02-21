@@ -31,6 +31,9 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         		<field name="place_number" />
 		        <field name="not_reserved" />
             </xpath>
+            <xpath expr="//tree" position="attributes">
+		    <attribute name="limit">200</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
