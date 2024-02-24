@@ -33,7 +33,13 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             </xpath>
             <xpath expr="//tree" position="attributes">
 		    <attribute name="limit">200</attribute>
-            </xpath>
+	    </xpath>
+            <xpath expr="//tree" position="attributes">
+		    <attribute name="mode">month</attribute>
+	    </xpath>
+            <xpath expr="//tree" position="attributes">
+		    <attribute name="delete">false</attribute>
+	    </xpath>
         </field>
     </record>
 </odoo>
