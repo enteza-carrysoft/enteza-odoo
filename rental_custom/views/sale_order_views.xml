@@ -32,24 +32,24 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
 		        <field name="not_reserved" />
             </xpath>
             <xpath expr="//tree" position="attributes">
-		    <attribute name="limit">200</attribute>
-	    </xpath>
+		        <attribute name="limit">200</attribute>
+	        </xpath>
         </field>
     </record>
 
-    <record id="view_sale__order_calendar" model="ir.ui.view">
-        <field name="name">sale.order.calendar</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_sale_order_calendar" />
-        <field name="arch" type="xml">
-            <xpath expr="//tree" position="attributes">
-		    <attribute name="mode">month</attribute>
-	    </xpath>
-            <xpath expr="//tree" position="attributes">
-		    <attribute name="delete">false</attribute>
-	    </xpath>
-        </field>
-    </record>
+<!--    <record id="view_sale_order_calendar" model="ir.ui.view">-->
+<!--        <field name="name">sale.order.calendar</field>-->
+<!--        <field name="model">sale.order</field>-->
+<!--        <field name="inherit_id" ref="sale.view_sale_order_calendar" />-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//tree" position="attributes">-->
+<!--		        <attribute name="mode">month</attribute>-->
+<!--	        </xpath>-->
+<!--            <xpath expr="//tree" position="attributes">-->
+<!--		        <attribute name="delete">false</attribute>-->
+<!--	        </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
 
 </odoo>
 
