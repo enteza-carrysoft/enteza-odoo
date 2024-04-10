@@ -88,9 +88,17 @@
                         </h2>
                         <div class="row mt32 mb32">
                             <div t-if="doc.origin" class="col-auto" name="div_origin">
+                                <strong>Cliente:</strong>
+                                <p t-field="doc.sale_id.partner_id.name"/>
+			    </div>
+                            <div t-if="doc.origin" class="col-auto" name="div_origin">
+                                <strong>Fecha del Evento:</strong>
+                                <p t-field="doc.sale_id.event_date"/>
+			    </div>
+                            <div t-if="doc.origin" class="col-auto" name="div_origin">
                                 <strong>Pedido:</strong>
                                 <p t-field="doc.origin"/>
-                            </div>
+			    </div>
                             <div t-if="doc.state" class="col-auto" name="div_sched_date">
                                 <strong>Fecha de envío:</strong>
                                 <t t-if="doc.state == 'done'">

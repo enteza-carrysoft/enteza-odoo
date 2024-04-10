@@ -67,7 +67,8 @@
                         <h2 class="mt16">
                             <t t-if="not (env.context.get('proforma', False) or is_pro_forma)">
                                 <span t-if="doc.state not in ['draft','sent']">Pedido #</span>
-                                <span t-if="doc.state in ['draft','sent']">Presupuesto #</span>
+                                <span t-if="(doc.state in ['draft','sent'] and not (not_reserved))">Reserva #</span>
+                                <span t-if="(doc.state in ['draft','sent'] and not_reserved)">Presupuesto #</span>
                             </t>
                             <t t-if="env.context.get('proforma', False) or is_pro_forma">
                                 <span>FActura pro-forma #</span>
@@ -112,8 +113,9 @@
                             <thead style="display: table-row-group">
                                 <tr>
                                     <th name="th_description" class="text-left">Descripción</th>
+                                    <th name="th_quantity" class="text-right">P.Coste</th>
                                     <th name="th_quantity" class="text-right">Cantidad</th>
-                                    <th name="th_priceunit" class="text-right">Precio unitario</th>
+                                    <th name="th_priceunit" class="text-right">Precio</th>
                                     <th name="th_discount" t-if="display_discount" class="text-right"
                                         groups="product.group_discount_per_so_line">
                                         <span>Desc.%</span>
@@ -133,7 +135,7 @@
                                        t-value="doc.order_line.filtered(lambda l: l.product_id.categ_id.id == category.id)"/>
                                     <t t-if="product_grouped">
                                         <tr>
-                                            <td colspan="5"
+                                            <td colspan="6"
                                                style="text-align:left;border-bottom:2px solid black;border-top:2px solid black;background:#e1e5eb">
                                                 <span t-field="category.name"></span>
                                             </td>
@@ -150,6 +152,9 @@
                                             <t t-if="not line.display_type">
                                                 <td name="td_name">
                                                     <span t-field="line.name"/>
+                                                </td>
+                                                <td name="td_coste">
+                                                    <span t-field="line.product_id.rented_product_id.list_price"/>
                                                 </td>
                                                 <td name="td_quantity" class="text-right">
                                                     <span t-field="line.product_uom_qty"/>
