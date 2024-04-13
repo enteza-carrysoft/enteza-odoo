@@ -160,6 +160,26 @@ class SaleOrderLine(models.Model):
             self.concurrent_orders = "none"
         return res
 
+    def _get_concurrent_order_lines(self):
+        self.ensure_one()
+        domain = []
+        if self.id:
+            domain = [("id", "!=", self.id)]
+        domain += [
+            ("state", "!=", "cancel"),
+            ("warehouses_id", "=", self.warehouses_id.id),
+            ("display_product_id", "=", self.display_product_id.id),
+            "|",
+            "&",
+            ("start_date", "<=", self.start_date),
+            ("end_date", ">=", self.start_date),
+            "&",
+            ("start_date", "<=", self.end_date),
+            ("end_date", ">=", self.end_date),
+        ]
+        res = self.search(domain)
+        return res
+
     def _get_max_overlapping_rental_qty(self):
         self.ensure_one()
         lines = self._get_concurrent_order_lines()
