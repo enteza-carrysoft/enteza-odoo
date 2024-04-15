@@ -18,7 +18,7 @@ msgstr ""
 #. module: sale_order_discount_all
 #: model_terms:ir.ui.view,arch_db:sale_order_discount_all.view_order_form_inherit
 msgid "Discount all"
-msgstr "100% Descuento a todos los productos"
+msgstr "Descuento a todos los productos"
 
 #. module: sale_order_discount_all
 #: model:ir.model,name:sale_order_discount_all.model_sale_order

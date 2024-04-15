@@ -7,8 +7,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="before">
                 <!-- <label for="product_qty_rent" string="En existencia" style="color:#008f39" attrs="{'invisible': [('rental','=',False)]}"/> -->
-                <field name="product_qty_rent_str" nolabel="1"  widget="badge" decoration-success="product_qty_rent_str!=False"  style="color:#FFF; font-weight: bold;" 
-                    attrs="{'invisible': [('rental','=',False)]}"/>
+		<field name="product_qty_rent"
+		    nolabel="1"
+		    widget="badge" 
+		    decoration-danger="product_qty_rent &lt; 1"
+		    decoration-success="product_qty_rent &gt; 0"
+		    attrs="{'invisible': [('rental','=',False)]}"/>
             </xpath>
         </field>
     </record>

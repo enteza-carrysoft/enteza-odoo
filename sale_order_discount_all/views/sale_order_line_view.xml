@@ -11,7 +11,10 @@
                     string="Discount all"
                     type="object"
                 />
-            </xpath>
+	    </xpath>
+	    <field name="client_order_ref" position="after">
+                <field name="all_discount"/>
+            </field>
         </field>
     </record>
 </odoo>

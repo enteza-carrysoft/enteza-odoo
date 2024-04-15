@@ -8,6 +8,8 @@ from odoo import fields, models, api
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    all_discount = fields.Float(string='Descuento en lineas (%)', digits='Discount', default=0.0)
+
     def action_sale_order_discount_all(self):
         for line in self.order_line:
-            line.discount = 100
+            line.discount = self.all_discount

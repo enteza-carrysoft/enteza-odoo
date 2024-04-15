@@ -46,23 +46,99 @@ class SaleOrder(models.Model):
             self.default_end_date = self.event_date + timedelta(days=1)
 
     @api.model
-    def get_report_product(self, data):
-        product_ids = []
-        date_start = data.get('date_start',False)
-        date_stop = data.get('date_stop',False)
-        product_ids_rent = data.get('product_ids',[])
+    def get_report_product(self,data):
+        if 'date_start' not in data:
+            return []
+        days=[]
+        product_ids=[]
+        date_start=data.get('date_start',False)
+        date_stop=data.get('date_stop',False)
+        fecha1 = datetime.strptime(date_start, "%Y-%m-%d")
+        fecha2 = datetime.strptime(date_stop, "%Y-%m-%d")
+        remaining_days = (fecha1-fecha2).days
+        if int(remaining_days)>=1:
+            raise ValidationError(str("La fecha final debe ser mayo ala fecha inicial"))
+        if int(abs(remaining_days))>20:
+            raise ValidationError( str("Debe consultar  20 dias maximo"))
+        fecha=fecha1
+        i=1
+        for  r  in range(0, 25):
+            days.append({i:fecha.strftime('%Y-%m-%d')})
+            fecha=fecha1+timedelta(days =i)
+            if fecha>fecha2:
+                break
+            i+=1
+        #raise ValidationError( str(  days  ))
+        product_ids_rent=data.get('product_ids',[])
         if data:
-            product_obj = self.env['product.product'].search([('id', 'in', product_ids_rent)])
+            product_obj = self.env['product.product'].search([('id','in',product_ids_rent)])
             for line in product_obj:
-                rental=self.get_stock_rental(line, data)
+                rental=0
+                p=1
+                for rp in days:
+                    rental=self.get_stock_rental(line,data={'date_start':rp.get(p),'date_stop':rp.get(p),'warehouse_id':data.get('warehouse_id',False)})
+                    rp.update({line.id:rental})
+                    p+=1
                 product_ids.append({
-                    'name': line.name,
-                    'qty': line.qty_available,
-                    'date_start': date_start,
-                    'rent': rental
+                    'name':line.name,
+                    'product_id':line.id,
+                    'qty':line.qty_available,
+                    'date_start':date_start,
+                    'rent':rental,
+                    'dates':days
                 })
-        return {'product_ids': product_ids}
 
+        return {'product_ids':product_ids}
+
+    def get_stock_rental(self,product_id,data):
+        date_start=data.get('date_start',False)
+        date_stop=data.get('date_stop',False)
+        warehouse_id=self.env['stock.warehouse'].browse(data.get('warehouse_id',False))
+        total_qty =product_id.with_context({"location": warehouse_id.rental_view_location_id.id}).qty_available
+        max_ol_qty = self._get_max_overlapping_rental_qty_cus(product_id,data)
+        return max_ol_qty
+
+    def _get_concurrent_order_lines_cust(self,product_id,data):
+        domain = []
+        domain += [
+            ("state", "!=", "cancel"),
+            ("display_product_id", "=", product_id.id),
+            "|",
+            "&",
+            ("start_date", "<=", data.get('date_stop')),
+            ("end_date", ">=",data.get('date_stop')),
+            "&",
+            ("start_date", "<=", data.get('date_stop')),
+            ("end_date", ">=", data.get('date_stop')),
+        ]
+        res = self.env['sale.order.line'].search(domain)
+        return res
+
+    def _get_max_overlapping_rental_qty_cus(self,product_id,data):
+        lines = self._get_concurrent_order_lines_cust(product_id,data)
+        max_qty = 0
+        for line in lines:
+            ol_lines = self.env['sale.order.line'].search(
+                [
+                    ("id", "in", lines.ids),
+                    ("start_date", "<=", data.get('date_stop')),
+                    ("end_date", ">=",data.get('date_stop')),
+                ]
+            )
+            tmp_qty = sum(line.rental_qty for line in ol_lines)
+            if tmp_qty > max_qty:
+                max_qty = tmp_qty
+            ol_lines = self.env['sale.order.line'].search(
+                [
+                    ("id", "in", lines.ids),
+                    ("start_date", "<=", data.get('date_stop')),
+                    ("end_date", ">=",data.get('date_stop')),
+                ]
+            )
+            tmp_qty = sum(line.rental_qty for line in ol_lines)
+            if tmp_qty > max_qty:
+                max_qty = tmp_qty
+        return max_qty
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
