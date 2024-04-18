@@ -7,6 +7,12 @@ from odoo import api, fields, models
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
+    client_id = fields.Many2one(
+        related="sale_id.partner_id",
+        string='Cliente',
+        store=True
+    )
+
     @api.onchange('move_ids_without_package')
     def _onchange_move(self):
         categories = []
