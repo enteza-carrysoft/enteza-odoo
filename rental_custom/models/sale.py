@@ -213,9 +213,10 @@ class SaleOrderLine(models.Model):
         self.product_qty_rent_str = "En Existencia "+str(avail_qty)
         if self.rental_qty > avail_qty:
             res = self._get_concurrent_orders()
-            if total_qty == 0:
-                self.concurrent_orders = "none"
-            elif res["quotation"] and not res["order"]:
+#            if total_qty == 0:
+#                self.concurrent_orders = "none"
+#            elif res["quotation"] and not res["order"]:
+            if res["quotation"] and not res["order"]:
                 self.concurrent_orders = "quotation"
             else:
                 self.concurrent_orders = "order"
