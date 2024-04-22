@@ -55,11 +55,14 @@ class WizardCreateSale(models.TransientModel):
                 'product_uom_qty':line.product_uom_qty
                 }))
         values={
-            'partner_id':picking_id.partner_id.id,
+#            'partner_id':picking_id.partner_id.id,
+            'partner_id':picking_id.client_id.id,
             'type_id':1,
             'order_line':data
         }
         sale_id=self.env['sale.order'].create(values)
+        if picking_id.origin:
+            sale_id.message_post(body="Documento origen. %s" % picking_id.origin)
         #picking_id.write({'sale_order_rental_id':sale_id.id})
         return True
 
