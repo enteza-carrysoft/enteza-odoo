@@ -1,0 +1,282 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* rental_check_availability_lines
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 15.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-04-26 07:03+0000\n"
+"PO-Revision-Date: 2024-04-26 07:03+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line__concurrent_orders
+msgid "Concurrent Orders"
+msgstr "Ordenes concurrentes"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__create_uid
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__create_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__create_date
+msgid "Created on"
+msgstr "Creada en"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__display_name
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line__default_end_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__end_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__end_date
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "End date"
+msgstr "Fecha fin"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__event_date
+msgid "Event date"
+msgstr "Fecha de evento"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line_concurrent_line__invoice_status__invoiced
+msgid "Fully Invoiced"
+msgstr "Totalmente facturada"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__id
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__id
+msgid "ID"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__invoice_status
+msgid "Invoice Status"
+msgstr "Estado de la factura"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent____last_update
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line____last_update
+msgid "Last Modified on"
+msgstr "Ultima modificacion en"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__write_uid
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__write_uid
+msgid "Last Updated by"
+msgstr "Ultima actualizacion en"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__write_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__write_date
+msgid "Last Updated on"
+msgstr "Ultima actualizacion en"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__line_ids
+msgid "Lines ids"
+msgstr "Lineas ids"
+
+#. module: rental_check_availability_lines
+#: code:addons/rental_check_availability_lines/wizards/sale.py:0
+#: code:addons/rental_check_availability_lines/wizards/sale.py:0
+#, python-format
+msgid "No found concurrent Rental Order/Quotation(s)."
+msgstr "No se encontraron pedidos/cotizaciones de alquiler simultáneos"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line__concurrent_orders__none
+msgid "None"
+msgstr "Ninguno"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line_concurrent_line__invoice_status__no
+msgid "Nothing to Invoice"
+msgstr "Nada que facturar"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line__concurrent_orders__order
+msgid "Order"
+msgstr "Pedido"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__date_order
+msgid "Order date"
+msgstr "Fecha de pedido"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__order_id
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__order_id
+msgid "Order id"
+msgstr "Id pedido"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__partner_id
+msgid "Partner"
+msgstr "Cliente"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__partner_id
+msgid "Partner name"
+msgstr "Nombre del cliente"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line__product_id
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__product_id
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Product"
+msgstr "Producto"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__product_uom_qty
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__product_uom_qty
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_order_line_current_tree
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line__concurrent_orders__quotation
+msgid "Quotation"
+msgstr "Presupuesto"
+
+#. module: rental_check_availability_lines
+#: model:ir.actions.act_window,name:rental_check_availability_lines.action_rental_orders_lines
+msgid "Rental Orders Lines"
+msgstr "Líneas de alquiler"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Sale Custom Wizard"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__sale_order_line_id
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__sale_order_line_concurrent_id
+msgid "Sale order line"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model,name:rental_check_availability_lines.model_sale_order_line_concurrent_line
+msgid "Sale order line concurrent"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__line_concurrent_ids
+msgid "Sale order lines concurrent"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model,name:rental_check_availability_lines.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: rental_check_availability_lines
+#: model:ir.model,name:rental_check_availability_lines.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea de pedido de venta"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_order_line_current_tree
+msgid "Sales Order Lines"
+msgstr "Líneas de ventas"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__salesman_id
+msgid "Salesman"
+msgstr "Comercial"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__salesman_id
+msgid "Salesman id"
+msgstr "Id comercial"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line__default_start_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__start_date
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__start_date
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Start date"
+msgstr "Fecha inicio"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__state
+msgid "State"
+msgstr "Estado"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__qty_available
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__qty_available_total
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__quantity
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_order_line_current_tree
+msgid "Stock"
+msgstr "Stock"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line__stock_available
+msgid "Stock Available"
+msgstr "Stock disponible"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Stock order warehouse"
+msgstr "Stock de almacen actual"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Stock total"
+msgstr "Stock total"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__amount_total
+msgid "Subtotal"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line_concurrent_line__invoice_status__to_invoice
+msgid "To Invoice"
+msgstr "Para facturar"
+
+#. module: rental_check_availability_lines
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_order_line_current_tree
+#: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
+msgid "Total"
+msgstr ""
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields.selection,name:rental_check_availability_lines.selection__sale_order_line_concurrent_line__invoice_status__upselling
+msgid "Upselling Opportunity"
+msgstr "Oportunidad de venta adicional"
+
+#. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__warehouse_id
+msgid "Warehouse"
+msgstr "Almacen"
+
+#. module: rental_check_availability_lines
+#: model:ir.model,name:rental_check_availability_lines.model_sale_order_line_concurrent
+msgid "sale.order.line.concurrent"
+msgstr ""

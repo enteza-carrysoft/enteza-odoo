@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sale_custom_wizard_form" model="ir.ui.view">
+            <field name="name">sale.order.line.concurrent.wizard.form</field>
+            <field name="model">sale.order.line.concurrent</field>
+            <field name="arch" type="xml">
+                <form string="Sale Custom Wizard">
+                    <group>
+                        <group>
+                        <field name="product_id" readonly="1" options="{'no_open': True}" string="Product"/>
+                        <field name="start_date" string="Start date" readonly="1" options="{'no_open': True}"/>
+                        <field name="end_date" string="End date" readonly="1" options="{'no_open': True}"/>
+                        </group>
+                        <group>
+                        <field name="warehouse_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="qty_available" string="Stock order warehouse" align="left"/>
+                        <field name="qty_available_total" string="Stock total" align="right"/>
+                        </group>
+
+                    </group>
+                            <field name="line_concurrent_ids" nolabel="1" readonly="1" colspan="2" options="{'no_open': True}">
+                                <tree>
+                                    <field name="order_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="date_order"/>
+                                    <field name="event_date"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                    <field name="salesman_id"/>
+                                    <field name="product_uom_qty" string="Quantity" sum="Total"/>
+                                    <field name="invoice_status" decoration-success="invoice_status == 'invoiced'"
+                                           decoration-info="invoice_status == 'to invoice'"
+                                           decoration-warning="invoice_status == 'upselling'" widget="badge"
+                                           optional="show"/>
+                                    <field name="amount_total" sum="Total" widget="monetary"/>
+                                </tree>
+                            </field>
+                    <footer>
+                        <button string="Confirm" type="object" name="confirm" class="btn-primary"/>
+                        <button string="Cancel" type="object" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
