@@ -13,8 +13,8 @@
                         <field name="end_date" string="End date" readonly="1" options="{'no_open': True}"/>
                         </group>
                         <group>
-                        <field name="warehouse_id" readonly="1" options="{'no_open': True}"/>
-                        <field name="qty_available" string="Stock order warehouse" align="left"/>
+                        <field name="warehouses_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="qty_available" string="Stock order warehouses" align="left"/>
                         <field name="qty_available_total" string="Stock total" align="right"/>
                         </group>
 

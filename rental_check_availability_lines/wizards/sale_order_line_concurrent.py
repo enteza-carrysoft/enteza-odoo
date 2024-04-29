@@ -32,7 +32,7 @@ class SaleOrderLineConcurrent(models.TransientModel):
 
     @api.model
     def _default_sale_order_line_warehouse(self):
-        return self.env["sale.order.line"].browse(self.env.context.get("active_id")).warehouse_id
+        return self.env["sale.order.line"].browse(self.env.context.get("active_id")).warehouses_id
 
     @api.model
     def _default_sale_order_start_date(self):
@@ -46,7 +46,7 @@ class SaleOrderLineConcurrent(models.TransientModel):
     def _compute_qty_available(self):
         for line in self:
             line.qty_available = line.product_id.rented_product_id.with_context(
-                {"location": line.order_id.warehouse_id.rental_view_location_id.id}
+                {"location": line.order_id.warehouses_id.rental_view_location_id.id}
             ).qty_available
 
     @api.depends("product_id")
@@ -115,7 +115,8 @@ class SaleOrderLineConcurrent(models.TransientModel):
         default=_default_sale_order_line_partner,
         string="Partner name",
     )
-    warehouse_id = fields.Many2one(
+    warehouses_id = fields.Many2one(
+        string="Warehouse",
         comodel_name="stock.warehouse",
         default=_default_sale_order_line_warehouse,
     )
@@ -125,6 +126,7 @@ class SaleOrderLineConcurrent(models.TransientModel):
         domain = [
             ("state", "!=", "cancel"),
             ("product_id", "=", self.product_id.id),
+            ("warehouses_id", "=", self.warehouses_id.id),
             "|",
             "&",
             ("start_date", "<=", self.start_date),

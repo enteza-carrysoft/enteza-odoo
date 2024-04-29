@@ -81,19 +81,19 @@ msgstr "Estado de la factura"
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent____last_update
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line____last_update
 msgid "Last Modified on"
-msgstr "Ultima modificacion en"
+msgstr "Ultima modificación en"
 
 #. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__write_uid
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__write_uid
 msgid "Last Updated by"
-msgstr "Ultima actualizacion en"
+msgstr "Ultima actualización en"
 
 #. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__write_date
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__write_date
 msgid "Last Updated on"
-msgstr "Ultima actualizacion en"
+msgstr "Ultima actualización en"
 
 #. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__line_ids
@@ -125,7 +125,7 @@ msgstr "Pedido"
 #. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__date_order
 msgid "Order date"
-msgstr "Fecha de pedido"
+msgstr "Fecha de pedído"
 
 #. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__order_id
@@ -243,7 +243,7 @@ msgstr "Stock disponible"
 #. module: rental_check_availability_lines
 #: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
 msgid "Stock order warehouse"
-msgstr "Stock de almacen actual"
+msgstr "Stock de almacén actual"
 
 #. module: rental_check_availability_lines
 #: model_terms:ir.ui.view,arch_db:rental_check_availability_lines.view_sale_custom_wizard_form
@@ -272,9 +272,9 @@ msgid "Upselling Opportunity"
 msgstr "Oportunidad de venta adicional"
 
 #. module: rental_check_availability_lines
-#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__warehouse_id
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__warehouses_id
 msgid "Warehouse"
-msgstr "Almacen"
+msgstr "Almacén"
 
 #. module: rental_check_availability_lines
 #: model:ir.model,name:rental_check_availability_lines.model_sale_order_line_concurrent
