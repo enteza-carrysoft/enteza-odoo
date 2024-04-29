@@ -137,20 +137,20 @@ class SaleOrderLineConcurrent(models.TransientModel):
         ]
         order_lines = self.env["sale.order.line"].search(domain)
         for line in order_lines:
-            self.line_concurrent_ids += self.env['sale.order.line.concurrent.line'].new({
-                "order_id": line.order_id,
-                "partner_id": line.order_id.partner_id,
-                "date_order": line.order_id.date_order,
-                "event_date": line.order_id.event_date,
-                "start_date": line.start_date,
-                "end_date": line.end_date,
-                "salesman_id": line.order_id.user_id,
-                "product_uom_qty": line.product_uom_qty,
-                "invoice_status": line.order_id.invoice_status,
-                "amount_total": line.order_id.amount_total,
-
-            }
-        )
+            self.line_concurrent_ids += self.env['sale.order.line.concurrent.line'].new(
+                {
+                    "order_id": line.order_id,
+                    "partner_id": line.order_id.partner_id,
+                    "date_order": line.order_id.date_order,
+                    "event_date": line.order_id.event_date,
+                    "start_date": line.start_date,
+                    "end_date": line.end_date,
+                    "salesman_id": line.order_id.user_id,
+                    "product_uom_qty": line.product_uom_qty,
+                    "invoice_status": line.order_id.invoice_status,
+                    "amount_total": line.order_id.amount_total,
+                }
+            )
 
     def confirm(self):
         return {'type': 'ir.actions.act_window_close'}
