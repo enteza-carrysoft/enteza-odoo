@@ -27,6 +27,10 @@ class SaleOrderLineConcurrent(models.TransientModel):
         return self.env["sale.order.line"].browse(self.env.context.get("active_id")).partner_id
 
     @api.model
+    def _default_sale_order_line_partner_shipping(self):
+        return self.env["sale.order.line"].browse(self.env.context.get("active_id")).partner_shipping_id
+
+    @api.model
     def _default_sale_order_line_salesman(self):
         return self.env["sale.order.line"].browse(self.env.context.get("active_id")).salesman_id
 
@@ -141,6 +145,7 @@ class SaleOrderLineConcurrent(models.TransientModel):
                 {
                     "order_id": line.order_id,
                     "partner_id": line.order_id.partner_id,
+                    "partner_shipping_id": line.order_id.partner_shipping_id,
                     "date_order": line.order_id.date_order,
                     "event_date": line.order_id.event_date,
                     "start_date": line.start_date,
@@ -172,6 +177,10 @@ class SaleOrderLineConcurrentLine(models.TransientModel):
     partner_id = fields.Many2one(
         comodel_name="res.partner",
         string="Partner",
+    )
+    partner_shipping_id = fields.Many2one(
+        comodel_name="res.partner",
+        string="Partner Shipping",
     )
     start_date = fields.Date(
         string="Start date",
@@ -205,7 +214,4 @@ class SaleOrderLineConcurrentLine(models.TransientModel):
     quantity = fields.Float(
         string="Stock",
     )
-
-
-
 

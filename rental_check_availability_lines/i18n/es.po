@@ -139,6 +139,11 @@ msgid "Partner"
 msgstr "Cliente"
 
 #. module: rental_check_availability_lines
+#: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent_line__partner_shipping_id
+msgid "Partner Shipping"
+msgstr "Lugar Entrega"
+
+#. module: rental_check_availability_lines
 #: model:ir.model.fields,field_description:rental_check_availability_lines.field_sale_order_line_concurrent__partner_id
 msgid "Partner name"
 msgstr "Nombre del cliente"

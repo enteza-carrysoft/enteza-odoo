@@ -23,17 +23,18 @@
                                 <tree>
                                     <field name="order_id"/>
                                     <field name="partner_id"/>
-                                    <field name="date_order"/>
+                                    <field name="partner_shipping_id"/>
+                                    <field name="date_order" optional="hide"/>
                                     <field name="event_date"/>
                                     <field name="start_date"/>
                                     <field name="end_date"/>
-                                    <field name="salesman_id"/>
+                                    <field name="salesman_id" optional="hide"/>
                                     <field name="product_uom_qty" string="Quantity" sum="Total"/>
                                     <field name="invoice_status" decoration-success="invoice_status == 'invoiced'"
                                            decoration-info="invoice_status == 'to invoice'"
                                            decoration-warning="invoice_status == 'upselling'" widget="badge"
                                            optional="show"/>
-                                    <field name="amount_total" sum="Total" widget="monetary"/>
+                                    <field name="amount_total" sum="Total" widget="monetary" optional="hide"/>
                                 </tree>
                             </field>
                     <footer>
