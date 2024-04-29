@@ -46,7 +46,7 @@ class SaleOrderLineConcurrent(models.TransientModel):
     def _compute_qty_available(self):
         for line in self:
             line.qty_available = line.product_id.rented_product_id.with_context(
-                {"location": line.order_id.warehouses_id.rental_view_location_id.id}
+                {"location": line.warehouses_id.rental_view_location_id.id}
             ).qty_available
 
     @api.depends("product_id")
