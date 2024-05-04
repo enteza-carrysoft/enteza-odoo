@@ -16,7 +16,9 @@
         "views/sale/report_saleorder_document.xml",
         "views/sale/sale_order_views.xml",
         "views/stock/stock_picking_views.xml",
-        "views/stock/report_stockpicking_document.xml"
+        "views/stock/report_stockpicking_document.xml",
+        "views/account/account_move_views.xml",
+        "views/account/report_accountmove_document.xml",
     ],
     "demo": [],
     "installable": True,
