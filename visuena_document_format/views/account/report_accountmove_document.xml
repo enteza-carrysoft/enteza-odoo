@@ -42,7 +42,7 @@
                             </strong>
                             <div t-field="doc.partner_id"
                                  t-options="{&quot;widget&quot;: &quot;contact&quot;, &quot;fields&quot;: [&quot;address&quot;, &quot;name&quot;, &quot;phone&quot;], &quot;no_marker&quot;: True, &quot;phone_icons&quot;: True}"/>
-                            <t t-if="doc.partner_shipping_id != doc.partner_invoice_id">
+                            <t t-if="doc.partner_shipping_id != doc.partner_id">
                                 <strong>Dirección de envío:</strong>
                                 <div t-field="doc.partner_shipping_id"
                                      t-options="{&quot;widget&quot;: &quot;contact&quot;, &quot;fields&quot;: [&quot;address&quot;, &quot;name&quot;, &quot;phone&quot;], &quot;no_marker&quot;: True, &quot;phone_icons&quot;: True}"/>
@@ -70,13 +70,16 @@
                                 <strong>Fecha:</strong>
                                 <p class="m-0" t-field="doc.date"
                                    t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
-                            </div>
-                            <div
+			    </div>
+
+                            <t t-if="doc.event_date">
+                              <div
                                  class="col-auto col-3 mw-100 mb-2">
                                 <strong>Fecha Evento:</strong>
                                 <p class="m-0" t-field="doc.event_date"
                                    t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
-                            </div>
+			      </div>
+                            </t>
                         </div>
 
                         <!-- Is there a discount on at least one line? -->
