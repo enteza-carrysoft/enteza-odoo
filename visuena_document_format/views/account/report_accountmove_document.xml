@@ -71,6 +71,12 @@
                                 <p class="m-0" t-field="doc.date"
                                    t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
                             </div>
+                            <div
+                                 class="col-auto col-3 mw-100 mb-2">
+                                <strong>Fecha Evento:</strong>
+                                <p class="m-0" t-field="doc.event_date"
+                                   t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                            </div>
                         </div>
 
                         <!-- Is there a discount on at least one line? -->

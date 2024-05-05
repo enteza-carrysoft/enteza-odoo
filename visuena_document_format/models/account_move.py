@@ -21,6 +21,10 @@ class AccountMove(models.Model):
             categories = accountmove.invoice_line_ids.mapped('product_id.categ_id')
             accountmove.used_categories = [(6, 0, categories.ids)]
 
+    event_date = fields.Date(
+        string="Fecha Evento",
+    )
+
     used_categories = fields.Many2many(
         'product.category',
         string='Categoria',
