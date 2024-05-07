@@ -8,9 +8,9 @@
             <xpath expr="//field[@name='partner_id']" position="after">
                <field name="used_categories" invisible="1"/>
             </xpath>
-            <xpath expr="//field[@name='not_in_mod347']" position="after">
+	    <xpath expr="//field[@name='not_in_mod347']" position="after">
                <field name="event_date"/>
-            </xpath>
+	    </xpath> 
         </field>
     </record>
 </odoo>
