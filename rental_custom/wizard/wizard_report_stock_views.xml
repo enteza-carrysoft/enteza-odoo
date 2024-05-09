@@ -48,17 +48,20 @@
       <field name="model">wizards.create.sale</field>
       <field name="priority">1</field>
       <field name="arch" type="xml">
-        <form string="Reporte">
-          <group>
-            <field name="name" readonly="1" invisible="1"/>
-          </group>
-          <footer>
-            <button name="action_create_sale" type="object" string="Crear Orden" class="oe_highlight"/>
-            or
-            <button string="Cancel" class="oe_link" special="cancel"/>
-          </footer>
-
-        </form>
+        <form string="Create Sale Order">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+<!--                   <field name="picking_ids" widget="many2many_tags" options="{'no_create': True}" domain="[('state', '=', 'done')]"/> -->
+                        <field name="picking_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Create Sale Order" type="object" name="action_create_sale" class="oe_highlight"/>
+                    or
+                    <button string="Cancel" class="oe_link" special="cancel"/>
+                </footer>
+            </form>
       </field>
     </record>
 

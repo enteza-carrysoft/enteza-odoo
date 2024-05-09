@@ -41,28 +41,46 @@ class WizardCreateSale(models.TransientModel):
 
     name=fields.Char(string="Nombre")
 
+    picking_ids = fields.Many2many(
+        comodel_name='stock.picking',
+        string='Pickings',
+        required=True,
+        help="Select pickings to create a sale order."
+    )
+
     def action_create_sale(self):
-        picking_id=self.env['stock.picking'].browse(self.env.context.get('active_id') )
-        
-        data=[]
-        for line in picking_id.move_ids_without_package:
-            data.append((0,0,{
-                'product_id':line.product_id.id,
-                'display_product_id':line.product_id.id,
-#               'price_unit':line.sale_line_id.product_id.list_price,#line.sale_line_id.price_unit,
-                'price_unit':line.sale_line_id.product_id.rented_product_tmpl_id.list_price,#line.sale_line_id.price_unit,
-                'warehouses_id':line.sale_line_id.warehouses_id.id or False,
-                'product_uom_qty':line.product_uom_qty
+        data = []
+        for picking in self.picking_ids:
+            for line in picking.move_ids_without_package:
+                data.append((0, 0, {
+                    'product_id': line.product_id.id,
+                    'display_product_id': line.product_id.id,
+                    'price_unit': line.sale_line_id.product_id.rented_product_tmpl_id.list_price,
+                    'warehouses_id': line.sale_line_id.warehouses_id.id or False,
+                    'product_uom_qty': line.product_uom_qty
                 }))
-        values={
-#            'partner_id':picking_id.partner_id.id,
-            'partner_id':picking_id.client_id.id,
+
+        values = {
+            'partner_id':self.picking_ids[0].client_id.id,
             'type_id':1,
             'order_line':data
         }
-        sale_id=self.env['sale.order'].create(values)
-        if picking_id.origin:
-            sale_id.message_post(body="Documento origen. %s" % picking_id.origin)
-        #picking_id.write({'sale_order_rental_id':sale_id.id})
-        return True
+
+        sale_id = self.env['sale.order'].create(values)
+        origins = ", ".join(p.origin for p in self.picking_ids if p.origin)
+        if origins:
+            sale_id.message_post(body="Documentos origen: %s" % origins)
+
+        # Opcional, si deseas vincular la orden de venta a los albaranes
+        for picking in self.picking_ids:
+            picking.write({'sale_order_rental_id': sale_id.id})
+
+        return {
+            'name': 'Sale Order',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'sale.order',
+            'res_id': sale_id.id,
+            'target': 'new',
+        }
 
