@@ -1,11 +1,14 @@
 <odoo>
     <record id="view_stock_split_picking_form" model="ir.ui.view">
         <field name="model">stock.split.picking</field>
-        <field name="inherit_id" ref="stock_split_picking.view_stock_split_picking_form"/>
+        <field name="inherit_id" ref="stock_split_picking.view_stock_split_picking"/>
         <field name="arch" type="xml">
             <field name="mode" position="after">
-                <field name="family_id"/>
-            </field>
+                <field name="categ_ids" widget="many2many_tags"/>
+	    </field>
+	    <xpath expr="//field[@name='move_ids']" position="attributes">
+	      <attribute name="domain">[('picking_id', 'in', picking_ids), ('product_id.categ_id', 'in', categ_ids)]</attribute>
+	    </xpath>
         </field>
     </record>
 </odoo>
