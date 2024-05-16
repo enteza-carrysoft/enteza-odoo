@@ -72,8 +72,8 @@ class WizardCreateSale(models.TransientModel):
             sale_id.message_post(body="Documentos origen: %s" % origins)
 
         # Opcional, si deseas vincular la orden de venta a los albaranes
-        for picking in self.picking_ids:
-            picking.write({'sale_order_rental_id': sale_id.id})
+#        for picking in self.picking_ids:
+#            picking.write({'sale_order_rental_id': sale_id.id})
 
         return {
             'name': 'Sale Order',
