@@ -1,0 +1,14 @@
+<!-- views/stock_picking_views.xml -->
+<odoo>
+    <record id="view_stock_picking_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <button name="button_validate" position="before">
+                <button name="action_open_missing_units_wizard" type="object" string="Report Missing Units" class="btn-primary"/>
+            </button>
+        </field>
+    </record>
+</odoo>
+

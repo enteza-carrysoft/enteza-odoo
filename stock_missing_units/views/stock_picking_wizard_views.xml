@@ -1,0 +1,27 @@
+<!-- views/stock_picking_wizard_views.xml -->
+<odoo>
+    <record id="view_stock_picking_wizard" model="ir.ui.view">
+        <field name="name">stock.picking.wizard.form</field>
+        <field name="model">stock.picking.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Report Missing Units">
+                <group>
+                    <field name="picking_id" invisible="1"/>
+                    <field name="line_ids">
+                        <tree string="Lines">
+                            <field name="product_id"/>
+                            <field name="reserved_qty"/>
+                            <field name="done_qty"/>
+                            <field name="missing_units"/>
+                        </tree>
+                    </field>
+                </group>
+                <footer>
+                    <button name="action_apply_missing_units" type="object" string="Apply" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
+

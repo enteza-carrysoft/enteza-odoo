@@ -12,7 +12,11 @@ class StockPicking(models.Model):
         string='Cliente',
         store=True
     )
-
+    product_categ_id = fields.Many2one(
+        related="product_id.categ_id",
+        string='Categoria',
+        store=True
+    )
     @api.onchange('move_ids_without_package')
     def _onchange_move(self):
         categories = []
@@ -31,4 +35,14 @@ class StockPicking(models.Model):
         'product.category',
         string='Categoria',
         compute=_compute_stock_used_categories,
+    )
+
+
+class StockMove(models.Model):
+    _inherit = 'stock.move'
+
+    product_categ_id = fields.Many2one(
+        related="product_id.categ_id",
+        string='Categoria',
+        store=True
     )
