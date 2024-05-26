@@ -46,3 +46,12 @@ class StockMove(models.Model):
         string='Categoria',
         store=True
     )
+
+class StockMoveLine(models.Model):
+    _inherit = 'stock.move.line'
+
+    product_categ_id = fields.Many2one(
+        related="product_id.categ_id",
+        string='Categoria',
+        store=True
+    )
