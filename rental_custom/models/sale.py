@@ -155,6 +155,11 @@ class SaleOrderLine(models.Model):
     product_qty_rent = fields.Float(
         string="Cantidad disponible"
     )
+    product_categ_id = fields.Many2one(
+        related="product_id.categ_id",
+        string="Categoria",
+        store=True
+    )
 
     def _prepare_new_rental_procurement_values(self, group=False):
         vals = super()._prepare_new_rental_procurement_values(group=group)
