@@ -1,0 +1,14 @@
+<!-- stock_picking_batch_report/reports/stock_picking_batch_report.xml -->
+
+<odoo>
+    <report
+        id="stock_picking_batch_report"
+        model="stock.picking.batch"
+        string="Stock Picking Batch Report"
+        report_type="qweb-pdf"
+        name="stock_picking_batch_report.report_stock_picking_batch"
+        file="stock_picking_batch_report.report_stock_picking_batch"
+        print_report_name="'Stock Picking Batch Report - %s' % (object.name)"
+    />
+</odoo>
+
