@@ -4,7 +4,7 @@
     <report
         id="stock_picking_batch_report"
         model="stock.picking.batch"
-        string="Stock Picking Batch Report"
+        string="Informe articulos por categoria"
         report_type="qweb-pdf"
         name="stock_picking_batch_report.report_stock_picking_batch"
         file="stock_picking_batch_report.report_stock_picking_batch"
