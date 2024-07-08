@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_account_asset_form_extension" model="ir.ui.view">
+        <field name="name">account.asset.form.extension</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="l10n_es_account_asset.view_account_asset_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet/notebook/page[@name='depreciation_board']" position="inside">
+                <button name="decrement_asset_value" type="object" string="Decrement Asset Value" class="oe_highlight"/>
+                <field name="decrement_amount"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
