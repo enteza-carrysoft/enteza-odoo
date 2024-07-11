@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_menu_sol_details_tree" model="ir.ui.view">
+        <field name="name">Sale Order Line</field>
+        <field name="model">sale.order.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="order_id" optional="show"/>
+                <field name="product_id" optional="show"/>
+                <field name="customer_lead" optional="show"/>
+                <field name="product_uom_qty" optional="show"/>
+                <field name="price_unit" optional="show"/>
+                <field name="discount" optional="show"/>
+                <field name="date_order" widget="date" optional="show"/>
+                <field name="state" optional="show"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_menu_sol_details_search" model="ir.ui.view">
+        <field name="name">Sale Order Line Search</field>
+        <field name="model">sale.order.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="date_order" />
+                <field name="product_id" />
+                <separator />
+                <group expand="0" string="Group By">
+                    <filter string="Current Month" name="date_order"
+                        context="{'group_by':'date_order'}"
+                        domain="[('date_order','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date_order','&gt;=',time.strftime('%%Y-%%m-01'))]" />
+                    <filter string="Order Date" name="date_order_group_by"
+                        context="{'group_by':'date_order'}" />
+                    <filter string="Product" name="product_id_group_by"
+                        context="{'group_by':'product_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_menu_sol_details_form" model="ir.ui.view">
+        <field name="name">Sale Order Line</field>
+        <field name="model">sale.order.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="product_id"
+                            domain="[('sale_ok', '=', True)]" />
+                    </group>
+                    <group>
+                        <field name="state" />
+                    </group>
+                    <group>
+                        <field name="customer_lead" />
+                    </group>
+                    <group>
+                        <field name="product_uom_qty" />
+                    </group>
+                    <group>
+                        <field name="price_unit" />
+                    </group>
+                    <group>
+                        <field name="discount" />
+                    </group>
+                    <group>
+                        <field name="date_order" widget="date" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_pivot_sale_order_lines" model="ir.ui.view">
+        <field name="name">Sale Order Line Pivot</field>
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Sale Order Line Pivot">
+                <field name="product_id" type="row" />
+                <field name="date_order" type="col" widget="date" />
+            </pivot>
+        </field>
+    </record>
+    <record model="ir.actions.act_window" id="action_details_sale_line">
+        <field name="name">Sale Order Line</field>
+        <field name="res_model">sale.order.line</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="context">{'edit': 0,'create':
+            0,'delete':0,'search_default_date_order_group_by': 1}</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">No search any details
+            </p>
+        </field>
+    </record>
+    <menuitem id="menu_report" name="Report Lines" sequence="32" action="action_details_sale_line"/>
+<menuitem id="menu_reports" name="Reports" sequence="2" parent="menu_report"/>
+<menuitem id="menu_sol" name="Sale Report Line" sequence="1" parent="menu_reports" action="action_details_sale_line"/>
+<menuitem id="menu_pol" name="Purchase Report Line" sequence="2" parent="menu_reports" action="action_details_purchase_line"/>
+<menuitem id="menu_il" name="Invoice Lines" sequence="3" parent="menu_reports" action="action_details_account_lines"/>
+<menuitem id="menu_vl" name="Vendor Bill Lines" sequence="4" parent="menu_reports" action="action_details_vendors_line"/>
+    
+</odoo>

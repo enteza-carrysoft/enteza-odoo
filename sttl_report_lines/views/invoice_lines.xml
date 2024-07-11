@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_menu_account_details_tree" model="ir.ui.view">
+        <field name="name">Invoice Line</field>
+        <field name="model">account.move.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="move_name" optional="show"/>
+                <field name="date" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="product_id" optional="show"/>
+                <field name="name" optional="show"/>
+                <field name="account_id" optional="show"/>
+                <field name="quantity" optional="show"/>
+                <field name="product_uom_id" optional="show"/>
+                <field name="price_unit" optional="show"/>
+                <field name="discount" optional="show"/>
+                <field name="price_subtotal" optional="show"/>
+                <field name="parent_state" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_menu_account_details_form" model="ir.ui.view">
+        <field name="name">Invoice Line</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="parent_state"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_menu_customer_graph_details_search" model="ir.ui.view">
+        <field name="name">Invoice Line Search</field>
+        <field name="model">account.move.line</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id" />
+                <group expand="0" string="Group By">
+                    <filter string="Current Month" name="date_group_by" context="{'group_by':'date'}"
+                        domain="[('date','&lt;',(context_today()+relativedelta(months=1)).strftime('%%Y-%%m-01')), ('date','&gt;=',time.strftime('%%Y-%%m-01'))]" />
+                    <filter string="Partner" name="partner_id_group_by"
+                        context="{'group_by':'partner_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_graph_invoice_order_lines" model="ir.ui.view">
+        <field name="name">Invoice Line Graph</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <graph string="Invoice Line Graph">
+                <field name="date" type="row" />
+                <field name="move_name" type="col" />
+            </graph>
+        </field>
+    </record>
+    <record id="view_pivot_customer_invoices" model="ir.ui.view">
+        <field name="name">Invoive Line Pivot</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Pivot View">
+                <field name="move_name" type="row" />
+                <field name="date" type="col" />
+            </pivot>
+        </field>
+    </record>
+    <record model="ir.actions.act_window" id="action_details_account_lines">
+        <field name="name">Invoice Line</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">account.move.line</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="domain">[('move_id.move_type', '=', 'out_invoice')]</field>
+        <field name="context">{'edit': 0,'create': 0,'delete':0,'search_default_date_group_by':1}</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">No search any details
+            </p>
+        </field>
+    </record>
+</odoo>
