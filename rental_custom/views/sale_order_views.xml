@@ -13,9 +13,6 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         		<field name="place_number" />
 		        <field name="not_reserved" />
             </xpath>
-	    <xpath expr="//tree//field[@name='display_product_id']" position="before">
-		    <field name="product_categ_id"/>
-	    </xpath>
         </field>
     </record>
 
