@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "Rental Custom",
-    "version": "15.0.1.0.1",
+    "version": "18.0.1.0.1",
     "category": "Product",
     "summary": "This module rental custom",
     "website": "",
@@ -10,11 +10,7 @@
     "maintainers": [],
     "license": "AGPL-3",
     "depends": [
-        'sale',
-        'sale_rental',
-        'rental_base',
-        'rental_product_set',
-        'sale_product_set',
+        'sale_rentering',
     ],
     "data": [
         'security/ir.model.access.csv',
