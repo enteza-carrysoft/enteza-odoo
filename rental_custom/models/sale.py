@@ -78,9 +78,6 @@ class SaleOrderLine(models.Model):
     event_date = fields.Date(
         related="order_id.event_date",
     )
-    not_reserved = fields.Boolean(
-        related="order_id.not_reserved",
-    )
     product_categ_id = fields.Many2one(
         related="product_id.categ_id",
         string="Categoria",
