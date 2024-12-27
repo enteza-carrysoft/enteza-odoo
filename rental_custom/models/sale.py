@@ -12,83 +12,15 @@ class SaleOrder(models.Model):
     event_date = fields.Date(
         string="Fecha Evento",
     )
-    not_reserved = fields.Boolean(
-        string="No Reservado",
-    )
     place_number = fields.Integer(
         string="Número Plazas",
     )
-    concurrent_orders = fields.Selection(
-        selection=[
-            ("none", "None"),
-            ("any", "Any"),
-        ],
-        default="none",
-        compute="_compute_concurrent_orders",
-        store=True,
-        string="Sobreventas",
-    )
-
-    @api.depends("order_line.concurrent_orders")
-    def _compute_concurrent_orders(self):
-        for order in self:
-            if any(
-                line.concurrent_orders != "none" for line in order.order_line
-            ):
-                order.concurrent_orders = "any"
-            else:
-                order.concurrent_orders = "none"
 
     @api.onchange("event_date")
     def event_date_change(self):
         if self.event_date:
-            self.default_start_date = self.event_date - timedelta(days=1)
-            self.default_end_date = self.event_date + timedelta(days=1)
-
-    @api.model
-    def get_report_product(self,data):
-        if 'date_start' not in data:
-            return []
-        days=[]
-        product_ids=[]
-        date_start=data.get('date_start',False)
-        date_stop=data.get('date_stop',False)
-        fecha1 = datetime.strptime(date_start, "%Y-%m-%d")
-        fecha2 = datetime.strptime(date_stop, "%Y-%m-%d")
-        remaining_days = (fecha1-fecha2).days
-        if int(remaining_days)>=1:
-            raise ValidationError(str("La fecha final debe ser mayo ala fecha inicial"))
-        if int(abs(remaining_days))>20:
-            raise ValidationError( str("Debe consultar  20 dias maximo"))
-        fecha=fecha1
-        i=1
-        for  r  in range(0, 25):
-            days.append({i:fecha.strftime('%Y-%m-%d')})
-            fecha=fecha1+timedelta(days =i)
-            if fecha>fecha2:
-                break
-            i+=1
-        #raise ValidationError( str(  days  ))
-        product_ids_rent=data.get('product_ids',[])
-        if data:
-            product_obj = self.env['product.product'].search([('id','in',product_ids_rent)])
-            for line in product_obj:
-                rental=0
-                p=1
-                for rp in days:
-                    rental=self.get_stock_rental(line,data={'date_start':rp.get(p),'date_stop':rp.get(p),'warehouse_id':data.get('warehouse_id',False)})
-                    rp.update({line.id:rental})
-                    p+=1
-                product_ids.append({
-                    'name':line.name,
-                    'product_id':line.id,
-                    'qty':line.qty_available,
-                    'date_start':date_start,
-                    'rent':rental,
-                    'dates':days
-                })
-
-        return {'product_ids':product_ids}
+            self.rental_start_date = self.event_date - timedelta(days=1)
+            self.rental_return_date = self.event_date + timedelta(days=1)
 
     def get_stock_rental(self,product_id,data):
         date_start=data.get('date_start',False)
@@ -149,12 +81,6 @@ class SaleOrderLine(models.Model):
     not_reserved = fields.Boolean(
         related="order_id.not_reserved",
     )
-    product_qty_rent_str = fields.Char(
-        string="En existencia",
-    )
-    product_qty_rent = fields.Float(
-        string="Cantidad disponible"
-    )
     product_categ_id = fields.Many2one(
         related="product_id.categ_id",
         string="Categoria",
@@ -199,11 +125,6 @@ class SaleOrderLine(models.Model):
             res = self._check_rental_availability()
         return res
 
-    # def _check_rental_availability(self):
-    #    raise ValidationError( str( "hola"))
-    #    res=super(SaleOrderLine,self).product_id_change()
-    #    return res
-
     def _check_rental_availability(self):
         self.ensure_one()
         res = {}
@@ -218,9 +139,6 @@ class SaleOrderLine(models.Model):
         self.product_qty_rent_str = "En Existencia "+str(avail_qty)
         if self.rental_qty > avail_qty:
             res = self._get_concurrent_orders()
-#            if total_qty == 0:
-#                self.concurrent_orders = "none"
-#            elif res["quotation"] and not res["order"]:
             if res["quotation"] and not res["order"]:
                 self.concurrent_orders = "quotation"
             else:
@@ -300,28 +218,3 @@ class SaleOrderLine(models.Model):
             avail_qty = total_qty - max_ol_qty
             self.product_qty_rent = avail_qty
             self.product_qty_rent_str = "En Existencia "+str(avail_qty)
-
-    @api.onchange('product_id')
-    def product_id_change(self):
-        res = super(SaleOrderLine,self).product_id_change()
-        self.compute_stock()
-        return res
-
-    @api.onchange("start_date", "end_date", "product_uom")
-    def onchange_start_end_date(self):
-        self.compute_stock()
-        res = super(SaleOrderLine,self).onchange_start_end_date()
-        return res
-
-    class SaleOrderChecker(models.Model):
-        _name = 'sale.order.checker'
-
-        @api.model
-        def check_orders(self):
-            today = fields.Date.today()
-            orders = self.env['sale.order'].search([('state', '=', 'draft'), ('date_order', '>', today)])
-
-            for order in orders:
-                for line in order.order_line:
-                    line._check_rental_availability()
-

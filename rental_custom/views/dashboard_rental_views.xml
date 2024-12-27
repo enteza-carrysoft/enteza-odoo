@@ -4,9 +4,6 @@
             <field name="name">DashboardRental</field>
             <field name="tag">rental_dashboard</field>
         </record>
-
-      <!--   <menuitem name="DashboardRental" id="rental_dashboard" parent="menu_master_data_report"
-                  sequence="1" action="action_rental_dashboard"/> -->
     </data>
 
 </odoo>

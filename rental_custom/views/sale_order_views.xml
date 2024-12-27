@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Copyright 2022 Xtendoo (http://xtendoo.es)
 License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
 <odoo>
-
     <record id="view_order_tree_invoiced_amount" model="ir.ui.view">
         <field name="name">sale.order.tree.invoiced_amount</field>
         <field name="model">sale.order</field>
@@ -68,20 +66,5 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
 	    </xpath>
         </field>
     </record>
-
-<!--    <record id="view_sale_order_calendar" model="ir.ui.view">-->
-<!--        <field name="name">sale.order.calendar</field>-->
-<!--        <field name="model">sale.order</field>-->
-<!--        <field name="inherit_id" ref="sale.view_sale_order_calendar" />-->
-<!--        <field name="arch" type="xml">-->
-<!--            <xpath expr="//tree" position="attributes">-->
-<!--		        <attribute name="mode">month</attribute>-->
-<!--	        </xpath>-->
-<!--            <xpath expr="//tree" position="attributes">-->
-<!--		        <attribute name="delete">false</attribute>-->
-<!--	        </xpath>-->
-<!--        </field>-->
-<!--    </record>-->
-
 </odoo>
 
