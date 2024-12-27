@@ -10,7 +10,7 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="arch" type="xml">
             <xpath expr="//field[@name='date_order']" position="after">
                 <field name="event_date" />
-        		<field name="place_number" />
+        	<field name="place_number" />
             </xpath>
         </field>
     </record>
@@ -22,7 +22,6 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="inherit_id" ref="stock.view_picking_form" />
         <field name="arch" type="xml">
 	    <xpath expr="//field[@name='product_qty']" position="after">
-		    <field name="product_categ_id" />
 		    <field name="missing_units" string="Faltan Uds." readonly="1"/>
 	    </xpath>
         </field>
