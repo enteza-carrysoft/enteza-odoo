@@ -10,7 +10,7 @@
     "maintainers": [],
     "license": "AGPL-3",
     "depends": [
-        'sale_rentering',
+        'sale_renting',
     ],
     "data": [
         'security/ir.model.access.csv',
