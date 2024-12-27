@@ -16,8 +16,6 @@
         'security/ir.model.access.csv',
         'views/dashboard_rental_views.xml',
         'views/sale_order_views.xml',
-        'wizard/wizard_report_stock_views.xml',
-        'wizard/product_set_add.xml',
     ],
     'assets': {
         'web.assets_backend': [
