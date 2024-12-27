@@ -14,28 +14,5 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             </xpath>
         </field>
     </record>
-
-
-    <record id="view_stock_picking_form" model="ir.ui.view">
-        <field name="name">stock.picking.form - limit</field>
-        <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="stock.view_picking_form" />
-        <field name="arch" type="xml">
-	    <xpath expr="//field[@name='product_qty']" position="after">
-		    <field name="missing_units" string="Faltan Uds." readonly="1"/>
-	    </xpath>
-        </field>
-    </record>
-
-    <record id="view_stock_move_line_operation_tree_form1" model="ir.ui.view">
-        <field name="name">stock.move.line.operation.tree.form1</field>
-        <field name="model">stock.move.line</field>
-        <field name="inherit_id" ref="stock.view_stock_move_line_operation_tree" />
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='picking_code']" position="after">
-		    <field name="missing_units" string="Faltan Uds."/>
-	    </xpath>
-        </field>
-    </record>
 </odoo>
 
