@@ -14,7 +14,6 @@
     ],
     "data": [
         'security/ir.model.access.csv',
-        'views/sale_line_views.xml',
         'views/dashboard_rental_views.xml',
         'views/sale_order_views.xml',
         'wizard/wizard_report_stock_views.xml',
