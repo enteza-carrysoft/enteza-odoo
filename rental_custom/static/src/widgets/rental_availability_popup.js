@@ -15,7 +15,7 @@ patch(QtyAtDatePopover.prototype, {
      * across all warehouses during a given period.
      */
     async openRentalAvailabilityPopup() {
-        const action = await this.actionService.loadAction("rental_availability_extended.action_rental_availability_popup", this.props.context);
+        const action = await this.actionService.loadAction("rental_custom.action_rental_availability_popup", this.props.context);
         action.context = {
             ...this.props.context,
             product_id: this.props.record.data.product_id[0],
