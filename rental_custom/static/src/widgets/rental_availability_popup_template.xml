@@ -1,27 +1,62 @@
-<template id="rental_availability_popup_template" name="Rental Availability Popup">
-    <div class="o_popup">
-        <h3>Disponibilidad del Producto</h3>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Stock Total</th>
-                    <th>Total Alquilado</th>
-                    <th>Total Disponible</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><t t-esc="data.product_id"/></td>
-                    <td><t t-esc="data.total_stock"/></td>
-                    <td><t t-esc="data.total_rented"/></td>
-                    <td><t t-esc="data.total_available"/></td>
-                </tr>
-            </tbody>
-        </table>
-        <footer>
-            <button class="btn btn-primary o_close_popup">Cerrar</button>
-        </footer>
-    </div>
+<?xml version="1.0" encoding="UTF-8" ?>
+<template id="rental_availability_widget_template" xml:space="preserve">
+    <!-- Extiende el widget QtyAtDate -->
+    <t t-name="sale_stock_renting.QtyAtDate" t-inherit="sale_stock.QtyAtDate" t-inherit-mode="extension">
+        <xpath expr="//a" position="attributes">
+            <!-- Modificar la clase CSS para incluir la validación de disponibilidad total -->
+            <attribute name="t-attf-class">fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || calcData.total_availability <= 0) ? 'text-danger' : '' }}</attribute>
+        </xpath>
+    </t>
+
+    <!-- Extiende el Popover QtyAtDatePopover -->
+    <t t-name="sale_stock_renting.QtyAtDatePopover" t-inherit="sale_stock.QtyAtDatePopover" t-inherit-mode="extension">
+        <xpath expr="//div" position="attributes">
+            <!-- Mostrar información solo si es un producto de alquiler y tiene fechas definidas -->
+            <attribute name="t-if">!props.record.data.is_rental || !props.record.data.return_date || !props.record.data.start_date</attribute>
+        </xpath>
+
+        <xpath expr="//div" position="after">
+            <div class="p-2" t-else="">
+                <h6>Rental Availability</h6>
+                <table class="table table-borderless table-sm">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>Total Availability</strong><br/>
+                                <small>From: <span t-out="props.calcData.stock_start_date"/></small><br/>
+                                <small>To: <span t-out="props.calcData.stock_end_date"/></small>
+                            </td>
+                            <td class="text-end">
+                                <span t-out="props.calcData.total_availability"/> <span t-out="props.record.data.product_uom[1]"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Total Stock</strong>
+                            </td>
+                            <td class="text-end">
+                                <span t-out="props.calcData.total_stock"/> <span t-out="props.record.data.product_uom[1]"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Total Rented</strong>
+                            </td>
+                            <td class="text-end">
+                                <span t-out="props.calcData.total_rented"/> <span t-out="props.record.data.product_uom[1]"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <t t-if="!(props.record.data.available_reserved_lots ?? true)">
+                    <strong class="text-danger">Reserved lots unavailable</strong><br/>
+                </t>
+                <button class="text-start btn btn-link" type="button" t-on-click="openRentalAvailabilityPopup">
+                    <i class="oi oi-fw o_button_icon oi-arrow-right"/>
+                    View Rental Availability
+                </button>
+            </div>
+        </xpath>
+    </t>
 </template>
 
