@@ -15,6 +15,11 @@
     "data": [
         'views/sale_order_views.xml',
     ],
+    'assets':{
+        'web.assets_backend':[
+            'rental_custom/static/src/js/rental_availability_popup.js',
+        ],
+    },
     "demo": [
     ],
     "installable": True,

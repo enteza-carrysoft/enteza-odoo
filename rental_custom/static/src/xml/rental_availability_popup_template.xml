@@ -1,0 +1,27 @@
+<template id="rental_availability_popup_template" name="Rental Availability Popup">
+    <div class="o_popup">
+        <h3>Disponibilidad del Producto</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Stock Total</th>
+                    <th>Total Alquilado</th>
+                    <th>Total Disponible</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><t t-esc="data.product_id"/></td>
+                    <td><t t-esc="data.total_stock"/></td>
+                    <td><t t-esc="data.total_rented"/></td>
+                    <td><t t-esc="data.total_available"/></td>
+                </tr>
+            </tbody>
+        </table>
+        <footer>
+            <button class="btn btn-primary o_close_popup">Cerrar</button>
+        </footer>
+    </div>
+</template>
+

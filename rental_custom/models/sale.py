@@ -33,3 +33,48 @@ class SaleOrderLine(models.Model):
         string="Categoria",
         store=True
     )
+
+    total_stock = fields.Float(string='Stock Total', compute='_compute_total_availability', store=False)
+    total_rented = fields.Float(string='Total Alquilado', compute='_compute_total_availability', store=False)
+    total_available = fields.Float(string='Total Disponible', compute='_compute_total_availability', store=False)
+
+    @api.depends('product_id', 'reservation_begin', 'return_date')
+    def _compute_total_availability(self):
+        for line in self:
+            if line.is_rental:
+                availability = self.get_total_availability(line.product_id.id, line.reservation_begin, line.return_date)
+                line.total_stock = availability['total_stock']
+                line.total_rented = availability['total_rented']
+                line.total_available = availability['total_available']
+
+    @api.model
+    def get_total_availability(self, product_id, start_date, end_date):
+        product = self.env['product.product'].browse(product_id)
+
+        total_stock = sum(self.env['stock.quant'].search([
+            ('product_id', '=', product_id),
+            ('location_id.usage', '=', 'internal')
+        ]).mapped('quantity'))
+
+        total_rented = sum(self.env['sale.order.line'].search([
+            ('product_id', '=', product_id),
+            ('is_rental', '=', True),
+            ('reservation_begin', '<=', end_date),
+            ('return_date', '>=', start_date),
+            ('state', '=', 'sale')
+        ]).mapped('product_uom_qty'))
+
+        total_available = total_stock - total_rented
+
+        return {
+            'product_id': product.display_name,
+            'total_stock': total_stock,
+            'total_rented': total_rented,
+            'total_available': total_available,
+        }
+
+    @api.model
+    def get_availability_data(self, product_id, start_date, end_date):
+        availability_data = self.get_total_availability(product_id, start_date, end_date)
+        return availability_data
+
