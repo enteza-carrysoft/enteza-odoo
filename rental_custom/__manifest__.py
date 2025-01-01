@@ -13,18 +13,8 @@
         'sale_renting',
     ],
     "data": [
-        'security/ir.model.access.csv',
-        'views/dashboard_rental_views.xml',
         'views/sale_order_views.xml',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'rental_custom/static/src/js/rental_dashboard.js',
-        ],
-        'web.assets_qweb': [
-            'rental_custom/static/src/xml/rental_dashboard.xml',
-        ],
-    },
     "demo": [
     ],
     "installable": True,
