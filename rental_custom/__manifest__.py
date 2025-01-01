@@ -17,7 +17,7 @@
     ],
     'assets':{
         'web.assets_backend':[
-            'rental_custom/static/src/js/rental_availability_popup.js',
+            'rental_custom/static/src/**/*',
         ],
     },
     "demo": [
