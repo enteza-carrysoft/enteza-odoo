@@ -15,16 +15,6 @@
     "data": [
         'views/sale_order_views.xml',
     ],
-    'assets': {
-    'web.assets_qweb': [
-        'rental_custom/static/src/widgets/rental_availability_widget.xml',
-    ],
-    'web.assets_backend': [
-        'rental_custom/static/src/widgets/rental_availability_widget.js',
-    ],
-    },
-    "demo": [
-    ],
     "installable": True,
     "auto_install": False,
     "application": False,
