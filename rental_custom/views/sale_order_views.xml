@@ -22,16 +22,17 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
              "start_date": context.get('start_date'),
              "end_date": context.get('end_date')}
         </field>
-     </record>
-     <template id="sale_stock_renting_custom_text_qty_at_date_popover" inherit_id="sale_stock.QtyAtDatePopover">
-        <!-- Insertamos el párrafo adicional dentro del div con clase "p-2" -->
+    </record>
+
+    <template id="rental_custom_qty_at_date_popover" inherit_id="sale_stock_renting.QtyAtDatePopover">
+        <!-- Se inserta una línea dentro del bloque con clase "p-2" -->
         <xpath expr="//div[@class='p-2']" position="inside">
             <p class="o_custom_text">
-                Este es el texto adicional. Doble cantidad disponible: 
-                <t t-esc="props.record.data.virtual_available_at_date * 2"/>
+                Doble cantidad disponible: 
+                <t t-esc="float(props.record.data.virtual_available_at_date) * 2"/>
             </p>
         </xpath>
-     </template>
+    </template>
 
 </odoo>
 
