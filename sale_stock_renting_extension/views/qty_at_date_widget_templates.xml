@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Este archivo se encarga de inyectar los assets del widget en el backend -->
+    <template id="assets_backend_inherit" inherit_id="web.assets_backend" name="sale_stock_renting_extension assets">
+        <xpath expr="." position="inside">
+            <script type="module" src="/sale_stock_renting_extension/static/src/widgets/qty_at_date_widget.js"></script>
+            <t t-call="sale_stock_renting_extension/static/src/widgets/qty_at_date_widget.xml"/>
+        </xpath>
+    </template>
+</odoo>
+
