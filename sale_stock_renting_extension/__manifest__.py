@@ -12,7 +12,7 @@
     'author': "Francisco Jose Carrion",
     'website': "http://www.carrysoft.com",
     'category': 'Sales',
-    'depends': ['sale_stock_renting'],
+    'depends': ['sale_stock_renting', 'web'],
     'data': [
         'views/qty_at_date_widget_templates.xml',
     ],
