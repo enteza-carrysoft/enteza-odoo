@@ -15,6 +15,11 @@
     "data": [
         'views/sale_order_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'rental_custom/static/src/js/custom_qty_extension.js',
+        ],
+    },
     "installable": True,
     "auto_install": False,
     "application": False,
