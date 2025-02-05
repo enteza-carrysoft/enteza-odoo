@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <templates xml:space="preserve">
+    <!-- Extensión del template base para el enlace del widget -->
     <t t-name="sale_stock_renting_ext.QtyAtDate" t-inherit="sale_stock.QtyAtDate" t-inherit-mode="extension">
         <xpath expr="//a" position="attributes">
+            <!-- Se eliminó el operador ?? y se usa !props.record.data.available_reserved_lots -->
             <attribute name="t-attf-class">
-                fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || !(props.record.data.available_reserved_lots ?? true)) ? 'text-danger' : '' }}
+                fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || !props.record.data.available_reserved_lots) ? 'text-danger' : '' }}
             </attribute>
         </xpath>
     </t>
 
+    <!-- Extensión del popover para mostrar las cantidades -->
     <t t-name="sale_stock_renting_ext.QtyAtDatePopover" t-inherit="sale_stock.QtyAtDatePopover" t-inherit-mode="extension">
+        <!-- Se mantiene el bloque condicional del template base -->
         <xpath expr="//div" position="attributes">
             <attribute name="t-if">!props.record.data.is_rental || !props.record.data.return_date || !props.record.data.start_date</attribute>
         </xpath>
+        <!-- Se inserta el bloque alternativo usando un t-if con la condición contraria -->
         <xpath expr="//div" position="after">
-            <div class="p-2" t-else="">
+            <div class="p-2" t-if="props.record.data.is_rental &amp;&amp; props.record.data.return_date &amp;&amp; props.record.data.start_date">
                 <h6>Availability</h6>
                 <table class="table table-borderless table-sm">
                     <tbody>
@@ -43,7 +48,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <t t-if="!(props.record.data.available_reserved_lots ?? true)">
+                <t t-if="!props.record.data.available_reserved_lots">
                     <strong class="text-danger">Reserved lots unavailable</strong><br/>
                 </t>
                 <button class="text-start btn btn-link" type="button" t-on-click="openRentalGanttView">

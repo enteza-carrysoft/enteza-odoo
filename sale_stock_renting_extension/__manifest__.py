@@ -14,7 +14,7 @@
     'category': 'Sales',
     'depends': ['sale_stock_renting', 'web'],
     'data': [
-        'views/qty_at_date_widget_templates.xml',
+#        'views/qty_at_date_widget_templates.xml',
     ],
     'assets': {
         'web.assets_backend': [
