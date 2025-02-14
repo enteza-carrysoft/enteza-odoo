@@ -4,108 +4,116 @@ import logging
 _logger = logging.getLogger(__name__)
 
 class RentalOrderLine(models.Model):
-    _inherit = 'sale.order.line'
+    _inherit = "sale.order.line"
 
-    virtual_available_at_date = fields.Float(
-        string="Available Qty (Warehouse)",
-        compute="_compute_qty_at_date",
-        store=True,
-        help="Cantidad disponible en el almacén asignado."
-    )
+    # Nuevo campo para almacenar la cantidad disponible sin filtrar por warehouse
     virtual_available_total_at_date = fields.Float(
-        string="Global Available Qty",
-        compute="_compute_qty_at_date",
-        store=True,
-        help="Cantidad global disponible entre todos los almacenes."
-    )
-    # Aseguramos que también se asignen valores a estos campos:
-    qty_available_today = fields.Float(
-        string="Qty Available Today",
-        compute="_compute_qty_at_date",
-        store=True
-    )
-    free_qty_today = fields.Float(
-        string="Free Qty Today",
-        compute="_compute_qty_at_date",
-        store=True
-    )
-    scheduled_date = fields.Datetime(
-        string="Scheduled Date",
-        compute="_compute_qty_at_date",
-        store=True
-    )
-    forecast_expected_date = fields.Datetime(
-        string="Forecast Expected Date",
-        compute="_compute_qty_at_date",
-        store=True
+        string="Global Virtual Available at Date",
+        help="Cantidad disponible en todos los almacenes para este producto en el intervalo de fechas.",
     )
 
-    @api.depends(
-        'reservation_begin', 'return_date', 'product_id',
-        'product_id.qty_available', 'product_id.qty_in_rent'
-    )
+    @api.depends('reservation_begin', 'return_date', 'product_id')
     def _compute_qty_at_date(self):
-        now = fields.Datetime.now()
-        for line in self:
-            # Si faltan datos críticos o no es línea de alquiler, asignamos valores por defecto.
-            if (not line.is_rental or
-                not line.product_id or
-                not line.product_id.is_storable or
-                not line.reservation_begin or
-                not line.return_date):
-                line.virtual_available_at_date = 0.0
-                line.virtual_available_total_at_date = 0.0
-                line.qty_available_today = 0.0
-                line.free_qty_today = 0.0
-                line.scheduled_date = False
-                line.forecast_expected_date = False
-            else:
-                from_date = line.reservation_begin
-                to_date = line.return_date
+        """
+        Esta función ya computa la cantidad disponible de un producto para un intervalo
+        en un almacén específico. Se amplía para que también compute la cantidad disponible
+        sin tener en cuenta el almacén (todos los almacenes).
+        """
+        # 1) Filtramos líneas que NO son de alquiler (non_rental)
+        non_rental = self.filtered(lambda sol: not sol.is_rental)
+        # Llamamos al super para que procese esas líneas no-rental con la lógica estándar
+        super(RentalOrderLine, non_rental)._compute_qty_at_date()
 
-                # --- Cálculo para el almacén asignado ---
-                rentable_qty_wh = (line.product_id.with_context(
+        # 2) Filtramos las líneas de alquiler que sean storable
+        rented_product_lines = (self - non_rental).filtered(
+            lambda l: l.product_id and l.product_id.is_storable
+        )
+
+        # 3) Valores por defecto para inicializar campos
+        line_default_values = {
+            'virtual_available_at_date': 0.0,
+            'scheduled_date': False,
+            'forecast_expected_date': False,
+            'free_qty_today': 0.0,
+            'qty_available_today': False,
+            # Añadimos también el nuevo campo, para asegurarnos de que queda a 0.0 por defecto
+            'virtual_available_total_at_date': 0.0,
+        }
+
+        # 4) Particionamos las líneas según su periodo de alquiler y almacén
+        #    y procesamos cada bloque
+        for (from_date, to_date, warehouse_id), line_ids in rented_product_lines._partition_so_lines_by_rental_period():
+            lines = self.env['sale.order.line'].browse(line_ids)
+            for line in lines:
+                # -------------------------------------------------------------
+                # Cálculo original: disponibilidad en el almacén warehouse_id
+                # -------------------------------------------------------------
+                rentable_qty = line.product_id.with_context(
                     from_date=from_date,
                     to_date=to_date,
-                    warehouse_id=line.order_id.warehouse_id.id
-                ).qty_available or 0.0)
-                if from_date > now:
-                    rentable_qty_wh += (line.product_id.with_context(
+                    warehouse_id=warehouse_id
+                ).qty_available
+
+                # Si la fecha de inicio aún no ha llegado, sumamos lo que está en alquiler
+                if from_date > fields.Datetime.now():
+                    rentable_qty += line.product_id.with_context(
                         warehouse_id=line.order_id.warehouse_id.id
-                    ).qty_in_rent or 0.0)
-                rented_qty_wh = (line.product_id._get_unavailable_qty(
-                    from_date, to_date,
-                    ignored_soline_id=line.id,
+                    ).qty_in_rent
+
+                rented_qty_during_period = line.product_id._get_unavailable_qty(
+                    from_date,
+                    to_date,
+                    ignored_soline_id=line and line.id,
                     warehouse_id=line.order_id.warehouse_id.id,
-                ) or 0.0)
-                virtual_available_wh = max(rentable_qty_wh - rented_qty_wh, 0)
-                line.virtual_available_at_date = virtual_available_wh
+                )
+                virtual_available_at_date = max(rentable_qty - rented_qty_during_period, 0)
 
-                # --- Cálculo global (sin filtrar por almacén) ---
-                rentable_qty_total = (line.product_id.with_context(
+                # -------------------------------------------------------------
+                # NUEVO Cálculo: disponibilidad en TODOS los almacenes
+                # -------------------------------------------------------------
+                # 1) Obtenemos la cantidad disponible sin filtrar por almacén
+                rentable_qty_global = line.product_id.with_context(
                     from_date=from_date,
-                    to_date=to_date
-                ).qty_available or 0.0)
-                if from_date > now:
-                    rentable_qty_total += (line.product_id.with_context().qty_in_rent or 0.0)
-                rented_qty_total = (line.product_id._get_unavailable_qty(
-                    from_date, to_date,
-                    ignored_soline_id=line.id,
-                ) or 0.0)
-                virtual_available_total = max(rentable_qty_total - rented_qty_total, 0)
-                line.virtual_available_total_at_date = virtual_available_total
+                    to_date=to_date,
+                    warehouse_id=False  # Sin warehouse
+                ).qty_available
 
-                # --- Asignación de los demás campos computados ---
-                # Para este ejemplo, asignamos:
-                # - scheduled_date: la fecha de inicio (from_date)
-                # - free_qty_today y qty_available_today: se asumen iguales a la cantidad disponible en el almacén
-                # - forecast_expected_date: se deja sin valor (False)
-                line.scheduled_date = from_date
-                line.free_qty_today = virtual_available_wh
-                line.qty_available_today = virtual_available_wh
-                line.forecast_expected_date = False
+                # Si aún no ha llegado la fecha de inicio, sumamos también lo que está en alquiler
+                # globalmente (sin warehouse). Dependiendo de tu implementación de qty_in_rent,
+                # puede que ya sea global, o que necesites un contexto sin warehouse_id.
+                if from_date > fields.Datetime.now():
+                    rentable_qty_global += line.product_id.with_context(
+                        warehouse_id=False
+                    ).qty_in_rent
 
-                _logger.info("Line %s: Warehouse=%s, Global=%s, Qty_today=%s",
-                             line.id, virtual_available_wh, virtual_available_total, line.qty_available_today)
+                # 2) Obtenemos la cantidad ya alquilada en ese periodo a nivel global
+                rented_qty_during_period_global = line.product_id._get_unavailable_qty(
+                    from_date,
+                    to_date,
+                    ignored_soline_id=line and line.id,
+                    warehouse_id=False  # Sin warehouse
+                )
 
+                # 3) Calculamos la disponibilidad "global"
+                virtual_available_total_at_date = max(
+                    rentable_qty_global - rented_qty_during_period_global,
+                    0
+                )
+
+                # -------------------------------------------------------------
+                # 5) Actualizamos los campos en la línea
+                # -------------------------------------------------------------
+                line.update({
+                    **line_default_values,
+                    'virtual_available_at_date': virtual_available_at_date,
+                    'scheduled_date': from_date,
+                    'free_qty_today': virtual_available_at_date,
+
+                    # Guardamos también la disponibilidad global
+                    'virtual_available_total_at': virtual_available_at_date_global,
+                })
+
+        # 6) A las líneas de alquiler que no entren en el caso anterior,
+        #    les establecemos los valores por defecto (que incluyan el nuevo campo en 0)
+        ((self - non_rental) - rented_product_lines).update(line_default_values)
 
