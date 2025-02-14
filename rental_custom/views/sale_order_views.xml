@@ -14,26 +14,6 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         </field>
     </record>
 
-    <record id="action_rental_availability_popup" model="ir.actions.client">
-        <field name="name">Disponibilidad Extendida</field>
-        <field name="tag">rental_availability_popup</field>
-        <field name="params">
-            {"product_id": context.get('product_id'),
-             "start_date": context.get('start_date'),
-             "end_date": context.get('end_date')}
-        </field>
-    </record>
-
-    <template id="rental_custom_qty_at_date_popover" inherit_id="sale_stock_renting.QtyAtDatePopover">
-        <!-- Se inserta una línea dentro del bloque con clase "p-2" -->
-        <xpath expr="//div[@class='p-2']" position="inside">
-            <p class="o_custom_text">
-                Doble cantidad disponible: 
-	    <!--	    <t t-esc="float(props.record.data.virtual_available_at_date) * 2"/>  -->
-            </p>
-        </xpath>
-    </template>
-
 </odoo>
 
 
