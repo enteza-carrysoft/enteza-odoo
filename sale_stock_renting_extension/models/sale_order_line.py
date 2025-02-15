@@ -12,6 +12,11 @@ class RentalOrderLine(models.Model):
         help="Cantidad disponible en todos los almacenes para este producto en el intervalo de fechas.",
     )
 
+    virtual_available_at_date = fields.Float(
+        string="Virtual Available at Date",
+        help="Cantidad disponible en un almacen determinado para este producto en el intervalo de fechas.",
+    )
+
     @api.depends('reservation_begin', 'return_date', 'product_id')
     def _compute_qty_at_date(self):
         """
@@ -110,7 +115,7 @@ class RentalOrderLine(models.Model):
                     'free_qty_today': virtual_available_at_date,
 
                     # Guardamos también la disponibilidad global
-                    'virtual_available_total_at': virtual_available_at_date_global,
+                    'virtual_available_total_at_date': virtual_available_total_at_date,
                 })
 
         # 6) A las líneas de alquiler que no entren en el caso anterior,

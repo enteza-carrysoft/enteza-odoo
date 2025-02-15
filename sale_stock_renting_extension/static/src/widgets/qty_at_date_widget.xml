@@ -39,7 +39,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <strong>Available Globally</strong>
+                                <strong>Disponibilidad completa</strong>
                             </td>
                             <td class="text-end">
                                 <t t-out="props.record.data.virtual_available_total_at_date"/>
