@@ -11,6 +11,9 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
                 <field name="event_date" />
         	<field name="place_number" />
             </xpath>
+            <xpath expr="//field[@name='partner_shipping_id']" position="after">
+                <field name="warehouse_id" />
+            </xpath>
         </field>
     </record>
 
