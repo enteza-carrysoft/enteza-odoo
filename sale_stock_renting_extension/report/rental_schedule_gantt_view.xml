@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_rental_schedule_gantt_inherit" model="ir.ui.view">
+        <field name="name">sale.rental.schedule.gantt.inherit</field>
+        <field name="model">sale.rental.schedule</field>
+        <field name="inherit_id" ref="sale_renting.rental_schedule_view_gantt"/>  
+        <field name="arch" type="xml">
+            <!-- Agregar partner_shipping_id después de name en el popover -->
+            <xpath expr="//templates/div[@t-name='gantt-popover']/div[1]" position="after">
+                <div>
+                    <strong>Shipping Address — </strong> <t t-esc="partner_shipping_id.display_name"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
