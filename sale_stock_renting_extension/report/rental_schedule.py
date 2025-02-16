@@ -1,5 +1,4 @@
 from odoo import fields, models
-form odoo.tools import SQL
 
 class RentalSchedule(models.Model):
     _inherit = "sale.rental.schedule"
