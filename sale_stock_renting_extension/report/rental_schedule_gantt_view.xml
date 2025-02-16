@@ -7,8 +7,8 @@
         <field name="arch" type="xml">
             <!-- Agregar partner_shipping_id después de name en el popover -->
             <xpath expr="//templates/div[@t-name='gantt-popover']/div[1]" position="after">
-	    	<div t-if="partner_id">
-                    <strong>Shipping Address — </strong> <t t-esc="partner_id.display_name"/>
+	    	<div>
+                    <strong>Finca a entregar — </strong> <t t-esc="name"/>
                 </div>
             </xpath>
         </field>
