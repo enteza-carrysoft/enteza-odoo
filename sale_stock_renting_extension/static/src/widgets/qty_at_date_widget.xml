@@ -3,6 +3,7 @@
     <!-- Extensión del template base para el enlace del widget -->
     <t t-name="sale_stock_renting_ext.QtyAtDate" t-inherit="sale_stock.QtyAtDate" t-inherit-mode="extension">
         <xpath expr="//a" position="attributes">
+            <!-- Se eliminó el operador ?? y se usa !props.record.data.available_reserved_lots -->
             <attribute name="t-attf-class">
                 fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || !props.record.data.available_reserved_lots) ? 'text-danger' : '' }}
             </attribute>
@@ -11,36 +12,19 @@
 
     <!-- Extensión del popover para mostrar las cantidades -->
     <t t-name="sale_stock_renting_ext.QtyAtDatePopover" t-inherit="sale_stock.QtyAtDatePopover" t-inherit-mode="extension">
-        <xpath expr="//div" position="replace">
-            <!-- Bloque para productos no de alquiler o sin fechas de alquiler -->
-            <div class="p-2" t-if="!props.record.data.is_rental || !props.record.data.return_date || !props.record.data.start_date">
-                <!-- Aquí puedes copiar el contenido original del template base si lo necesitas, o dejarlo vacío -->
-                <h6>Availability</h6>
-                <table class="table table-borderless table-sm">
-                    <tbody>
-                        <tr>
-                            <td>Stock pronosticado</td>
-                            <td class="text-end">0</td>
-                        </tr>
-                        <tr>
-                            <td>Disponible operaciones planificadas</td>
-                            <td class="text-end">0</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button class="text-start btn btn-link" type="button">
-                    <i class="oi oi-fw o_button_icon oi-arrow-right"/> Ver pronóstico
-                </button>
-            </div>
-
-            <!-- Bloque personalizado para productos de alquiler con fechas -->
-            <div class="p-2" t-if="props.record.data.is_rental && props.record.data.return_date && props.record.data.start_date">
+        <!-- Se mantiene el bloque condicional del template base -->
+        <xpath expr="//div" position="attributes">
+            <attribute name="t-if">!props.record.data.is_rental || !props.record.data.return_date || !props.record.data.start_date</attribute>
+        </xpath>
+        <!-- Se inserta el bloque alternativo usando un t-if con la condición contraria -->
+        <xpath expr="//div" position="after">
+            <div class="p-2" t-if="props.record.data.is_rental &amp;&amp; props.record.data.return_date &amp;&amp; props.record.data.start_date">
                 <h6>Availability</h6>
                 <table class="table table-borderless table-sm">
                     <tbody>
                         <tr>
                             <td>
-                                <strong>Disponible para alquilar</strong><br/>
+                                <strong>Available for Rent</strong><br/>
                                 <small>
                                     <span t-out="props.calcData.stock_start_date"/>
                                 </small>
@@ -69,7 +53,7 @@
                 </t>
                 <button class="text-start btn btn-link" type="button" t-on-click="openRentalGanttView">
                     <i class="oi oi-fw o_button_icon oi-arrow-right"/>
-                    Ver alquileres
+                    View Rentals
                 </button>
             </div>
         </xpath>
