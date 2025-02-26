@@ -8,7 +8,7 @@
             </field>
             <!-- Ajustar dominio si necesario, pero filtrado se maneja en el modelo -->
             <xpath expr="//field[@name='move_ids']" position="attributes">
-                <attribute name="domain">[('picking_id', '=', picking_id), ('product_id.categ_id', 'in', categ_ids)]</attribute>
+                <attribute name="domain">[('picking_id', 'in', picking_ids), ('product_id.categ_id', 'in', categ_ids)]</attribute>
             </xpath>
         </field>
     </record>
