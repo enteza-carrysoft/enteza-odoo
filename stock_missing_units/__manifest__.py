@@ -1,7 +1,7 @@
 # __manifest__.py
 {
     'name': 'Stock Missing Units',
-    'version': '15.0.1.0.0',
+    'version': '18.0.1.0.0',
     'summary': 'Manage missing units in stock pickings',
     'description': """
         This module adds functionality to manage missing units in stock pickings.
