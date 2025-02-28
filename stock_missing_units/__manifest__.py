@@ -8,7 +8,10 @@
     """,
     'author': 'Tu Nombre',
     'depends': ['stock'],
+    'data': [
+        'views/stock_picking_views.xml',  # Asegurar que las vistas se carguen
+    ],
     'installable': True,
     'application': False,
+    'license': 'AGPL-3',  # Identificación de la licencia de código abierto
 }
-

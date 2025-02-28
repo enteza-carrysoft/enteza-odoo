@@ -5,8 +5,12 @@
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
-                <field name="missing_units"/>
+            <xpath expr="//field[@name='move_line_ids']/tree" position="attributes">
+                <attribute name="editable">bottom</attribute>
+            </xpath>
+            <xpath expr="//field[@name='move_line_ids']/tree/field[@name='product_uom_qty']" position="after">
+                <field name="missing_units" widget="integer"/>
+            </xpath>
         </field>
     </record>
 </odoo>
-
