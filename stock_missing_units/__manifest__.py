@@ -1,4 +1,4 @@
-# __manifest__.py
+# stock_missing_units/__manifest__.py
 {
     'name': 'Stock Missing Units',
     'version': '18.0.1.0.0',
@@ -9,9 +9,9 @@
     'author': 'Tu Nombre',
     'depends': ['stock'],
     'data': [
-        'views/stock_picking_views.xml',  # Asegurar que las vistas se carguen
+        'views/stock_picking_views.xml',
     ],
     'installable': True,
     'application': False,
-    'license': 'AGPL-3',  # Identificación de la licencia de código abierto
+    'license': 'LGPL-3',
 }
