@@ -6,11 +6,11 @@
             <field name="name">stock.picking.form.inherit</field>
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock.view_picking_form"/>
-	    <field name="arch" type="xml">
-		<xpath expr="//field[@name='product_packaging_id']" position="after">
-    	   	    <field optional="show" name="missing_units"/>
-  		</xpath>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='product_packaging_id']" position="after">
+                    <field optional="show" name="missing_units"/>
+                </xpath>
+            </field>
         </record>
     </data>
 </odoo>
-
