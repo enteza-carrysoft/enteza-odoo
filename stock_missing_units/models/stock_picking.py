@@ -1,7 +1,7 @@
 from odoo import models, fields, api
 
-class StockPicking(models.Model):
-    _inherit = 'stock.picking'
+class StockMove(models.Model):
+    _inherit = 'stock.move'
     
     missing_units = fields.Integer(string='Missing Units', default=0)
     
