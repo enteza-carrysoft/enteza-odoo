@@ -43,10 +43,10 @@ class WizardCreateSale(models.TransientModel):
             for line in picking.move_ids:
                 # Obtener precio
                 price = 0
-                if line.sale_line_id and line.sale_line_id.price_unit:
-                    price = line.sale_line_id.price_unit
-                elif line.product_id:
-                    price = line.product_id.list_price
+#                if line.sale_line_id and line.sale_line_id.price_unit:
+#                    price = line.sale_line_id.price_unit
+#                elif line.product_id:
+                price = line.product_id.list_price
                 
                 # Preparamos los valores para una línea de venta normal
                 line_values = {
@@ -57,8 +57,8 @@ class WizardCreateSale(models.TransientModel):
                 }
                 
                 # Asegurar que se use la unidad de medida correcta
-                if line.product_uom:
-                    line_values['product_uom'] = line.product_uom.id
+#                if line.product_uom:
+#                    line_values['product_uom'] = line.product_uom.id
                 
                 data.append((0, 0, line_values))
 
