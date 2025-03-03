@@ -1,21 +1,20 @@
-# Copyright 2019 NaN (http://www.nan-tic.com) - Àngel Àlvarez
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
-    "name": "Rental Custom",
-    "version": "18.0.1.0.1",
-    "category": "Product",
-    "summary": "This module rental custom",
-    "website": "",
-    "author": "Fco Jose Carrion, Daniel Dominguez - Xtendoo (https://xtendoo.es)",
-    "maintainers": [],
-    "license": "AGPL-3",
-    "depends": [
-        'sale_renting',
+    'name': 'Crear Orden de Venta desde Albarán',
+    'version': '18.0.1.0.0',
+    'category': 'Sales/Sales',
+    'summary': 'Permite crear órdenes de venta a partir de albaranes',
+    'author': 'Tu Nombre',
+    'license': 'AGPL-3',
+    'depends': [
+        'sale_management',
+        'stock',
+        # Añade aquí 'sale_rental' si es necesario para tu caso
     ],
-    "data": [
-        'views/sale_order_views.xml',
+    'data': [
+        'security/ir.model.access.csv',
+        'wizard/wizard_create_sale_view.xml',
     ],
-    "installable": True,
-    "auto_install": False,
-    "application": False,
+    'installable': True,
+    'application': False,
+    'auto_install': False,
 }
