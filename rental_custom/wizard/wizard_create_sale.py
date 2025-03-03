@@ -22,41 +22,23 @@ class WizardCreateSale(models.TransientModel):
         data = []
         for picking in self.picking_ids:
             for line in picking.move_ids:  # En Odoo 18 es move_ids en lugar de move_ids_without_package
-                # Obtener información de precio de forma segura
+                # Obtener precio: primero de la línea de venta original, luego del producto
                 price = 0
-                
-                # Primero intentamos obtener el precio desde la línea de venta original si existe
                 if line.sale_line_id and line.sale_line_id.price_unit:
                     price = line.sale_line_id.price_unit
-                # Si no hay línea de venta o no tiene precio, usamos el precio del producto
                 elif line.product_id:
                     price = line.product_id.list_price
                 
-                # Obtener warehouse_id
-                warehouse_id = False
-                if line.sale_line_id and hasattr(line.sale_line_id, 'warehouses_id') and line.sale_line_id.warehouses_id:
-                    warehouse_id = line.sale_line_id.warehouses_id.id
-                elif picking.picking_type_id and picking.picking_type_id.warehouse_id:
-                    warehouse_id = picking.picking_type_id.warehouse_id.id
-                
-                # Preparamos los valores básicos de la línea
+                # Preparamos los valores para una línea de venta normal (no alquiler)
                 line_values = {
                     'product_id': line.product_id.id,
                     'product_uom_qty': line.product_uom_qty,
                     'price_unit': price,
+                    'name': line.product_id.name,
                 }
                 
-                # Verificamos si el modelo sale.order.line tiene estos campos antes de usarlos
-                SaleOrderLine = self.env['sale.order.line']
-                
-                if hasattr(SaleOrderLine, 'display_product_id'):
-                    line_values['display_product_id'] = line.product_id.id
-                    
-                if hasattr(SaleOrderLine, 'warehouses_id') and warehouse_id:
-                    line_values['warehouses_id'] = warehouse_id
-                
-                # Si existe un campo product_uom en el modelo, lo usamos
-                if hasattr(SaleOrderLine, 'product_uom') and line.product_uom:
+                # Asegurar que se use la unidad de medida correcta
+                if line.product_uom:
                     line_values['product_uom'] = line.product_uom.id
                 
                 data.append((0, 0, line_values))
@@ -71,7 +53,7 @@ class WizardCreateSale(models.TransientModel):
         if not partner_id:
             raise ValidationError(_("No se pudo determinar el cliente para la orden de venta."))
 
-        # Preparamos los valores básicos de la orden de venta
+        # Valores básicos para una orden de venta normal
         values = {
             'partner_id': partner_id,
             'order_line': data
@@ -81,11 +63,7 @@ class WizardCreateSale(models.TransientModel):
         if self.picking_ids[0].origin:
             values['origin'] = self.picking_ids[0].origin
         
-        # Verificamos si existe el campo type_id en el modelo sale.order
-        if hasattr(self.env['sale.order'], 'type_id'):
-            values['type_id'] = 1
-
-        # Creamos la orden de venta
+        # Creamos la orden de venta estándar
         sale_id = self.env['sale.order'].create(values)
         
         # Agregamos un mensaje con los documentos origen
