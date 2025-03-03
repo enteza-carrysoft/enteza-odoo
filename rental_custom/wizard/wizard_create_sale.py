@@ -9,27 +9,46 @@ class WizardCreateSale(models.TransientModel):
     _name = "wizards.create.sale"
     _description = "Crear Orden de Venta desde Albarán"
 
-    name = fields.Char(string="Nombre")
+    @api.model
+    def default_get(self, fields_list):
+        """
+        Método sobreescrito para obtener automáticamente el albarán activo
+        """
+        res = super(WizardCreateSale, self).default_get(fields_list)
+        
+        # Obtener el albarán activo desde el contexto
+        active_model = self._context.get('active_model')
+        active_ids = self._context.get('active_ids', [])
+        
+        if active_model == 'stock.picking' and active_ids:
+            res['picking_ids'] = [(6, 0, active_ids)]
+        
+        return res
 
+    name = fields.Char(string="Nombre")
     picking_ids = fields.Many2many(
         comodel_name='stock.picking',
         string='Albaranes',
         required=True,
-        help="Seleccione albaranes para crear una orden de venta."
+        help="Albaranes para crear una orden de venta."
     )
 
     def action_create_sale(self):
+        # Verificar que hay albaranes seleccionados
+        if not self.picking_ids:
+            raise ValidationError(_("No se ha seleccionado ningún albarán para crear la orden de venta."))
+            
         data = []
         for picking in self.picking_ids:
-            for line in picking.move_ids:  # En Odoo 18 es move_ids en lugar de move_ids_without_package
-                # Obtener precio: primero de la línea de venta original, luego del producto
+            for line in picking.move_ids:
+                # Obtener precio
                 price = 0
                 if line.sale_line_id and line.sale_line_id.price_unit:
                     price = line.sale_line_id.price_unit
                 elif line.product_id:
                     price = line.product_id.list_price
                 
-                # Preparamos los valores para una línea de venta normal (no alquiler)
+                # Preparamos los valores para una línea de venta normal
                 line_values = {
                     'product_id': line.product_id.id,
                     'product_uom_qty': line.product_uom_qty,
