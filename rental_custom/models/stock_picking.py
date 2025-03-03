@@ -26,7 +26,6 @@ class StockPicking(models.Model):
                     'product_uom_qty': move.product_uom_qty,
                     'product_uom': move.product_uom.id,
                     'price_unit': move.product_id.list_price,
-                    'location_id': move.location_dest_id.id,  # Usar la ubicación del albarán
                 }))
                 
             sale_order = self.env['sale.order'].create(sale_order_vals)
