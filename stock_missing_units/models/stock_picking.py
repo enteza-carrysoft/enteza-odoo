@@ -9,5 +9,5 @@ class StockMove(models.Model):
     def _onchange_missing_units(self):
         for line in self:
             if line.missing_units:
-                line.qty_done = line.product_uom_qty - line.missing_units
+                line.quantity = line.product_uom_qty - line.missing_units
 
