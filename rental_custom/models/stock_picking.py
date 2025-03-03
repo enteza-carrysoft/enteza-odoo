@@ -39,4 +39,3 @@ class StockPicking(models.Model):
                 'res_id': sale_order.id,
                 'target': 'current',
             }
-
