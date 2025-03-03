@@ -16,6 +16,8 @@ class SaleOrder(models.Model):
         string="Número Plazas",
     )
 
+    picking_id = fields.Many2one('stock.picking', string="Stock Picking", readonly=True, copy=False)
+
     @api.onchange("event_date")
     def event_date_change(self):
         if self.event_date:
