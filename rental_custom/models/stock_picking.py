@@ -11,7 +11,7 @@ class StockPicking(models.Model):
             if picking.sale_order_id:
                 raise UserError(_('Ya existe una orden de venta para este albarán.'))
             
-            if not picking.move_lines:
+            if not picking.move_ids_without_package:
                 raise UserError(_('No hay líneas de productos en el albarán para crear una orden de venta.'))
             
             sale_order_vals = {
@@ -20,7 +20,7 @@ class StockPicking(models.Model):
                 'order_line': [],
             }
             
-            for move in picking.move_lines:
+            for move in picking.move_ids_without_package:
                 sale_order_vals['order_line'].append((0, 0, {
                     'product_id': move.product_id.id,
                     'product_uom_qty': move.product_uom_qty,
@@ -40,3 +40,4 @@ class StockPicking(models.Model):
                 'res_id': sale_order.id,
                 'target': 'current',
             }
+
