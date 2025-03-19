@@ -13,6 +13,7 @@
     'data': [
         'security/ir.model.access.csv',
 #        'wizard/wizard_create_sale_view.xml',
+        'views/sale_order_views.xml',
         'views/stock_picking_views.xml',
     ],
     'installable': True,
