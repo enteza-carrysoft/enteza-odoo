@@ -1,0 +1,25 @@
+<odoo>
+  <record id="view_res_config_settings_intervention" model="ir.ui.view">
+    <field name="name">res.config.settings.view.form.intervention</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="sale.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@id='sales']" position="inside">
+        <div class="app_settings_block" data-string="Presupuesto de Intervención" string="Presupuesto de Intervención">
+          <h2>Presupuesto de Intervención</h2>
+          <group>
+            <field name="intervention_speed_kmh"/>
+          </group>
+          <group string="Productos">
+            <field name="product_labor_normal_id"/>
+            <field name="product_labor_overtime_id"/>
+            <field name="product_mobile_unit_id"/>
+            <field name="mobile_time_uom"/>
+            <field name="consumables_percent"/>
+            <field name="product_consumables_id"/>
+          </group>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>
