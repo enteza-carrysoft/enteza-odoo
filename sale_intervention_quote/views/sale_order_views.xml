@@ -9,7 +9,7 @@
                 type="object"
                 string="Presupuesto de intervención"
                 class="btn-secondary"
-                attrs="{'invisible': [('state','not in',('draft','sent'))]}"/>
+                invisible="state not in ('draft','sent')}"/>
       </xpath>
     </field>
   </record>
