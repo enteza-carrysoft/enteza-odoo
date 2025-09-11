@@ -1,4 +1,17 @@
 <odoo>
+  <!-- Vista para las líneas de material -->
+  <record id="view_intervention_material_line_tree" model="ir.ui.view">
+    <field name="name">intervention.material.line.tree</field>
+    <field name="model">intervention.material.line</field>
+    <field name="arch" type="xml">
+      <tree editable="bottom">
+        <field name="product_id"/>
+        <field name="quantity"/>
+      </tree>
+    </field>
+  </record>
+
+  <!-- Vista principal del wizard -->
   <record id="view_intervention_quote_wizard_form" model="ir.ui.view">
     <field name="name">intervention.quote.wizard.form</field>
     <field name="model">intervention.quote.wizard</field>
@@ -23,12 +36,7 @@
           </group>
         </group>
         <group string="Materiales">
-          <field name="material_line_ids" context="{'default_wizard_id': active_id}">
-            <tree editable="bottom">
-              <field name="product_id"/>
-              <field name="quantity"/>
-            </tree>
-          </field>
+            <field name="material_line_ids" context="{'default_wizard_id': active_id}"/>
         </group>
         <footer>
           <button string="Generar líneas" type="object" name="action_apply" class="btn-primary"/>
