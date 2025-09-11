@@ -6,7 +6,7 @@
     "license": "LGPL-3",
     "depends": ["sale_management", "product"],
     "data": [
-        "views/res_config_settings_views.xml",
+        #"views/res_config_settings_views.xml",
         "views/sale_order_views.xml",
         "views/intervention_quote_wizard_views.xml",
     ],
