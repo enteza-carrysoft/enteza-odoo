@@ -59,11 +59,16 @@ class WizardCreateSale(models.TransientModel):
                     'warehouses_id': line.sale_line_id.warehouses_id.id or False,
                     'product_uom_qty': line.product_uom_qty
                 }))
+        # --- NUEVO: obtener el plazo de pago del partner ---
+        partner = self.picking_ids[0].client_id.commercial_partner_id
+        payment_term = partner.property_payment_term_id  # Many2one a account.payment.term
 
         values = {
             'partner_id':self.picking_ids[0].client_id.id,
             'type_id':1,
-            'order_line':data
+            'order_line':data,
+            # --- NUEVO: arrastrar el plazo de pago ---
+            'payment_term_id': payment_term.id if payment_term else False,
         }
 
         sale_id = self.env['sale.order'].create(values)
