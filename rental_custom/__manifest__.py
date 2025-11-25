@@ -1,9 +1,9 @@
 {
     'name': 'Crear Orden de Venta desde Albarán',
-    'version': '18.0.1.0.0',
+    'version': '19.0.1.0.0',
     'category': 'Sales/Sales',
     'summary': 'Permite crear órdenes de venta a partir de albaranes',
-    'author': 'Tu Nombre',
+    'author': 'Francisco Jose Carrion',
     'license': 'AGPL-3',
     'depends': [
         'sale_management',
