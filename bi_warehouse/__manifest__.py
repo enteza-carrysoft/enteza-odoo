@@ -2,7 +2,7 @@
 # Part of BrowseInfo. See LICENSE file for full copyright and licensing details.
 {
     "name":"Warehouse Product Availability in SO",
-    "version":"18.0.0.0",
+    "version":"19.0.0.0",
     "category":"Warehouse",
     "summary":"warehouse sale order line product available availability warehouse product stock available availability warehouse location wise product availability warehouse sale order product quantity sale product availability warehouse product available quantity",
     "description":"""
@@ -11,7 +11,7 @@
 
     """,
     'author': 'BROWSEINFO',
-    'website': 'https://www.browseinfo.com/demo-request?app=bi_warehouse_product_availability_in_so&version=18&edition=Community',
+    'website': 'https://www.browseinfo.com/demo-request?app=bi_warehouse_product_availability_in_so&version=19&edition=Community',
     "depends":["base",
                "sale_management",
                "sale",
@@ -25,6 +25,6 @@
     'license':'OPL-1',
     'installable': True,
     'auto_install': False,
-    'live_test_url':'https://www.browseinfo.com/demo-request?app=bi_warehouse_product_availability_in_so&version=18&edition=Community',
+    'live_test_url':'https://www.browseinfo.com/demo-request?app=bi_warehouse_product_availability_in_so&version=19&edition=Community',
     "images":['static/description/Warehouse-Product-Availability-SO-Banner.gif'],
 }
