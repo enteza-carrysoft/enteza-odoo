@@ -68,7 +68,7 @@ class RentalAvailabilityWizard(models.TransientModel):
 
         for wh in all_whs:
             on_hand = product.with_context(
-                warehouse=wh.id
+                warehouse_id=wh.id
             ).qty_available
 
             # Comprometidos en alquileres solapados

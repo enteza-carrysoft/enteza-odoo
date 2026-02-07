@@ -266,7 +266,7 @@ class SaleOrderLine(models.Model):
 
     def _wh_qty_on_hand(self, product, warehouse):
         """Stock físico actual en el almacén."""
-        return product.with_context(warehouse=warehouse.id).qty_available
+        return product.with_context(warehouse_id=warehouse.id).qty_available
 
     def _wh_committed_rental_qty(self, product, warehouse, start, end):
         """
