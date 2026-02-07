@@ -330,8 +330,14 @@ class SaleOrderLine(models.Model):
         """
         Traslados internos entrantes al almacén programados antes de la fecha.
         Solo pendientes (no finalizados ni cancelados).
-        Excluye traslados creados por esta misma línea de pedido.
+        Excluye traslados vinculados a asignaciones de alquiler, ya que
+        esos están gestionados por el cálculo de committed/returning.
         """
+        # Obtener todos los pickings vinculados a asignaciones de alquiler
+        rental_pickings = self.env['rental.warehouse.assignment'].search([
+            ('picking_id', '!=', False),
+        ]).mapped('picking_id')
+
         domain = [
             ('product_id', '=', product.id),
             ('picking_id.picking_type_id.code', '=', 'internal'),
@@ -339,9 +345,9 @@ class SaleOrderLine(models.Model):
             ('date', '<=', before_date),
             ('state', 'not in', ['done', 'cancel']),
         ]
-        # Excluir traslados propios de esta línea
-        if self.rental_picking_ids:
-            domain.append(('picking_id', 'not in', self.rental_picking_ids.ids))
+        # Excluir traslados de alquiler (gestionados por committed)
+        if rental_pickings:
+            domain.append(('picking_id', 'not in', rental_pickings.ids))
         moves = self.env['stock.move'].search(domain)
         return sum(moves.mapped('product_uom_qty'))
 
