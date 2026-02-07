@@ -43,7 +43,7 @@
     <menuitem
         id="menu_rental_availability_wizard"
         name="Consultar disponibilidad"
-        parent="sale_renting.menu_rental_report"
+        parent="sale_renting.menu_rental_reporting"
         action="rental_availability_wizard_action"
         sequence="10"
     />

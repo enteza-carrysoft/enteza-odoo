@@ -111,7 +111,7 @@
     <menuitem
         id="menu_rental_warehouse_assignment"
         name="Asignaciones multi-almacén"
-        parent="sale_renting.menu_rental_report"
+        parent="sale_renting.menu_rental_reporting"
         action="rental_warehouse_assignment_action"
         sequence="30"
     />
