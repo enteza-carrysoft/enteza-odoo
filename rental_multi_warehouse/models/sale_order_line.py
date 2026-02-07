@@ -314,14 +314,19 @@ class SaleOrderLine(models.Model):
         """
         Traslados internos entrantes al almacén programados antes de la fecha.
         Solo pendientes (no finalizados ni cancelados).
+        Excluye traslados creados por esta misma línea de pedido.
         """
-        moves = self.env['stock.move'].search([
+        domain = [
             ('product_id', '=', product.id),
             ('picking_id.picking_type_id.code', '=', 'internal'),
             ('location_dest_id', 'child_of', warehouse.lot_stock_id.id),
             ('date', '<=', before_date),
             ('state', 'not in', ['done', 'cancel']),
-        ])
+        ]
+        # Excluir traslados propios de esta línea
+        if self.rental_picking_ids:
+            domain.append(('picking_id', 'not in', self.rental_picking_ids.ids))
+        moves = self.env['stock.move'].search(domain)
         return sum(moves.mapped('product_uom_qty'))
 
     # ── Utilidades de fecha ────────────────────────────────────────────
