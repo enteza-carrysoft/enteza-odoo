@@ -1,23 +1,33 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
-import { Component, useState, onWillStart, onWillUpdateProps } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
+import { usePopover } from "@web/core/popover/popover_hook";
+
+/**
+ * Componente popover con la tabla de detalle multi-almacén.
+ */
+class RentalMultiWhPopover extends Component {
+    static template = "rental_multi_warehouse.RentalMultiWhPopover";
+    static props = {
+        data: { type: Object },
+        close: { type: Function, optional: true },
+    };
+}
 
 /**
  * Widget que muestra la disponibilidad multi-almacén de una línea
- * de alquiler. Reemplaza el campo rental_availability_json por una
- * visualización interactiva con semáforo y detalle expandible.
+ * de alquiler. Muestra un indicador con semáforo y al hacer clic
+ * despliega un popover con el desglose por almacén.
  */
 class RentalMultiWhWidget extends Component {
     static template = "rental_multi_warehouse.RentalMultiWhWidget";
     static props = { ...standardFieldProps };
 
     setup() {
-        this.state = useState({
-            expanded: false,
-            data: null,
+        this.popover = usePopover(RentalMultiWhPopover, {
+            position: "bottom",
         });
     }
 
@@ -39,19 +49,16 @@ class RentalMultiWhWidget extends Component {
         const configs = {
             ok: {
                 color: "text-success",
-                bgClass: "bg-success-subtle",
                 icon: "fa-check-circle",
                 label: "Disponible en almacén preferente",
             },
             transfer_needed: {
                 color: "text-info",
-                bgClass: "bg-info-subtle",
                 icon: "fa-truck",
                 label: "Requiere traslado inter-almacén",
             },
             deficit: {
                 color: "text-danger",
-                bgClass: "bg-danger-subtle",
                 icon: "fa-times-circle",
                 label: "Stock insuficiente",
             },
@@ -67,16 +74,12 @@ class RentalMultiWhWidget extends Component {
         return this.availabilityData?.deficit || 0;
     }
 
-    get assignments() {
-        return this.availabilityData?.assignments || [];
-    }
-
-    get qtyNeeded() {
-        return this.availabilityData?.qty_needed || 0;
-    }
-
-    toggleExpanded() {
-        this.state.expanded = !this.state.expanded;
+    onClickDetail(ev) {
+        if (this.availabilityData) {
+            this.popover.open(ev.currentTarget, {
+                data: this.availabilityData,
+            });
+        }
     }
 }
 
