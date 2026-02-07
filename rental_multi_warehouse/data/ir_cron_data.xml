@@ -9,7 +9,6 @@
             <field name="code">model._cron_check_pending_transfers()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="trigger">interval</field>
             <field name="active">True</field>
         </record>
     </data>
