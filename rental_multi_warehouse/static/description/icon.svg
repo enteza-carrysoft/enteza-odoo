@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="10" fill="#714B67"/>
+  <g fill="white" opacity="0.9">
+    <!-- Warehouse 1 -->
+    <rect x="10" y="45" width="25" height="20" rx="2"/>
+    <polygon points="10,45 22.5,33 35,45"/>
+    <!-- Warehouse 2 -->
+    <rect x="65" y="45" width="25" height="20" rx="2"/>
+    <polygon points="65,45 77.5,33 90,45"/>
+    <!-- Arrow between -->
+    <line x1="38" y1="55" x2="60" y2="55" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <polygon points="60,50 68,55 60,60"/>
+    <!-- Truck icon below -->
+    <rect x="35" y="72" width="20" height="10" rx="2"/>
+    <rect x="55" y="75" width="8" height="7" rx="1"/>
+    <circle cx="40" cy="84" r="3"/>
+    <circle cx="50" cy="84" r="3"/>
+    <circle cx="60" cy="84" r="3"/>
+  </g>
+</svg>

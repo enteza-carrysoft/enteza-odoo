@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="rental_multi_wh_transfer_day" model="ir.config_parameter">
+            <field name="key">rental_multi_wh.transfer_day</field>
+            <field name="value">1</field>
+        </record>
+        <record id="rental_multi_wh_transfer_lead_days" model="ir.config_parameter">
+            <field name="key">rental_multi_wh.transfer_lead_days</field>
+            <field name="value">2</field>
+        </record>
+        <record id="rental_multi_wh_auto_return_transfer" model="ir.config_parameter">
+            <field name="key">rental_multi_wh.auto_return_transfer</field>
+            <field name="value">True</field>
+        </record>
+    </data>
+</odoo>

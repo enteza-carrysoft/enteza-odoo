@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_rental_multi_wh" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.rental.multi.wh</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="sale_renting.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@string='Rental']//block[last()]" position="after">
+                <block title="Multi-Almacén" name="rental_multi_warehouse_settings">
+                    <setting
+                        string="Día de traslado"
+                        help="Día de la semana en que se programan los traslados entre almacenes (el inmediatamente anterior a la entrega)">
+                        <field name="rental_transfer_day"/>
+                    </setting>
+                    <setting
+                        string="Días mínimos de antelación"
+                        help="Si la fecha de traslado calculada es demasiado cercana, se ajustará automáticamente">
+                        <field name="rental_transfer_lead_days"/>
+                    </setting>
+                    <setting
+                        string="Retorno automático"
+                        help="Crear traslados de retorno al almacén de origen cuando el cliente devuelve el material">
+                        <field name="rental_auto_return_transfer"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

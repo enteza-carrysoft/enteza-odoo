@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rental_multi_warehouse.RentalMultiWhWidget">
+        <div t-if="availabilityData" class="o_rental_multi_wh_widget">
+
+            <!-- Indicador principal: icono + total disponible -->
+            <div class="d-flex align-items-center gap-1 cursor-pointer"
+                 t-on-click="toggleExpanded"
+                 t-att-title="statusConfig.label">
+
+                <i t-attf-class="fa {{statusConfig.icon}} {{statusConfig.color}}"
+                   style="font-size: 14px;"/>
+
+                <span t-attf-class="{{statusConfig.color}} fw-bold"
+                      style="font-size: 12px;">
+                    <t t-esc="totalAvailable"/> disp.
+                </span>
+
+                <!-- Indicador de traslado -->
+                <span t-if="status === 'transfer_needed'"
+                      class="badge text-bg-info"
+                      style="font-size: 10px;"
+                      title="Se necesita traslado entre almacenes">
+                    <i class="fa fa-truck me-1"/>traslado
+                </span>
+
+                <!-- Indicador de déficit -->
+                <span t-if="status === 'deficit'"
+                      class="badge text-bg-danger"
+                      style="font-size: 10px;">
+                    -<t t-esc="deficit"/>
+                </span>
+
+                <i t-attf-class="fa fa-caret-{{state.expanded ? 'up' : 'down'}} text-muted ms-1"
+                   style="font-size: 10px;"/>
+            </div>
+
+            <!-- Tabla de detalle expandible -->
+            <div t-if="state.expanded"
+                 class="o_rental_wh_detail border rounded mt-1 p-2"
+                 style="background: #fafafa; max-width: 500px; font-size: 11px;">
+
+                <!-- Resumen -->
+                <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+                    <span class="text-muted">Necesario:</span>
+                    <span class="fw-bold"><t t-esc="qtyNeeded"/> uds</span>
+                </div>
+
+                <table class="table table-sm table-borderless mb-0"
+                       style="font-size: 11px;">
+                    <thead>
+                        <tr class="text-muted" style="font-size: 10px;">
+                            <th>Almacén</th>
+                            <th class="text-end">Stock</th>
+                            <th class="text-end">Comprom.</th>
+                            <th class="text-end">Disp.</th>
+                            <th class="text-end">Asignado</th>
+                            <th class="text-center">Traslado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="assignments" t-as="a" t-key="a.warehouse_id">
+                            <tr t-att-class="a.is_primary ? 'table-warning' : ''">
+                                <td>
+                                    <i t-if="a.is_primary"
+                                       class="fa fa-star text-warning me-1"
+                                       title="Almacén preferente"
+                                       style="font-size: 10px;"/>
+                                    <t t-esc="a.warehouse_name"/>
+                                </td>
+                                <td class="text-end text-muted">
+                                    <t t-esc="a.stock_on_hand"/>
+                                </td>
+                                <td class="text-end text-danger">
+                                    <t t-if="a.committed > 0">
+                                        -<t t-esc="a.committed"/>
+                                    </t>
+                                    <t t-else="">—</t>
+                                </td>
+                                <td class="text-end">
+                                    <t t-esc="a.available"/>
+                                </td>
+                                <td class="text-end fw-bold"
+                                    t-att-class="a.assigned > 0 ? '' : 'text-muted'">
+                                    <t t-esc="a.assigned"/>
+                                </td>
+                                <td class="text-center">
+                                    <t t-if="!a.is_primary and a.assigned > 0 and a.transfer_date">
+                                        <span class="text-info"
+                                              t-att-title="'Programado: ' + a.transfer_date">
+                                            <i class="fa fa-truck"/>
+                                            <t t-esc="a.transfer_date"/>
+                                        </span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="text-muted">—</span>
+                                    </t>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-top fw-bold">
+                            <td>TOTAL</td>
+                            <td/>
+                            <td/>
+                            <td class="text-end"><t t-esc="totalAvailable"/></td>
+                            <td class="text-end"><t t-esc="qtyNeeded"/></td>
+                            <td/>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Leyenda -->
+                <div class="mt-1 pt-1 border-top text-muted"
+                     style="font-size: 10px;">
+                    <span class="me-2">
+                        <i class="fa fa-star text-warning"/> Preferente
+                    </span>
+                    <span class="me-2">
+                        <i class="fa fa-truck text-info"/> Traslado programado
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sin datos -->
+        <span t-if="!availabilityData" class="text-muted"
+              style="font-size: 11px;">—</span>
+    </t>
+
+</templates>

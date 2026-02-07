@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  LISTA DE PRIORIDAD DE ALMACENES                             -->
+    <!-- ============================================================ -->
+
+    <record id="rental_warehouse_priority_tree" model="ir.ui.view">
+        <field name="name">rental.warehouse.priority.tree</field>
+        <field name="model">rental.warehouse.priority</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="warehouse_id"/>
+                <field name="is_active"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_warehouse_priority_form" model="ir.ui.view">
+        <field name="name">rental.warehouse.priority.form</field>
+        <field name="model">rental.warehouse.priority</field>
+        <field name="arch" type="xml">
+            <form string="Prioridad de almacén">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="warehouse_id"/>
+                        </group>
+                        <group>
+                            <field name="is_active"/>
+                            <field name="company_id" invisible="True"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_warehouse_priority_action" model="ir.actions.act_window">
+        <field name="name">Prioridad de almacenes</field>
+        <field name="res_model">rental.warehouse.priority</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure el orden de prioridad de almacenes
+            </p>
+            <p>
+                Cuando un almacén no tiene stock suficiente para un alquiler,
+                el sistema buscará automáticamente en los almacenes de esta
+                lista, siguiendo el orden de prioridad (menor número = mayor prioridad).
+            </p>
+            <p>
+                El almacén asignado al pedido de venta siempre se consulta
+                primero, independientemente de esta configuración.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú bajo Alquiler > Configuración -->
+    <menuitem
+        id="menu_rental_warehouse_priority"
+        name="Prioridad de almacenes"
+        parent="sale_renting.menu_rental_config"
+        action="rental_warehouse_priority_action"
+        sequence="20"
+    />
+
+    <!-- ============================================================ -->
+    <!--  ASIGNACIONES (solo lectura, informativo)                    -->
+    <!-- ============================================================ -->
+
+    <record id="rental_warehouse_assignment_tree" model="ir.ui.view">
+        <field name="name">rental.warehouse.assignment.tree</field>
+        <field name="model">rental.warehouse.assignment</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false">
+                <field name="order_id"/>
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="quantity"/>
+                <field name="is_primary"/>
+                <field name="picking_id"/>
+                <field name="return_picking_id"/>
+                <field name="state"
+                       decoration-info="state == 'confirmed'"
+                       decoration-success="state in ('transferred', 'returned')"
+                       decoration-warning="state == 'delivered'"
+                       widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_warehouse_assignment_action" model="ir.actions.act_window">
+        <field name="name">Asignaciones multi-almacén</field>
+        <field name="res_model">rental.warehouse.assignment</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay asignaciones multi-almacén
+            </p>
+            <p>
+                Las asignaciones se crean automáticamente al confirmar
+                pedidos de alquiler que necesitan stock de varios almacenes.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_rental_warehouse_assignment"
+        name="Asignaciones multi-almacén"
+        parent="sale_renting.menu_rental_report"
+        action="rental_warehouse_assignment_action"
+        sequence="30"
+    />
+
+</odoo>
