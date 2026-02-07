@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="rental_multi_warehouse.RentalMultiWhWidget">
-        <div t-if="availabilityData" class="o_rental_multi_wh_widget">
+        <div t-if="availabilityData" class="o_rental_multi_wh_widget" style="position: relative;">
 
             <!-- Indicador principal: icono + total disponible -->
             <div class="d-flex align-items-center gap-1 cursor-pointer"
@@ -38,8 +38,8 @@
 
             <!-- Tabla de detalle expandible -->
             <div t-if="state.expanded"
-                 class="o_rental_wh_detail border rounded mt-1 p-2"
-                 style="background: #fafafa; max-width: 500px; font-size: 11px;">
+                 class="o_rental_wh_detail border rounded mt-1 p-2 shadow"
+                 style="background: #fff; min-width: 500px; font-size: 11px; position: absolute; z-index: 1050; left: 0; top: 100%;">
 
                 <!-- Resumen -->
                 <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
