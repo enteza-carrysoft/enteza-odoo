@@ -319,12 +319,9 @@ class SaleOrderLine(models.Model):
             ('order_id.state', 'in', ['sale', 'done']),
             ('return_date', '<=', start),
         ]
-        # Solo contar las que aún no se devolvieron
-        # En sale_renting: rental_status = 'pickup' → en poder del cliente
-        try:
-            domain.append(('rental_status', '=', 'pickup'))
-        except Exception:
-            pass
+        # Solo contar las que están con el cliente (recogidas, no devueltas)
+        # En sale_renting: rental_status = 'return' → recogido por el cliente
+        domain.append(('rental_status', '=', 'return'))
 
         lines = self.env['sale.order.line'].search(domain)
         return sum(lines.mapped('product_uom_qty'))
