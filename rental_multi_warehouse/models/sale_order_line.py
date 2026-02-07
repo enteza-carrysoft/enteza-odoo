@@ -272,7 +272,12 @@ class SaleOrderLine(models.Model):
         """
         Unidades comprometidas en alquileres solapados:
         solapa si rental.start < nuestro end AND rental.return > nuestro start
+
+        Incluye:
+        1. Pedidos cuyo almacén primario es este almacén (qty completa)
+        2. Asignaciones multi-almacén desde este almacén como secundario
         """
+        # 1. Comprometidos como almacén primario del pedido
         domain = [
             ('product_id', '=', product.id),
             ('is_rental', '=', True),
@@ -281,12 +286,26 @@ class SaleOrderLine(models.Model):
             ('start_date', '<', end),
             ('return_date', '>', start),
         ]
-        # Excluir línea actual si existe en BD
         if self._origin.id:
             domain.append(('id', '!=', self._origin.id))
-
         lines = self.env['sale.order.line'].search(domain)
-        return sum(lines.mapped('product_uom_qty'))
+        committed_primary = sum(lines.mapped('product_uom_qty'))
+
+        # 2. Comprometidos como almacén secundario (asignaciones inter-almacén)
+        assign_domain = [
+            ('product_id', '=', product.id),
+            ('warehouse_id', '=', warehouse.id),
+            ('state', 'not in', ['draft', 'returned']),
+            ('sale_line_id.start_date', '<', end),
+            ('sale_line_id.return_date', '>', start),
+            ('sale_line_id.order_id.warehouse_id', '!=', warehouse.id),
+        ]
+        if self._origin.id:
+            assign_domain.append(('sale_line_id', '!=', self._origin.id))
+        assignments = self.env['rental.warehouse.assignment'].search(assign_domain)
+        committed_secondary = sum(assignments.mapped('quantity'))
+
+        return committed_primary + committed_secondary
 
     def _wh_returning_before(self, product, warehouse, start):
         """
