@@ -152,9 +152,6 @@ class SaleOrder(models.Model):
                 line.order_id.name, line.product_id.display_name
             ),
             'move_ids': [(0, 0, {
-                'name': _('%s → %s (Alquiler %s)') % (
-                    source_wh.name, dest_wh.name, line.order_id.name,
-                ),
                 'product_id': line.product_id.id,
                 'product_uom_qty': qty,
                 'product_uom_id': line.product_uom_id.id,
