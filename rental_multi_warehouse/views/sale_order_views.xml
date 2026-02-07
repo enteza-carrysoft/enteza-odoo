@@ -25,7 +25,7 @@
             </xpath>
 
             <!-- Campos de disponibilidad en las líneas del pedido -->
-            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']"
+            <xpath expr="//field[@name='order_line']//list//field[@name='product_uom_qty']"
                    position="after">
                 <field name="rental_availability_status"
                        column_invisible="not parent.is_rental_order"
@@ -49,50 +49,5 @@
         </field>
     </record>
 
-    <!-- ============================================================ -->
-    <!--  LÍNEA DE PEDIDO: Pestaña de asignaciones multi-almacén      -->
-    <!-- ============================================================ -->
-
-    <record id="sale_order_line_form_rental_multi_wh" model="ir.ui.view">
-        <field name="name">sale.order.line.form.rental.multi.wh</field>
-        <field name="model">sale.order.line</field>
-        <field name="inherit_id" ref="sale.view_order_line_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//page[last()]" position="after">
-                <page string="Multi-Almacén"
-                      name="rental_multi_wh"
-                      invisible="not is_rental">
-                    <group string="Disponibilidad por almacén">
-                        <group>
-                            <field name="rental_availability_status" readonly="True"/>
-                            <field name="rental_total_available" readonly="True"/>
-                        </group>
-                    </group>
-                    <field name="rental_assignment_ids" readonly="True">
-                        <list>
-                            <field name="sequence" widget="handle"/>
-                            <field name="warehouse_id"/>
-                            <field name="quantity"/>
-                            <field name="is_primary"/>
-                            <field name="picking_id"/>
-                            <field name="return_picking_id"/>
-                            <field name="state" widget="badge"
-                                   decoration-info="state == 'confirmed'"
-                                   decoration-success="state in ('transferred', 'returned')"
-                                   decoration-warning="state == 'delivered'"/>
-                        </list>
-                    </field>
-                    <field name="rental_picking_ids" readonly="True">
-                        <list>
-                            <field name="name"/>
-                            <field name="scheduled_date"/>
-                            <field name="state" widget="badge"/>
-                            <field name="origin"/>
-                        </list>
-                    </field>
-                </page>
-            </xpath>
-        </field>
-    </record>
 
 </odoo>
