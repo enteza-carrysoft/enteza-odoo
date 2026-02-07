@@ -282,8 +282,8 @@ class SaleOrderLine(models.Model):
             ('return_date', '>', start),
         ]
         # Excluir línea actual si existe en BD
-        if not isinstance(self.id, models.NewId) and self.id:
-            domain.append(('id', '!=', self.id))
+        if self._origin.id:
+            domain.append(('id', '!=', self._origin.id))
 
         lines = self.env['sale.order.line'].search(domain)
         return sum(lines.mapped('product_uom_qty'))
