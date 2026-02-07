@@ -154,7 +154,6 @@ class SaleOrder(models.Model):
             'move_ids': [(0, 0, {
                 'product_id': line.product_id.id,
                 'product_uom_qty': qty,
-                'product_uom_id': line.product_uom_id.id,
                 'location_id': source_wh.lot_stock_id.id,
                 'location_dest_id': dest_wh.lot_stock_id.id,
                 'date': transfer_date,
