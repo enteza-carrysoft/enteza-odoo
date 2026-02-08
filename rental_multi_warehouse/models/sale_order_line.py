@@ -150,8 +150,18 @@ class SaleOrderLine(models.Model):
     )
 
     # ══════════════════════════════════════════════════════════════════
-    #  REASIGNACIÓN AL MODIFICAR CANTIDAD EN PEDIDO CONFIRMADO
+    #  ASIGNACIÓN AUTOMÁTICA EN PEDIDOS CONFIRMADOS
     # ══════════════════════════════════════════════════════════════════
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        for line in lines:
+            if (line.is_rental and line.product_id
+                    and line.start_date and line.return_date
+                    and line.order_id.state in ('sale', 'done')):
+                line._reassign_rental_warehouses()
+        return lines
 
     def write(self, vals):
         res = super().write(vals)
