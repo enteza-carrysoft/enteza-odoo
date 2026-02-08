@@ -150,6 +150,53 @@ class SaleOrderLine(models.Model):
     )
 
     # ══════════════════════════════════════════════════════════════════
+    #  REASIGNACIÓN AL MODIFICAR CANTIDAD EN PEDIDO CONFIRMADO
+    # ══════════════════════════════════════════════════════════════════
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'product_uom_qty' in vals:
+            for line in self:
+                if (line.is_rental and line.product_id
+                        and line.start_date and line.return_date
+                        and line.order_id.state in ('sale', 'done')):
+                    line._reassign_rental_warehouses()
+        return res
+
+    def _reassign_rental_warehouses(self):
+        """
+        Recalcula asignaciones y traslados para una línea de pedido
+        confirmado cuya cantidad ha cambiado.
+        """
+        self.ensure_one()
+        order = self.order_id
+        primary_wh = order.warehouse_id
+
+        # 1. Cancelar traslados pendientes existentes
+        for picking in self.rental_picking_ids.filtered(
+            lambda p: p.state not in ('done', 'cancel')
+        ):
+            picking.action_cancel()
+            _logger.info(
+                'Traslado %s cancelado por reasignación de %s',
+                picking.name, order.name,
+            )
+
+        # 2. Eliminar asignaciones anteriores
+        self.rental_assignment_ids.unlink()
+        self.rental_picking_ids = [(5, 0, 0)]
+
+        # 3. Recalcular disponibilidad y crear nuevas asignaciones
+        result = self._get_multi_wh_availability()
+        if result['status'] != 'deficit':
+            order._create_rental_assignments(self, result, primary_wh)
+
+        _logger.info(
+            'Reasignación completada para línea %s (%s): %s',
+            self.id, self.product_id.display_name, result['status'],
+        )
+
+    # ══════════════════════════════════════════════════════════════════
     #  MOTOR DE DISPONIBILIDAD
     # ══════════════════════════════════════════════════════════════════
 
