@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rental_change_request_user,rental.change.request.user,model_rental_change_request,base.group_user,1,0,0,0
+access_rental_change_request_manager,rental.change.request.manager,model_rental_change_request,sales_team.group_sale_manager,1,1,1,1
+access_rental_change_request_line_user,rental.change.request.line.user,model_rental_change_request_line,base.group_user,1,0,0,0
+access_rental_change_request_line_manager,rental.change.request.line.manager,model_rental_change_request_line,sales_team.group_sale_manager,1,1,1,1

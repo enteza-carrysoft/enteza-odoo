@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Sale Order Form Extension -->
+        <record id="sale_order_rental_change_request_form_view" model="ir.ui.view">
+            <field name="name">sale.order.rental.change.request.form</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Add rental fields -->
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="is_rental_order" invisible="1"/>
+                    <field name="x_rental_pickup_date" attrs="{'invisible': [('is_rental_order', '=', False)]}"/>
+                </xpath>
+
+                <!-- Add change request buttons -->
+                <xpath expr="//button[@name='action_quotation_send']" position="after">
+                    <button name="action_view_change_requests" string="Change Requests" type="object" class="oe_highlight" attrs="{'invisible': [('is_rental_order', '=', False)]}"/>
+                </xpath>
+
+                <!-- Add parent order reference -->
+                <xpath expr="//field[@name='client_order_ref']" position="after">
+                    <field name="x_parent_order_id" attrs="{'invisible': [('x_parent_order_id', '=', False)]}"/>
+                </xpath>
+
+                <!-- Add active change request in notebook -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Change Requests" name="change_requests" attrs="{'invisible': [('is_rental_order', '=', False)]}">
+                        <group>
+                            <field name="x_active_change_request_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="x_revision_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="state"/>
+                                    <field name="date_order"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Sale Order Tree Extension -->
+        <record id="sale_order_rental_change_request_tree_view" model="ir.ui.view">
+            <field name="name">sale.order.rental.change.request.tree</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="is_rental_order" invisible="1"/>
+                    <field name="x_active_change_request_id" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Sale Order Search Extension -->
+        <record id="sale_order_rental_change_request_search_view" model="ir.ui.view">
+            <field name="name">sale.order.rental.change.request.search</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[last()]" position="after">
+                    <separator/>
+                    <filter string="Rental Orders" name="is_rental" domain="[('is_rental_order', '=', True)]"/>
+                    <filter string="Has Active Change Request" name="has_change_request" domain="[('x_active_change_request_id', '!=', False)]"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

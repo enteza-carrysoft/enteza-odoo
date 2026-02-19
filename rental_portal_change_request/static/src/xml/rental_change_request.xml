@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="rental_portal.ChangeRequestApp" xml:space="preserve">
+        <div class="rental_change_request_app">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="change_request_title"></h4>
+                    <small class="text-muted" t-esc="order.name"/>
+                </div>
+                <div class="status_indicator_container"></div>
+            </div>
+
+            <!-- Alert Container -->
+            <div class="alert_container"></div>
+
+            <!-- Loading Overlay -->
+            <div class="loading_overlay text-center py-5" t-if="state.isLoading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div t-if="!state.isLoading">
+                <!-- Quick Add -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><t>Quick Add by SKU</t></h5>
+                        <div class="quick_add_container"></div>
+                        <div class="sku_feedback text-sm"></div>
+                    </div>
+                </div>
+
+                <!-- Lines Table -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><t>Order Lines</t></h5>
+                        <button class="btn btn-sm btn-primary" data-action="show_catalog">
+                            <i class="fa fa-plus mr-1"></i> <t>Add from Catalog</t>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="lines_table_container">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th><t>Product</t></th>
+                                        <th class="text-center"><t>Quantity</t></th>
+                                        <th class="text-right"><t>Price</t></th>
+                                        <th class="text-right"><t>Subtotal</t></th>
+                                        <th class="text-center"><t>Availability</t></th>
+                                        <th class="text-center"><t>Actions</t></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="order_lines_tbody">
+                                    <!-- Lines rendered here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submission Note -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><t>Submission Note (Optional)</t></h5>
+                        <textarea class="form-control submission_note" rows="3" placeholder="Add a note for the sales manager..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-secondary" data-action="cancel">
+                        <i class="fa fa-times mr-1"></i> <t>Cancel</t>
+                    </button>
+                    <div>
+                        <button class="btn btn-outline-primary mr-2" data-action="save">
+                            <i class="fa fa-save mr-1"></i> <t>Save Draft</t>
+                        </button>
+                        <button class="btn btn-primary" data-action="submit">
+                            <i class="fa fa-paper-plane mr-1"></i> <t>Submit for Approval</t>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catalog Side Panel -->
+            <div class="catalog_panel_container position-fixed"></div>
+        </div>
+    </template>
+
+    <template id="rental_portal.StatusIndicator" xml:space="preserve">
+        <div class="rental_status_indicator">
+            <span class="badge" t-att-class="getStateInfo().class">
+                <i class="fa" t-att-class="getStateInfo().icon + ' mr-1'"></i>
+                <t t-esc="getStateInfo().label"/>
+            </span>
+        </div>
+    </template>
+
+    <template id="rental_portal.OrderLinesTable" xml:space="preserve">
+        <div class="rental_order_lines_table">
+            <!-- Table rendered in JS -->
+        </div>
+    </template>
+
+    <template id="rental_portal.QuickAddBySKU" xml:space="preserve">
+        <div class="rental_quick_add_sku input-group">
+            <input type="text" class="form-control sku_input" t-att-placeholder="placeholder" t-att-disabled="disabled"/>
+            <div class="input-group-append">
+                <button class="btn btn-primary btn_add_sku" type="button" t-att-disabled="disabled">
+                    <i class="fa fa-plus mr-1"></i><t>Add</t>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="rental_portal.CatalogSidePanel" xml:space="preserve">
+        <div class="catalog_side_panel position-fixed right-0 top-0 h-100 bg-white border-left shadow-lg" style="width: 400px; z-index: 1050; display: none; overflow-y: auto;">
+            <div class="p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><t>Product Catalog</t></h5>
+                    <button class="btn btn-sm btn-secondary btn_close_catalog">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <input type="text" class="form-control catalog_search_input" placeholder="Search products..."/>
+                </div>
+
+                <div class="catalog_product_list">
+                    <!-- Products rendered here -->
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <button class="btn btn-sm btn-outline-secondary btn_catalog_prev">
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <small class="catalog_page_info text-muted"></small>
+                    <button class="btn btn-sm btn-outline-secondary btn_catalog_next">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>
