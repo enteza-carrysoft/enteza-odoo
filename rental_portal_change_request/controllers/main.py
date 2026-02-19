@@ -1,0 +1,127 @@
+# -*- coding: utf-8 -*-
+
+from odoo import http
+from odoo.http import request
+from odoo.addons.portal.controllers.portal import CustomerPortal
+from odoo.addons.portal.controllers.web import Home
+from odoo.exceptions import AccessError
+
+
+class PortalRentalHome(Home):
+    """Extend portal home to show rental count"""
+
+    @http.route(['/my', '/my/home'], type='http', auth="user", website=True)
+    def portal_home(self, **kw):
+        response = super().portal_home(**kw)
+        if response.is_qweb:
+            rental_count = request.env['sale.order'].search_count([
+                ('partner_id', '=', request.env.user.partner_id.id),
+                ('is_rental_order', '=', True),
+                ('state', 'in', ['sale', 'done', 'cancel']),
+            ])
+            response.qcontext['rental_count'] = rental_count
+        return response
+
+
+class PortalRentalOrders(CustomerPortal):
+    """Portal controller for rental orders"""
+
+    def _prepare_home_portal_values(self, counters):
+        """Add rental count to portal home"""
+        values = super()._prepare_home_portal_values(counters)
+        if 'rental_count' in counters:
+            values['rental_count'] = request.env['sale.order'].search_count([
+                ('partner_id', '=', request.env.user.partner_id.id),
+                ('is_rental_order', '=', True),
+                ('state', 'in', ['sale', 'done', 'cancel']),
+            ])
+        return values
+
+    @http.route(['/my/rentals'], type='http', auth='user', website=True)
+    def portal_my_rentals(self, **kw):
+        """Display list of user's rental orders"""
+        values = self._prepare_portal_layout_values()
+        partner = request.env.user.partner_id
+
+        # Get rental orders
+        orders = request.env['sale.order'].search([
+            ('partner_id', '=', partner.id),
+            ('is_rental_order', '=', True),
+            ('state', 'in', ['sale', 'done', 'cancel']),
+        ], order='date_order desc')
+
+        values.update({
+            'orders': orders,
+            'default_url': '/my/rentals',
+        })
+
+        return request.render('rental_portal_change_request.portal_my_rentals_page', values)
+
+    @http.route(['/my/rentals/<int:order_id>'], type='http', auth='user', website=True)
+    def portal_rental_order_page(self, order_id, **kw):
+        """Display rental order details"""
+        order = request.env['sale.order'].browse(order_id)
+
+        # Security check
+        if not order or order.partner_id.id != request.env.user.partner_id.id:
+            return request.redirect('/my')
+
+        values = self._prepare_portal_layout_values()
+        active_change_request = order.x_active_change_request_id if order.x_active_change_request_id else None
+
+        values.update({
+            'order': order,
+            'active_change_request': active_change_request,
+        })
+
+        return request.render('rental_portal_change_request.portal_rental_order_page', values)
+
+    @http.route([
+        '/my/rentals/<int:order_id>/change-request/new',
+        '/my/rentals/<int:order_id>/change-request/<int:change_request_id>'
+    ], type='http', auth='user', website=True)
+    def portal_change_request_page(self, order_id, change_request_id=None, **kw):
+        """Display change request editor"""
+        order = request.env['sale.order'].browse(order_id)
+
+        # Security check
+        if not order or order.partner_id.id != request.env.user.partner_id.id:
+            return request.redirect('/my')
+
+        # Check if change request exists and belongs to this order
+        change_request = None
+        if change_request_id:
+            change_request = request.env['rental.change_request'].browse(change_request_id)
+            if not change_request or change_request.order_id.id != order.id:
+                return request.redirect('/my/rentals/%d' % order.id)
+
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'order': order,
+            'change_request': change_request,
+        })
+
+        return request.render('rental_portal_change_request.portal_change_request_page', values)
+
+    @http.route(['/my/rentals/<int:order_id>/change-request/create'], type='http', auth='user', website=True, methods=['POST'])
+    def portal_create_change_request(self, order_id, **kw):
+        """Create a new change request and redirect to editor"""
+        order = request.env['sale.order'].browse(order_id)
+
+        # Security check
+        if not order or order.partner_id.id != request.env.user.partner_id.id:
+            return request.redirect('/my')
+
+        # Check if order is eligible
+        if order.state != 'sale' or order.x_active_change_request_id:
+            return request.redirect('/my/rentals/%d' % order.id)
+
+        # Create change request via atomic method
+        result = request.env['rental.change_request'].start_from_order_atomic(order_id)
+
+        if not result.get('success'):
+            # Handle error - in production, show proper error message
+            return request.redirect('/my/rentals/%d' % order.id)
+
+        change_request_id = result.get('change_request')
+        return request.redirect('/my/rentals/%d/change-request/%d' % (order_id, change_request_id))

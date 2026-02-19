@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="assets_frontend" inherit_id="web.assets_frontend" name="Rental Portal Assets">
+            <xpath expr="." position="inside">
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/rental_change_request_app.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/components/order_lines_table.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/components/quick_add_sku.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/components/catalog_side_panel.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/components/status_indicator.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/services/rpc_service.js"/>
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/services/availability_service.js"/>
+            </xpath>
+        </template>
+    </data>
+</odoo>

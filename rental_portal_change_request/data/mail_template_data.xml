@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Email template for change request submitted -->
+        <record id="email_template_change_request_submitted" model="mail.template">
+            <field name="name">Change Request Submitted</field>
+            <field name="model_id" ref="model_rental_change_request"/>
+            <field name="subject">Change Request ${object.name} Submitted for Order ${object.order_id.name}</field>
+            <field name="email_from">${object.order_id.company_id.email or 'noreply@localhost'}</field>
+            <field name="email_to">${object.order_id.user_id.email or object.order_id.company_id.email}</field>
+            <field name="lang">${object.order_id.partner_id.lang}</field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello ${object.order_id.user_id.name or 'Sales Manager'},</p>
+                    <p>A change request has been submitted for order <strong>${object.order_id.name}</strong>.</p>
+                    <p>Customer: <strong>${object.order_id.partner_id.name}</strong></p>
+                    <p>Change Request: <strong>${object.name}</strong></p>
+                    <p>Number of changes: <strong>${object.line_count}</strong></p>
+
+                    %if object.submission_note:
+                    <p>Customer note:</p>
+                    <p><em>${object.submission_note}</em></p>
+                    %endif
+
+                    <p>Please review and approve or reject this change request.</p>
+                    <p>You can view the change request in Odoo.</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Email template for change request approved -->
+        <record id="email_template_change_request_approved" model="mail.template">
+            <field name="name">Change Request Approved</field>
+            <field name="model_id" ref="model_rental_change_request"/>
+            <field name="subject">Your Change Request ${object.name} Has Been Approved</field>
+            <field name="email_from">${object.order_id.company_id.email or 'noreply@localhost'}</field>
+            <field name="email_to">${object.order_id.partner_id.email}</field>
+            <field name="lang">${object.order_id.partner_id.lang}</field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello ${object.order_id.partner_id.name},</p>
+                    <p>Your change request <strong>${object.name}</strong> for order <strong>${object.order_id.name}</strong> has been approved.</p>
+                    <p>The changes have been applied to your order.</p>
+                    <p>Approved by: <strong>${object.approved_by.name}</strong></p>
+                    <p>You can view the updated order in your portal.</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Email template for change request rejected -->
+        <record id="email_template_change_request_rejected" model="mail.template">
+            <field name="name">Change Request Rejected</field>
+            <field name="model_id" ref="model_rental_change_request"/>
+            <field name="subject">Your Change Request ${object.name} Has Been Rejected</field>
+            <field name="email_from">${object.order_id.company_id.email or 'noreply@localhost'}</field>
+            <field name="email_to">${object.order_id.partner_id.email}</field>
+            <field name="lang">${object.order_id.partner_id.lang}</field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello ${object.order_id.partner_id.name},</p>
+                    <p>Your change request <strong>${object.name}</strong> for order <strong>${object.order_id.name}</strong> has been rejected.</p>
+
+                    %if object.rejection_reason:
+                    <p>Reason:</p>
+                    <p><em>${object.rejection_reason}</em></p>
+                    %endif
+
+                    <p>Please contact us if you have any questions.</p>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

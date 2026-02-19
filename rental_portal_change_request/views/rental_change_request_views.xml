@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Rental Change Request Tree View -->
+        <record id="rental_change_request_tree_view" model="ir.ui.view">
+            <field name="name">rental.change.request.tree</field>
+            <field name="model">rental.change_request</field>
+            <field name="arch" type="xml">
+                <tree string="Change Requests" decoration-muted="state == 'cancelled'" decoration-success="state == 'approved'">
+                    <field name="name"/>
+                    <field name="order_id"/>
+                    <field name="revision_order_id"/>
+                    <field name="state"/>
+                    <field name="submitted_date"/>
+                    <field name="approved_date"/>
+                    <field name="line_count"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Rental Change Request Form View -->
+        <record id="rental_change_request_form_view" model="ir.ui.view">
+            <field name="name">rental.change.request.form</field>
+            <field name="model">rental.change_request</field>
+            <field name="arch" type="xml">
+                <form string="Change Request">
+                    <header>
+                        <button name="action_edit" string="Start Editing" states="draft" type="object" class="btn-primary"/>
+                        <button name="action_submit" string="Submit for Approval" states="editing" type="object" class="btn-primary"/>
+                        <button name="action_approve" string="Approve" states="submitted" type="object" class="btn-primary" attrs="{'invisible': [('can_approve', '=', False)]}"/>
+                        <button name="action_reject" string="Reject" states="submitted" type="object" attrs="{'invisible': [('can_approve', '=', False)]}"/>
+                        <button name="action_cancel" string="Cancel" states="draft,editing,submitted" type="object"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,editing,submitted,approved,rejected,cancelled,applied"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="order_id" readonly="1"/>
+                                <field name="revision_order_id" readonly="1"/>
+                                <field name="line_count" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="submitted_date" readonly="1"/>
+                                <field name="submitted_by" readonly="1"/>
+                                <field name="approved_date" readonly="1"/>
+                                <field name="approved_by" readonly="1"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Changes" name="changes">
+                                <field name="change_request_line_ids">
+                                    <tree>
+                                        <field name="product_id"/>
+                                        <field name="operation"/>
+                                        <field name="original_qty" attrs="{'invisible': [('operation', '=', 'add')]}"/>
+                                        <field name="new_qty" attrs="{'invisible': [('operation', '=', 'remove')]}"/>
+                                        <field name="availability_status"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Submission Note" name="submission">
+                                <group>
+                                    <field name="submission_note" readonly="1"/>
+                                    <field name="rejection_reason" readonly="1" attrs="{'invisible': [('state', '!=', 'rejected')]}"/>
+                                </group>
+                            </page>
+                            <page string="Technical Info" name="technical">
+                                <group>
+                                    <field name="expected_order_write_date" readonly="1"/>
+                                    <field name="expected_revision_write_date" readonly="1"/>
+                                    <field name="diff_json" readonly="1" widget="text"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Rental Change Request Search View -->
+        <record id="rental_change_request_search_view" model="ir.ui.view">
+            <field name="name">rental.change.request.search</field>
+            <field name="model">rental.change_request</field>
+            <field name="arch" type="xml">
+                <search string="Search Change Requests">
+                    <field name="name"/>
+                    <field name="order_id"/>
+                    <field name="state"/>
+                    <filter string="Draft" name="state_draft" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Editing" name="state_editing" domain="[('state', '=', 'editing')]"/>
+                    <filter string="Submitted" name="state_submitted" domain="[('state', '=', 'submitted')]"/>
+                    <filter string="Approved" name="state_approved" domain="[('state', '=', 'approved')]"/>
+                    <filter string="Rejected" name="state_rejected" domain="[('state', '=', 'rejected')]"/>
+                    <separator/>
+                    <filter string="My Orders" name="my_orders" domain="[('order_id.partner_id', '=', user.partner_id.id)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Customer" name="group_customer" context="{'group_by': 'order_id.partner_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Rental Change Request Action -->
+        <record id="rental_change_request_action" model="ir.actions.act_window">
+            <field name="name">Change Requests</field>
+            <field name="res_model">rental.change_request</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new change request
+                </p>
+            </field>
+        </record>
+
+        <!-- Menu Items -->
+        <menuitem id="rental_change_request_menu" name="Change Requests" parent="sale.sale_order_menu" action="rental_change_request_action" sequence="5"/>
+
+        <!-- Reject Wizard -->
+        <record id="rental_change_request_reject_wizard_view" model="ir.ui.view">
+            <field name="name">rental.change.request.reject.wizard.form</field>
+            <field name="model">rental.change.request.reject.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Reject Change Request">
+                    <sheet>
+                        <group>
+                            <field name="change_request_id" readonly="1"/>
+                            <field name="reason" required="1"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_reject" string="Reject" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="rental_change_request_reject_wizard_action" model="ir.actions.act_window">
+            <field name="name">Reject Change Request</field>
+            <field name="res_model">rental.change.request.reject.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>
