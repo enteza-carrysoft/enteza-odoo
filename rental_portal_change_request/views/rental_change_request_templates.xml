@@ -207,12 +207,20 @@
                                      t-att-data-order-id="order.id"
                                      t-att-data-change-request-id="change_request.id if change_request else 0"
                                      t-att-data-csrf-token="request.csrf_token()">
-                                    <div class="text-center py-5">
+                                    <div class="text-center py-5 o_app_loading_indicator">
                                         <div class="spinner-border text-primary" role="status">
-                                            <!-- Bootstrap 5: sr-only → visually-hidden -->
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
+                                        <p class="mt-2 text-muted o_loading_fallback d-none">
+                                            Si la pantalla no carga, por favor recarga la página (Ctrl+F5).
+                                        </p>
                                     </div>
+                                    <script>
+                                        setTimeout(function() {
+                                            var fallback = document.querySelector('.o_loading_fallback');
+                                            if (fallback) fallback.classList.remove('d-none');
+                                        }, 5000);
+                                    </script>
                                 </div>
                             </div>
                         </div>
