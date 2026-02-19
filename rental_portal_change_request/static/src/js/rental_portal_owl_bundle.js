@@ -386,6 +386,9 @@ publicWidget.registry.RentalChangeRequestApp = publicWidget.Widget.extend({
         const orderId = parseInt(this.el.dataset.orderId);
         const changeRequestId = parseInt(this.el.dataset.changeRequestId);
 
+        // Clear the loading indicator
+        this.el.innerHTML = '';
+
         await mount(RentalChangeRequestApp, this.el, {
             templates,
             props: { orderId, changeRequestId },

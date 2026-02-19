@@ -177,52 +177,30 @@
             <div class="o_portal_change_request container mt-3 mb-5">
                 <div class="row">
                     <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h4 class="mb-0">
-                                        <t t-if="change_request">
-                                            Edit Change Request <t t-out="change_request.name"/>
-                                        </t>
-                                        <t t-else="">
-                                            New Change Request for <t t-out="order.name"/>
-                                        </t>
-                                    </h4>
-                                    <small class="text-muted">
-                                        Order: <t t-out="order.name"/>
-                                    </small>
+                        <!-- OWL App Mount Point -->
+                        <div id="rental_change_request_app"
+                             t-att-data-order-id="order.id"
+                             t-att-data-change-request-id="change_request.id if change_request else 0"
+                             t-att-data-csrf-token="request.csrf_token()">
+                            <div class="text-center py-5 o_app_loading_indicator">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
                                 </div>
-                                <div>
-                                    <t t-if="change_request">
-                                        <!-- Bootstrap 5: badge uses bg-* -->
-                                        <span class="badge bg-info text-white">
-                                            <t t-out="change_request.state"/>
-                                        </span>
-                                    </t>
-                                </div>
+                                <p class="mt-2 text-muted o_loading_fallback d-none">
+                                    Si la pantalla no carga, por favor recarga la página (Ctrl+F5).
+                                </p>
                             </div>
-                            <div class="card-body">
-                                <!-- OWL App Mount Point -->
-                                <div id="rental_change_request_app"
-                                     t-att-data-order-id="order.id"
-                                     t-att-data-change-request-id="change_request.id if change_request else 0"
-                                     t-att-data-csrf-token="request.csrf_token()">
-                                    <div class="text-center py-5 o_app_loading_indicator">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="mt-2 text-muted o_loading_fallback d-none">
-                                            Si la pantalla no carga, por favor recarga la página (Ctrl+F5).
-                                        </p>
-                                    </div>
-                                    <script>
-                                        setTimeout(function() {
-                                            var fallback = document.querySelector('.o_loading_fallback');
-                                            if (fallback) fallback.classList.remove('d-none');
-                                        }, 5000);
-                                    </script>
-                                </div>
-                            </div>
+                            <script>
+                                setTimeout(function() {
+                                    var indicator = document.querySelector('.o_app_loading_indicator');
+                                    var fallback = document.querySelector('.o_loading_fallback');
+                                    // Only show fallback if the mount point still contains the indicator 
+                                    // (meaning OWL hasn't cleared it yet)
+                                    if (indicator &amp;&amp; fallback &amp;&amp; indicator.contains(fallback)) {
+                                        fallback.classList.remove('d-none');
+                                    }
+                                }, 5000);
+                            </script>
                         </div>
                     </div>
                 </div>

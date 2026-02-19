@@ -333,10 +333,10 @@ class RentalPortalJsonRpc(http.Controller):
             product_data = []
             for product in products:
                 product_data.append({
-                    'id': product.id,
-                    'name': product.name,
-                    'default_code': product.default_code,
-                    'lst_price': product.lst_price,
+                    'product_id': product.id,
+                    'product_name': product.name,
+                    'product_code': product.default_code,
+                    'price_unit': product.lst_price,
                     'description_sale': product.description_sale,
                     'image_url': f'/web/image/product.product/{product.id}/image_128' if product.image_128 else None,
                 })
