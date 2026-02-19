@@ -4,3 +4,6 @@ access_rental_change_request_manager,rental.change.request.manager,model_rental_
 access_rental_change_request_line_user,rental.change.request.line.user,model_rental_change_request_line,base.group_user,1,0,0,0
 access_rental_change_request_line_manager,rental.change.request.line.manager,model_rental_change_request_line,sales_team.group_sale_manager,1,1,1,1
 access_rental_change_request_reject_wizard_manager,rental.change.request.reject.wizard.manager,model_rental_change_request_reject_wizard,sales_team.group_sale_manager,1,1,1,1
+access_rental_change_request_portal,rental.change.request.portal,model_rental_change_request,base.group_portal,1,1,1,0
+access_rental_change_request_line_portal,rental.change.request.line.portal,model_rental_change_request_line,base.group_portal,1,0,0,0
+access_product_product_portal,product.product.portal,product.model_product_product,base.group_portal,1,0,0,0
