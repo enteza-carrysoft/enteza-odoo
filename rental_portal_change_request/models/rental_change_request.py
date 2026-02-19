@@ -62,10 +62,12 @@ class RentalChangeRequest(models.Model):
     # State management
     state = fields.Selection([
         ('draft', 'Draft'),
+        ('editing', 'Editing'),  # Kept for backwards compatibility
         ('submitted', 'Submitted'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('cancelled', 'Cancelled'),
+        ('applied', 'Applied'),  # Kept for backwards compatibility
     ], string='State', default='draft', tracking=True, index=True)
 
     # Change details
@@ -105,10 +107,10 @@ class RentalChangeRequest(models.Model):
     def _check_only_one_active_per_order(self):
         """Ensure only one active change request per order"""
         for request in self:
-            if request.state in ['draft', 'submitted']:
+            if request.state in ['draft', 'editing', 'submitted']:
                 existing = self.search([
                     ('order_id', '=', request.order_id.id),
-                    ('state', 'in', ['draft', 'submitted']),
+                    ('state', 'in', ['draft', 'editing', 'submitted']),
                     ('id', '!=', request.id)
                 ], limit=1)
                 if existing:

@@ -80,7 +80,7 @@ class SaleOrder(models.Model):
         """Check if order has an active change request"""
         self.ensure_one()
         return bool(self.x_active_change_request_id and
-                   self.x_active_change_request_id.state in ['draft', 'submitted'])
+                   self.x_active_change_request_id.state in ['draft', 'editing', 'submitted'])
 
     def get_portal_rental_orders(self, partner_id):
         """Get rental orders for portal display"""
