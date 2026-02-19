@@ -8,6 +8,8 @@ class RentalChangeRequestLine(models.Model):
     _name = 'rental.change_request.line'
     _description = 'Rental Change Request Line'
     _order = 'change_request_id, sequence, id'
+    # Odoo 19: use _rec_name + _compute_display_name instead of name_get()
+    _rec_name = 'product_id'
 
     change_request_id = fields.Many2one(
         'rental.change_request',
@@ -25,6 +27,13 @@ class RentalChangeRequestLine(models.Model):
         string='Product',
         required=True,
         index=True
+    )
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='Unit of Measure',
+        related='product_id.uom_id',
+        store=True,
+        readonly=True,
     )
     operation = fields.Selection([
         ('add', 'Add'),
@@ -111,14 +120,12 @@ class RentalChangeRequestLine(models.Model):
                     'Quantity must be greater than zero for add/update operations.'
                 ))
 
-    def name_get(self):
-        """Custom name display"""
-        result = []
+    def _compute_display_name(self):
+        """Odoo 19 replacement for deprecated name_get()"""
         for line in self:
             name = f"{line.product_id.display_name} ({line.operation})"
             if line.original_line_id:
                 name += f" - Original: {line.original_qty}"
             if line.new_qty:
                 name += f" - New: {line.new_qty}"
-            result.append((line.id, name))
-        return result
+            line.display_name = name

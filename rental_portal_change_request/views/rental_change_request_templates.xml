@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Portal: add "My Rentals" entry to portal home -->
     <template id="portal_my_rentals" name="My Rental Orders" inherit_id="portal.portal_my_home">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-if="rental_count" t-call="portal.portal_docs_entry">
@@ -10,6 +11,7 @@
         </xpath>
     </template>
 
+    <!-- My Rentals list page -->
     <template id="portal_my_rentals_page" name="My Rental Orders">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar">True</t>
@@ -33,7 +35,7 @@
                                                 <th>Date</th>
                                                 <th>Pickup Date</th>
                                                 <th>State</th>
-                                                <th class="text-right">Total</th>
+                                                <th class="text-end">Total</th>
                                                 <th class="text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -41,26 +43,27 @@
                                             <tr t-foreach="orders" t-as="order">
                                                 <td>
                                                     <a t-attf-href="/my/rentals/#{order.id}">
-                                                        <t t-esc="order.name"/>
+                                                        <t t-out="order.name"/>
                                                     </a>
                                                 </td>
-                                                <td><t t-esc="order.date_order"/></td>
-                                                <td><t t-esc="order.x_rental_pickup_date or '-'"/></td>
+                                                <td><t t-out="order.date_order"/></td>
+                                                <td><t t-out="order.x_rental_pickup_date or '-'"/></td>
                                                 <td>
-                                                    <span class="badge badge-info">
-                                                        <t t-esc="order.state"/>
+                                                    <!-- Bootstrap 5: badge uses bg-* classes -->
+                                                    <span class="badge bg-info text-white">
+                                                        <t t-out="order.state"/>
                                                     </span>
                                                     <t t-if="order.x_active_change_request_id">
-                                                        <span class="badge badge-warning ml-1">Changes Pending</span>
+                                                        <span class="badge bg-warning text-dark ms-1">Changes Pending</span>
                                                     </t>
                                                 </td>
-                                                <td class="text-right">
-                                                    <span t-esc="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                <td class="text-end">
+                                                    <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                                 </td>
                                                 <td class="text-center">
                                                     <a t-attf-href="/my/rentals/#{order.id}" class="btn btn-sm btn-primary">View</a>
                                                     <t t-if="not order.x_active_change_request_id and order.state == 'sale'">
-                                                        <a t-attf-href="/my/rentals/#{order.id}/change-request/new" class="btn btn-sm btn-secondary">Request Change</a>
+                                                        <a t-attf-href="/my/rentals/#{order.id}/change-request/new" class="btn btn-sm btn-secondary ms-1">Request Change</a>
                                                     </t>
                                                 </td>
                                             </tr>
@@ -75,6 +78,7 @@
         </t>
     </template>
 
+    <!-- Rental Order detail page -->
     <template id="portal_rental_order_page" name="Rental Order Details">
         <t t-call="portal.portal_layout">
             <t t-set="order" t-value="order"/>
@@ -84,20 +88,20 @@
                     <div class="col-lg-8 offset-lg-2">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">Rental Order <t t-esc="order.name"/></h4>
-                                <span class="badge badge-info">
-                                    <t t-esc="order.state"/>
+                                <h4 class="mb-0">Rental Order <t t-out="order.name"/></h4>
+                                <span class="badge bg-info text-white">
+                                    <t t-out="order.state"/>
                                 </span>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <strong>Order Date:</strong> <t t-esc="order.date_order"/><br/>
-                                        <strong>Pickup Date:</strong> <t t-esc="order.x_rental_pickup_date or '-'"/>
+                                        <strong>Order Date:</strong> <t t-out="order.date_order"/><br/>
+                                        <strong>Pickup Date:</strong> <t t-out="order.x_rental_pickup_date or '-'"/>
                                     </div>
                                     <div class="col-md-6">
                                         <strong>Total:</strong>
-                                        <span t-esc="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                     </div>
                                 </div>
 
@@ -107,33 +111,33 @@
                                         <tr>
                                             <th>Product</th>
                                             <th class="text-center">Qty</th>
-                                            <th class="text-right">Unit Price</th>
-                                            <th class="text-right">Subtotal</th>
+                                            <th class="text-end">Unit Price</th>
+                                            <th class="text-end">Subtotal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr t-foreach="order.order_line" t-as="line">
                                             <td>
-                                                <span t-esc="line.product_id.display_name"/>
+                                                <span t-out="line.product_id.display_name"/>
                                                 <small class="d-block text-muted" t-if="line.product_id.default_code">
-                                                    SKU: <t t-esc="line.product_id.default_code"/>
+                                                    SKU: <t t-out="line.product_id.default_code"/>
                                                 </small>
                                             </td>
-                                            <td class="text-center"><t t-esc="line.product_uom_qty"/></td>
-                                            <td class="text-right">
-                                                <span t-esc="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                            <td class="text-center"><t t-out="line.product_uom_qty"/></td>
+                                            <td class="text-end">
+                                                <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                             </td>
-                                            <td class="text-right">
-                                                <span t-esc="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                            <td class="text-end">
+                                                <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                             </td>
                                         </tr>
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="3" class="text-right"><strong>Total:</strong></td>
-                                            <td class="text-right">
+                                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                            <td class="text-end">
                                                 <strong>
-                                                    <span t-esc="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                    <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                                 </strong>
                                             </td>
                                         </tr>
@@ -144,9 +148,9 @@
                                     <div class="alert alert-info">
                                         <strong>Active Change Request:</strong>
                                         <a t-attf-href="/my/rentals/#{order.id}/change-request/#{active_change_request.id}">
-                                            <t t-esc="active_change_request.name"/>
+                                            <t t-out="active_change_request.name"/>
                                         </a>
-                                        (<span t-esc="active_change_request.state"/>)
+                                        (<span t-out="active_change_request.state"/>)
                                     </div>
                                 </t>
                                 <t t-else="">
@@ -164,6 +168,7 @@
         </t>
     </template>
 
+    <!-- Change Request editor page (OWL app mount point) -->
     <template id="portal_change_request_page" name="Change Request Editor">
         <t t-call="portal.portal_layout">
             <t t-set="order" t-value="order"/>
@@ -177,20 +182,21 @@
                                 <div>
                                     <h4 class="mb-0">
                                         <t t-if="change_request">
-                                            Edit Change Request <t t-esc="change_request.name"/>
+                                            Edit Change Request <t t-out="change_request.name"/>
                                         </t>
                                         <t t-else="">
-                                            New Change Request for <t t-esc="order.name"/>
+                                            New Change Request for <t t-out="order.name"/>
                                         </t>
                                     </h4>
                                     <small class="text-muted">
-                                        Order: <t t-esc="order.name"/>
+                                        Order: <t t-out="order.name"/>
                                     </small>
                                 </div>
                                 <div>
                                     <t t-if="change_request">
-                                        <span class="badge badge-info">
-                                            <t t-esc="change_request.state"/>
+                                        <!-- Bootstrap 5: badge uses bg-* -->
+                                        <span class="badge bg-info text-white">
+                                            <t t-out="change_request.state"/>
                                         </span>
                                     </t>
                                 </div>
@@ -203,7 +209,8 @@
                                      t-att-data-csrf-token="request.csrf_token()">
                                     <div class="text-center py-5">
                                         <div class="spinner-border text-primary" role="status">
-                                            <span class="sr-only">Loading...</span>
+                                            <!-- Bootstrap 5: sr-only → visually-hidden -->
+                                            <span class="visually-hidden">Loading...</span>
                                         </div>
                                     </div>
                                 </div>

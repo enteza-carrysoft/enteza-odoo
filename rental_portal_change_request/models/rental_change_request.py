@@ -5,7 +5,6 @@ from datetime import datetime
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError, AccessError
 from odoo.tools import float_compare
-from odoo.addons.base.models.res_partner import Partner
 
 
 class RentalChangeRequestRejectWizard(models.TransientModel):
@@ -66,6 +65,16 @@ class RentalChangeRequest(models.Model):
         help='Draft order containing the proposed changes'
     )
 
+    # Related fields
+    partner_id = fields.Many2one(
+        'res.partner',
+        string='Customer',
+        related='order_id.partner_id',
+        store=True,
+        readonly=True,
+        index=True,
+    )
+
     # Concurrency control tokens
     expected_order_write_date = fields.Datetime(
         string='Expected Order Write Date',
@@ -112,9 +121,14 @@ class RentalChangeRequest(models.Model):
         string='Submitted By',
         readonly=True
     )
+    # customer_message maps to submission_note for compatibility
     submission_note = fields.Text(
-        string='Submission Note',
+        string='Customer Message',
         readonly=True
+    )
+    internal_note = fields.Text(
+        string='Internal Note',
+        help='Only visible to staff'
     )
 
     # Approval info
@@ -210,7 +224,7 @@ class RentalChangeRequest(models.Model):
 
     @api.constrains('order_id')
     def _check_order_state(self):
-        """Ensure change request can only be created for sale orders"""
+        """Ensure change request can only be created for confirmed sale orders"""
         for request in self:
             if request.order_id.state != 'sale':
                 raise ValidationError(_(
@@ -218,7 +232,7 @@ class RentalChangeRequest(models.Model):
                 ))
 
     # -------------------------------------------------------------------------
-    # ATOMIC METHODS - These must be called via JSON-RPC or internally
+    # ATOMIC METHODS — These must be called via JSON-RPC or internally
     # -------------------------------------------------------------------------
 
     @api.model
@@ -236,7 +250,9 @@ class RentalChangeRequest(models.Model):
         """
         try:
             order = self.env['sale.order'].browse(order_id)
-            order.sudo().check_access_rules('read')
+            # Odoo 19: check_access_rights + check_access_rule (no sudo for security check)
+            order.check_access_rights('read')
+            order.check_access_rule('read')
 
             # Verify order is eligible
             if order.state != 'sale':
@@ -332,7 +348,9 @@ class RentalChangeRequest(models.Model):
         """
         try:
             request = self.browse(change_request_id)
-            request.sudo().check_access_rules('write')
+            # Odoo 19: proper access check without sudo
+            request.check_access_rights('write')
+            request.check_access_rule('write')
 
             # Validate state
             if request.state not in ['draft', 'editing']:
@@ -373,12 +391,14 @@ class RentalChangeRequest(models.Model):
                 if operation == 'add':
                     # Add new line to revision
                     product = self.env['product.product'].browse(product_id)
-                    line = revision._create_product_line(
-                        product,
-                        qty=qty
-                    )
+                    new_line = self.env['sale.order.line'].create({
+                        'order_id': revision.id,
+                        'product_id': product.id,
+                        'product_uom_qty': qty,
+                        'product_uom': product.uom_id.id,
+                    })
                     created_lines.append({
-                        'id': line.id,
+                        'id': new_line.id,
                         'product_id': product_id,
                         'operation': 'add',
                         'new_qty': qty,
@@ -430,7 +450,7 @@ class RentalChangeRequest(models.Model):
     def action_submit(self):
         """Submit change request for approval (called from view)"""
         self.ensure_one()
-        result = self.submit_atomic(self.submission_note or '')
+        result = self.submit_atomic(self.id, self.submission_note or '')
         if not result.get('success'):
             raise UserError(result.get('error', _('Submission failed')))
         return {
@@ -456,7 +476,8 @@ class RentalChangeRequest(models.Model):
         """
         try:
             request = self.browse(change_request_id)
-            request.sudo().check_access_rules('write')
+            request.check_access_rights('write')
+            request.check_access_rule('write')
 
             if request.state not in ['draft', 'editing']:
                 return {
@@ -632,7 +653,8 @@ class RentalChangeRequest(models.Model):
         """
         self.ensure_one()
         try:
-            self.sudo().check_access_rules('write')
+            self.check_access_rights('write')
+            self.check_access_rule('write')
 
             if self.state != 'submitted':
                 return {
@@ -692,7 +714,8 @@ class RentalChangeRequest(models.Model):
         """
         try:
             request = self.browse(change_request_id)
-            request.sudo().check_access_rules('write')
+            request.check_access_rights('write')
+            request.check_access_rule('write')
 
             if request.state != 'submitted':
                 return {
@@ -724,7 +747,6 @@ class RentalChangeRequest(models.Model):
                 'error': str(e)
             }
 
-    @api.model
     def apply_revision_atomic(self):
         """
         Atomically apply revision order changes to original order.
@@ -736,39 +758,55 @@ class RentalChangeRequest(models.Model):
         """
         self.ensure_one()
         try:
-            # Lock original order row
-            self.env.cr.execute(
-                "SELECT id FROM sale_order WHERE id = %s FOR UPDATE NOWAIT",
-                (self.order_id.id,)
-            )
+            # Use savepoint for clean rollback on error
+            with self.env.cr.savepoint():
+                # Row-level lock on original order to prevent concurrent approvals
+                self.env.cr.execute(
+                    "SELECT id FROM sale_order WHERE id = %s FOR UPDATE NOWAIT",
+                    (self.order_id.id,)
+                )
 
-            # Cancel existing pickings
-            pickings = self.order_id.picking_ids.filtered(
-                lambda p: p.state not in ['done', 'cancel']
-            )
-            pickings.action_cancel()
+                # Check optimistic concurrency token
+                self.order_id.invalidate_recordset(['write_date'])
+                if self.expected_order_write_date and \
+                        self.order_id.write_date != self.expected_order_write_date:
+                    return {
+                        'success': False,
+                        'error': _('Order was modified by another user. Please refresh and retry.')
+                    }
 
-            # Store original lines
-            original_lines = self.order_id.order_line
+                # Cancel existing open pickings (not done/cancelled)
+                pickings = self.order_id.picking_ids.filtered(
+                    lambda p: p.state not in ['done', 'cancel']
+                )
+                pickings.action_cancel()
 
-            # Remove all original lines
-            original_lines.unlink()
+                # Remove all original order lines
+                self.order_id.order_line.unlink()
 
-            # Copy lines from revision
-            for rev_line in self.revision_order_id.order_line:
-                rev_line.copy({
-                    'order_id': self.order_id.id,
-                    'state': 'sale',
-                })
+                # Copy lines from revision to original order
+                for rev_line in self.revision_order_id.order_line:
+                    rev_line.copy({
+                        'order_id': self.order_id.id,
+                    })
 
-            # Recalculate prices and rental dates
-            self.order_id.recompute_records(['order_line'])
+                # Trigger recomputation of prices on the confirmed order
+                # (depends decorators will fire automatically on write)
+                self.order_id.order_line._compute_price_unit()
 
-            # Create new pickings
-            self.order_id._action_confirm()
+                # Recreate stock moves/pickings for the confirmed rental order
+                # _create_pickings is the standard sale method in Odoo 17+
+                if hasattr(self.order_id, '_create_pickings'):
+                    self.order_id._create_pickings()
+                else:
+                    # Fallback: use action_confirm only if truly needed
+                    # (should not reach here in Odoo 19)
+                    self.order_id.with_context(
+                        force_reconfirm=True
+                    )._action_confirm()
 
-            # Update state
-            self.write({'state': 'applied'})
+                # Mark change request as applied
+                self.write({'state': 'applied'})
 
             return {'success': True}
 
@@ -842,6 +880,6 @@ class RentalChangeRequest(models.Model):
                 'qty': line.product_uom_qty,
                 'price_unit': line.price_unit,
                 'price_subtotal': line.price_subtotal,
-                'is_rental': line.is_rental if hasattr(line, 'is_rental') else False,
+                'is_rental': getattr(line, 'is_rental', False),
             })
         return lines

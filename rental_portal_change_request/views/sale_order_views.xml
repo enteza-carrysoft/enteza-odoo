@@ -8,35 +8,38 @@
             <field name="model">sale.order</field>
             <field name="inherit_id" ref="sale.view_order_form"/>
             <field name="arch" type="xml">
-                <!-- Add rental fields -->
+                <!-- Add rental pickup date field after partner_id -->
                 <xpath expr="//field[@name='partner_id']" position="after">
-                    <field name="is_rental_order" invisible="1"/>
-                    <field name="x_rental_pickup_date" attrs="{'invisible': [('is_rental_order', '=', False)]}"/>
+                    <field name="x_rental_pickup_date" invisible="not is_rental_order"/>
                 </xpath>
 
-                <!-- Add change request buttons -->
+                <!-- Add change request button -->
                 <xpath expr="//button[@name='action_quotation_send']" position="after">
-                    <button name="action_view_change_requests" string="Change Requests" type="object" class="oe_highlight" attrs="{'invisible': [('is_rental_order', '=', False)]}"/>
+                    <button name="action_view_change_requests"
+                            string="Change Requests"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="not is_rental_order"/>
                 </xpath>
 
-                <!-- Add parent order reference -->
+                <!-- Add parent order reference after client_order_ref -->
                 <xpath expr="//field[@name='client_order_ref']" position="after">
-                    <field name="x_parent_order_id" attrs="{'invisible': [('x_parent_order_id', '=', False)]}"/>
+                    <field name="x_parent_order_id" invisible="not x_parent_order_id"/>
                 </xpath>
 
-                <!-- Add active change request in notebook -->
+                <!-- Add Change Requests tab in notebook -->
                 <xpath expr="//notebook" position="inside">
-                    <page string="Change Requests" name="change_requests" attrs="{'invisible': [('is_rental_order', '=', False)]}">
+                    <page string="Change Requests" name="change_requests" invisible="not is_rental_order">
                         <group>
                             <field name="x_active_change_request_id" readonly="1"/>
                         </group>
                         <group>
                             <field name="x_revision_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="name"/>
                                     <field name="state"/>
                                     <field name="date_order"/>
-                                </tree>
+                                </list>
                             </field>
                         </group>
                     </page>
@@ -44,14 +47,13 @@
             </field>
         </record>
 
-        <!-- Sale Order Tree Extension -->
+        <!-- Sale Order List Extension -->
         <record id="sale_order_rental_change_request_tree_view" model="ir.ui.view">
             <field name="name">sale.order.rental.change.request.tree</field>
             <field name="model">sale.order</field>
             <field name="inherit_id" ref="sale.view_order_tree"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='state']" position="after">
-                    <field name="is_rental_order" invisible="1"/>
                     <field name="x_active_change_request_id" optional="hide"/>
                 </xpath>
             </field>

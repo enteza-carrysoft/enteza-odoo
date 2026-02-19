@@ -55,7 +55,6 @@
         'views/rental_change_request_views.xml',
         'views/sale_order_views.xml',
         'views/rental_change_request_templates.xml',
-        'views/assets.xml',
     ],
     'assets': {
         'web.assets_frontend': [

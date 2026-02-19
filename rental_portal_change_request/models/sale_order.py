@@ -7,7 +7,7 @@ from odoo.exceptions import ValidationError
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    # Rental related fields
+    # Rental related fields — NOTE: is_rental_order is already defined by sale_renting module
     x_parent_order_id = fields.Many2one(
         'sale.order',
         string='Parent Order',
@@ -30,42 +30,28 @@ class SaleOrder(models.Model):
     )
     x_rental_pickup_date = fields.Datetime(
         string='Rental Pickup Date',
-        compute='_compute_rental_pickup_date',
+        compute='_compute_x_rental_pickup_date',
         store=True,
         index=True,
-        help='Expected pickup/end date for rental orders'
-    )
-    is_rental_order = fields.Boolean(
-        string='Is Rental Order',
-        compute='_compute_is_rental_order',
-        store=True,
-        help='True if this order contains rental products'
+        help='Expected pickup/end date for rental orders (= rental return date)'
     )
 
-    @api.depends('order_line')
-    def _compute_rental_pickup_date(self):
-        """Compute rental pickup date from rental_end_date"""
+    @api.depends('order_line', 'order_line.return_date')
+    def _compute_x_rental_pickup_date(self):
+        """Compute rental pickup date from rental return_date (Odoo 19 field name)"""
         for order in self:
             if order.is_rental_order and order.order_line:
-                # Get rental end date from first rental line
+                # In Odoo 19 sale_renting, rental lines have return_date field
                 rental_line = next(
                     (line for line in order.order_line if getattr(line, 'is_rental', False)),
                     None
                 )
-                if rental_line and hasattr(rental_line, 'rental_end_date'):
-                    order.x_rental_pickup_date = rental_line.rental_end_date
+                if rental_line and hasattr(rental_line, 'return_date'):
+                    order.x_rental_pickup_date = rental_line.return_date
                 else:
                     order.x_rental_pickup_date = False
             else:
                 order.x_rental_pickup_date = False
-
-    @api.depends('order_line')
-    def _compute_is_rental_order(self):
-        """Compute if order contains rental products"""
-        for order in self:
-            order.is_rental_order = any(
-                getattr(line, 'is_rental', False) for line in order.order_line
-            )
 
     @api.constrains('x_parent_order_id')
     def _check_parent_order(self):

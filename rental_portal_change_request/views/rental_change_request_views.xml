@@ -7,7 +7,7 @@
             <field name="name">rental.change.request.tree</field>
             <field name="model">rental.change_request</field>
             <field name="arch" type="xml">
-                <tree string="Change Requests" decoration-muted="state == 'cancelled'" decoration-success="state == 'approved'">
+                <list string="Change Requests" decoration-muted="state == 'cancelled'" decoration-success="state == 'approved'">
                     <field name="name"/>
                     <field name="order_id"/>
                     <field name="revision_order_id"/>
@@ -15,7 +15,7 @@
                     <field name="submitted_date"/>
                     <field name="approved_date"/>
                     <field name="line_count"/>
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -26,11 +26,16 @@
             <field name="arch" type="xml">
                 <form string="Change Request">
                     <header>
-                        <button name="action_edit" string="Start Editing" states="draft" type="object" class="btn-primary"/>
-                        <button name="action_submit" string="Submit for Approval" states="editing" type="object" class="btn-primary"/>
-                        <button name="action_approve" string="Approve" states="submitted" type="object" class="btn-primary" attrs="{'invisible': [('can_approve', '=', False)]}"/>
-                        <button name="action_reject" string="Reject" states="submitted" type="object" attrs="{'invisible': [('can_approve', '=', False)]}"/>
-                        <button name="action_cancel" string="Cancel" states="draft,editing,submitted" type="object"/>
+                        <button name="action_edit" string="Start Editing" type="object" class="btn-primary"
+                                invisible="state != 'draft'"/>
+                        <button name="action_submit" string="Submit for Approval" type="object" class="btn-primary"
+                                invisible="state != 'editing'"/>
+                        <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                                invisible="state != 'submitted' or not can_approve"/>
+                        <button name="action_reject" string="Reject" type="object"
+                                invisible="state != 'submitted' or not can_approve"/>
+                        <button name="action_cancel" string="Cancel" type="object"
+                                invisible="state not in ['draft', 'editing', 'submitted']"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,editing,submitted,approved,rejected,cancelled,applied"/>
                     </header>
                     <sheet>
@@ -43,6 +48,7 @@
                             <group>
                                 <field name="order_id" readonly="1"/>
                                 <field name="revision_order_id" readonly="1"/>
+                                <field name="partner_id" readonly="1"/>
                                 <field name="line_count" readonly="1"/>
                             </group>
                             <group>
@@ -55,19 +61,21 @@
                         <notebook>
                             <page string="Changes" name="changes">
                                 <field name="change_request_line_ids">
-                                    <tree>
+                                    <list>
                                         <field name="product_id"/>
                                         <field name="operation"/>
-                                        <field name="original_qty" attrs="{'invisible': [('operation', '=', 'add')]}"/>
-                                        <field name="new_qty" attrs="{'invisible': [('operation', '=', 'remove')]}"/>
+                                        <field name="original_qty" invisible="operation == 'add'"/>
+                                        <field name="new_qty" invisible="operation == 'remove'"/>
                                         <field name="availability_status"/>
-                                    </tree>
+                                    </list>
                                 </field>
                             </page>
-                            <page string="Submission Note" name="submission">
+                            <page string="Notes" name="notes">
                                 <group>
-                                    <field name="submission_note" readonly="1"/>
-                                    <field name="rejection_reason" readonly="1" attrs="{'invisible': [('state', '!=', 'rejected')]}"/>
+                                    <field name="submission_note" readonly="1" string="Customer Message"/>
+                                    <field name="internal_note"/>
+                                    <field name="rejection_reason" readonly="1"
+                                           invisible="state != 'rejected'"/>
                                 </group>
                             </page>
                             <page string="Technical Info" name="technical">
@@ -79,11 +87,7 @@
                             </page>
                         </notebook>
                     </sheet>
-                    <div class="oe_chatter">
-                        <field name="message_follower_ids"/>
-                        <field name="activity_ids"/>
-                        <field name="message_ids"/>
-                    </div>
+                    <chatter/>
                 </form>
             </field>
         </record>
@@ -96,6 +100,7 @@
                 <search string="Search Change Requests">
                     <field name="name"/>
                     <field name="order_id"/>
+                    <field name="partner_id"/>
                     <field name="state"/>
                     <filter string="Draft" name="state_draft" domain="[('state', '=', 'draft')]"/>
                     <filter string="Editing" name="state_editing" domain="[('state', '=', 'editing')]"/>
@@ -103,10 +108,10 @@
                     <filter string="Approved" name="state_approved" domain="[('state', '=', 'approved')]"/>
                     <filter string="Rejected" name="state_rejected" domain="[('state', '=', 'rejected')]"/>
                     <separator/>
-                    <filter string="My Orders" name="my_orders" domain="[('order_id.partner_id', '=', user.partner_id.id)]"/>
+                    <filter string="My Orders" name="my_orders" domain="[('order_id.partner_id', '=', uid)]"/>
                     <group expand="0" string="Group By">
                         <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
-                        <filter string="Customer" name="group_customer" context="{'group_by': 'order_id.partner_id'}"/>
+                        <filter string="Customer" name="group_customer" context="{'group_by': 'partner_id'}"/>
                     </group>
                 </search>
             </field>
@@ -116,7 +121,7 @@
         <record id="rental_change_request_action" model="ir.actions.act_window">
             <field name="name">Change Requests</field>
             <field name="res_model">rental.change_request</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="domain">[]</field>
             <field name="context">{}</field>
             <field name="help" type="html">
@@ -129,7 +134,7 @@
         <!-- Menu Items -->
         <menuitem id="rental_change_request_menu" name="Change Requests" parent="sale.sale_order_menu" action="rental_change_request_action" sequence="5"/>
 
-        <!-- Reject Wizard -->
+        <!-- Reject Wizard View -->
         <record id="rental_change_request_reject_wizard_view" model="ir.ui.view">
             <field name="name">rental.change.request.reject.wizard.form</field>
             <field name="model">rental.change.request.reject.wizard</field>

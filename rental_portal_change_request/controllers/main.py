@@ -1,26 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from odoo import _
 from odoo import http
 from odoo.http import request
-from odoo.addons.portal.controllers.portal import CustomerPortal
-from odoo.addons.portal.controllers.web import Home
 from odoo.exceptions import AccessError
-
-
-class PortalRentalHome(Home):
-    """Extend portal home to show rental count"""
-
-    @http.route(['/my', '/my/home'], type='http', auth="user", website=True)
-    def portal_home(self, **kw):
-        response = super().portal_home(**kw)
-        if response.is_qweb:
-            rental_count = request.env['sale.order'].search_count([
-                ('partner_id', '=', request.env.user.partner_id.id),
-                ('is_rental_order', '=', True),
-                ('state', 'in', ['sale', 'done', 'cancel']),
-            ])
-            response.qcontext['rental_count'] = rental_count
-        return response
+from odoo.addons.portal.controllers.portal import CustomerPortal
 
 
 class PortalRentalOrders(CustomerPortal):
@@ -43,7 +27,6 @@ class PortalRentalOrders(CustomerPortal):
         values = self._prepare_portal_layout_values()
         partner = request.env.user.partner_id
 
-        # Get rental orders
         orders = request.env['sale.order'].search([
             ('partner_id', '=', partner.id),
             ('is_rental_order', '=', True),
@@ -62,12 +45,12 @@ class PortalRentalOrders(CustomerPortal):
         """Display rental order details"""
         order = request.env['sale.order'].browse(order_id)
 
-        # Security check
-        if not order or order.partner_id.id != request.env.user.partner_id.id:
+        # Security check: order must belong to current user
+        if not order.exists() or order.partner_id.id != request.env.user.partner_id.id:
             return request.redirect('/my')
 
         values = self._prepare_portal_layout_values()
-        active_change_request = order.x_active_change_request_id if order.x_active_change_request_id else None
+        active_change_request = order.x_active_change_request_id or None
 
         values.update({
             'order': order,
@@ -85,14 +68,14 @@ class PortalRentalOrders(CustomerPortal):
         order = request.env['sale.order'].browse(order_id)
 
         # Security check
-        if not order or order.partner_id.id != request.env.user.partner_id.id:
+        if not order.exists() or order.partner_id.id != request.env.user.partner_id.id:
             return request.redirect('/my')
 
-        # Check if change request exists and belongs to this order
+        # Validate change request if provided
         change_request = None
         if change_request_id:
             change_request = request.env['rental.change_request'].browse(change_request_id)
-            if not change_request or change_request.order_id.id != order.id:
+            if not change_request.exists() or change_request.order_id.id != order.id:
                 return request.redirect('/my/rentals/%d' % order.id)
 
         values = self._prepare_portal_layout_values()
@@ -103,13 +86,16 @@ class PortalRentalOrders(CustomerPortal):
 
         return request.render('rental_portal_change_request.portal_change_request_page', values)
 
-    @http.route(['/my/rentals/<int:order_id>/change-request/create'], type='http', auth='user', website=True, methods=['POST'])
+    @http.route(
+        ['/my/rentals/<int:order_id>/change-request/create'],
+        type='http', auth='user', website=True, methods=['POST']
+    )
     def portal_create_change_request(self, order_id, **kw):
         """Create a new change request and redirect to editor"""
         order = request.env['sale.order'].browse(order_id)
 
         # Security check
-        if not order or order.partner_id.id != request.env.user.partner_id.id:
+        if not order.exists() or order.partner_id.id != request.env.user.partner_id.id:
             return request.redirect('/my')
 
         # Check if order is eligible
@@ -120,7 +106,6 @@ class PortalRentalOrders(CustomerPortal):
         result = request.env['rental.change_request'].start_from_order_atomic(order_id)
 
         if not result.get('success'):
-            # Handle error - in production, show proper error message
             return request.redirect('/my/rentals/%d' % order.id)
 
         change_request_id = result.get('change_request')
