@@ -58,13 +58,8 @@
     'assets': {
         'web.assets_frontend': [
             'rental_portal_change_request/static/src/scss/rental_portal.scss',
-            'rental_portal_change_request/static/src/js/rental_change_request_app.js',
-            'rental_portal_change_request/static/src/js/components/order_lines_table.js',
-            'rental_portal_change_request/static/src/js/components/quick_add_sku.js',
-            'rental_portal_change_request/static/src/js/components/catalog_side_panel.js',
-            'rental_portal_change_request/static/src/js/components/status_indicator.js',
-            'rental_portal_change_request/static/src/js/services/rpc_service.js',
-            'rental_portal_change_request/static/src/js/services/availability_service.js',
+            'rental_portal_change_request/static/src/js/rental_portal_owl_bundle.js',
+            'rental_portal_change_request/static/src/xml/rental_change_request_owl.xml',
         ],
     },
     'demo': [],

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rental_portal.ChangeRequestApp">
+        <div class="rental_change_request_app container-fluid">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-0">
+                        <t t-if="state.changeRequest">
+                            Edit Change Request <t t-esc="state.changeRequest.name"/>
+                        </t>
+                        <t t-else="">
+                            New Change Request for <t t-esc="state.order.name"/>
+                        </t>
+                    </h4>
+                    <small class="text-muted">Order: <t t-esc="state.order.name"/></small>
+                </div>
+                <div class="status_indicator">
+                    <span class="badge" t-att-class="getStatusClass()">
+                        <t t-esc="state.changeRequest ? state.changeRequest.state : 'draft'"/>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Error handling -->
+            <div t-if="state.error" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <t t-esc="state.error"/>
+                <button type="button" class="btn-close" t-on-click="() => state.error = null" aria-label="Close"></button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div t-if="state.isLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Main App Content -->
+            <div t-else="" class="row">
+                <div class="col-lg-8">
+                    <!-- Lines Table Component -->
+                    <OrderLinesTable lines="state.lines" onLineUpdate.bind="this.onLineUpdate" onLineRemove.bind="this.onLineRemove"/>
+                    
+                    <!-- Submission Note -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Notes</h5>
+                            <textarea class="form-control" t-att-value="state.note" t-on-input="onInput" rows="3" placeholder="Add a note..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="d-flex justify-content-between mt-4 mb-5">
+                        <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" t-on-click="onSaveDraft" t-att-disabled="!state.hasChanges">Save Draft</button>
+                            <button class="btn btn-primary" t-on-click="onSubmit" t-att-disabled="state.lines.length === 0">Submit for Approval</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Right Sidebar: Quick Add & Catalog -->
+                    <div class="sticky-top" style="top: 20px;">
+                        <QuickAddBySKU onProductAdded.bind="this.onProductAdded"/>
+                        <CatalogPanel onProductAdded.bind="this.onProductAdded"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- OWL Template for Lines Table -->
+    <t t-name="rental_portal.OrderLinesTable">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Order Lines</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-center" style="width: 120px;">Qty</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="props.lines" t-as="line" t-key="line.id">
+                            <td>
+                                <div><strong t-esc="line.product_name"/></div>
+                                <small class="text-muted" t-if="line.product_code">SKU: <t t-esc="line.product_code"/></small>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm text-center" 
+                                       t-att-value="line.qty" 
+                                       t-on-change="(ev) => props.onLineUpdate(line.id, {qty: parseFloat(ev.target.value)})"/>
+                            </td>
+                            <td class="text-end">
+                                <t t-esc="formatMonetary(line.price_unit)"/>
+                            </td>
+                            <td class="text-end">
+                                <t t-esc="formatMonetary(line.qty * line.price_unit)"/>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-link text-danger p-0" t-on-click="() => props.onLineRemove(line.id)">
+                                    <i class="fa fa-trash"/>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr t-if="props.lines.length === 0">
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No products added. Use search or catalog to add items.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+
+    <!-- Quick Add Component -->
+    <t t-name="rental_portal.QuickAddBySKU">
+        <div class="card mb-3 shadow-sm border-primary">
+            <div class="card-body">
+                <h6 class="card-title">Quick Add (SKU)</h6>
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Type SKU..." t-att-value="state.sku" t-on-input="onInput" t-on-keydown="onKeydown"/>
+                    <button class="btn btn-primary" t-on-click="onSearch">
+                        <i class="fa fa-plus"/>
+                    </button>
+                </div>
+                <div t-if="state.finding" class="mt-1 small text-info">Searching...</div>
+                <div t-if="state.notFound" class="mt-1 small text-danger">SKU not found</div>
+            </div>
+        </div>
+    </t>
+
+</templates>
