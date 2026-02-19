@@ -59,6 +59,11 @@ class OrderLinesTable extends Component {
             </div>
         </div>
     `;
+    onQtyChange(ev, lineId) {
+        if (this.props.onLineUpdate) {
+            this.props.onLineUpdate(lineId, { qty: parseFloat(ev.target.value) });
+        }
+    }
 }
 
 /**
@@ -244,6 +249,8 @@ export class RentalChangeRequestApp extends Component {
             note: "",
             error: null,
             hasChanges: false,
+            order_token: null,
+            revision_token: null,
         });
 
         onWillStart(async () => {
@@ -262,7 +269,13 @@ export class RentalChangeRequestApp extends Component {
                 this.state.order = data.order;
                 this.state.changeRequest = data.change_request;
                 this.state.lines = data.lines || [];
-                if (data.change_request) this.state.note = data.change_request.submission_note || "";
+                if (data.change_request) {
+                    this.state.note = data.change_request.submission_note || "";
+                    this.state.revision_token = data.change_request.expected_revision_write_date;
+                    this.state.order_token = data.change_request.expected_order_write_date;
+                } else if (data.order) {
+                    this.state.order_token = data.order.write_date;
+                }
             } else {
                 this.state.error = data.error;
             }
@@ -311,12 +324,6 @@ export class RentalChangeRequestApp extends Component {
         return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
     }
 
-    onQtyChange(ev, lineId) {
-        if (this.props.onLineUpdate) {
-            this.props.onLineUpdate(lineId, { qty: parseFloat(ev.target.value) });
-        }
-    }
-
     getStatusClass() {
         const state = this.state.changeRequest ? this.state.changeRequest.state : 'draft';
         const classes = {
@@ -348,6 +355,8 @@ export class RentalChangeRequestApp extends Component {
                     qty: l.qty,
                     line_id: l.id.toString().startsWith('temp') ? null : l.id,
                 })),
+                token_order: this.state.order_token,
+                token_revision: this.state.revision_token,
             });
 
             if (patchRes.success) {

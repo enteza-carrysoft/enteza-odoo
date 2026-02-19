@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import json
+import logging
 from odoo import _
 from odoo import http
 from odoo.http import request
 from odoo.exceptions import AccessError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class RentalPortalJsonRpc(http.Controller):
@@ -83,7 +85,7 @@ class RentalPortalJsonRpc(http.Controller):
         methods=['POST'],
         csrf=True
     )
-    def change_request_patch(self, change_request_id, patch_operations, token_order, token_revision, **kwargs):
+    def change_request_patch(self, change_request_id, patch_operations, token_order=None, token_revision=None, **kwargs):
         """
         Apply incremental changes to revision order.
 
@@ -254,6 +256,7 @@ class RentalPortalJsonRpc(http.Controller):
                         'name': cr.order_id.name,
                         'state': cr.order_id.state,
                         'date_order': cr.order_id.date_order,
+                        'write_date': cr.order_id.write_date,
                     },
                     'lines': cr.get_revision_order_lines(),
                 }
@@ -297,6 +300,7 @@ class RentalPortalJsonRpc(http.Controller):
                         'name': order.name,
                         'state': order.state,
                         'date_order': order.date_order,
+                        'write_date': order.write_date,
                     },
                     'lines': lines,
                 }
