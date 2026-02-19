@@ -59,7 +59,6 @@
         'web.assets_frontend': [
             'rental_portal_change_request/static/src/scss/rental_portal.scss',
             'rental_portal_change_request/static/src/js/rental_portal_owl_bundle.js',
-            'rental_portal_change_request/static/src/xml/rental_change_request_owl.xml',
         ],
     },
     'demo': [],
