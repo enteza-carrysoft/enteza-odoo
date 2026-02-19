@@ -36,7 +36,6 @@
         'base',
         'sale_management',
         'sale_renting',
-        'website_sale',
         'portal',
         'mail',
         'web',
@@ -72,5 +71,4 @@
     'installable': True,
     'auto_install': False,
     'application': True,
-    'post_init_hook': 'post_init_hook',
 }
