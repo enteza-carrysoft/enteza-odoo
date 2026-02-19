@@ -35,7 +35,7 @@ class OrderLinesTable extends Component {
                             <td>
                                 <input type="number" class="form-control form-control-sm text-center" 
                                        t-att-value="line.qty" 
-                                       t-on-change="(ev) => props.onLineUpdate(line.id, {qty: parseFloat(ev.target.value)})"/>
+                                       t-on-change="(ev) => this.onQtyChange(ev, line.id)"/>
                             </td>
                             <td class="text-end">
                                 <t t-esc="props.formatMonetary(line.price_unit)"/>
@@ -201,7 +201,7 @@ export class RentalChangeRequestApp extends Component {
             <div t-else="" class="row">
                 <div class="col-lg-8">
                     <!-- Lines Table Component -->
-                    <OrderLinesTable lines="state.lines" onLineUpdate="onLineUpdate" onLineRemove="onLineRemove" formatMonetary="formatMonetary"/>
+                    <OrderLinesTable lines="state.lines" onLineUpdate="this.onLineUpdate" onLineRemove="this.onLineRemove" formatMonetary="this.formatMonetary"/>
                     
                     <!-- Submission Note -->
                     <div class="card mt-3">
@@ -224,8 +224,8 @@ export class RentalChangeRequestApp extends Component {
                 <div class="col-lg-4">
                     <!-- Right Sidebar: Quick Add & Catalog -->
                     <div class="sticky-top" style="top: 20px;">
-                        <QuickAddBySKU onProductAdded="onProductAdded"/>
-                        <CatalogPanel onProductAdded="onProductAdded"/>
+                        <QuickAddBySKU onProductAdded="this.onProductAdded"/>
+                        <CatalogPanel onProductAdded="this.onProductAdded"/>
                     </div>
                 </div>
             </div>
@@ -309,6 +309,12 @@ export class RentalChangeRequestApp extends Component {
 
     formatMonetary(amount) {
         return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+    }
+
+    onQtyChange(ev, lineId) {
+        if (this.props.onLineUpdate) {
+            this.props.onLineUpdate(lineId, { qty: parseFloat(ev.target.value) });
+        }
     }
 
     getStatusClass() {
