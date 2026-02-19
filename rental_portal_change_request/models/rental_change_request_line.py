@@ -99,22 +99,10 @@ class RentalChangeRequestLine(models.Model):
         help='Quantity available for rental'
     )
 
-    @api.constrains('operation', 'original_line_id', 'new_qty')
+    @api.constrains('operation', 'new_qty')
     def _check_operation_consistency(self):
         """Validate operation consistency"""
         for line in self:
-            if line.operation == 'update' and not line.original_line_id:
-                raise ValidationError(_(
-                    'Update operation requires an original line reference.'
-                ))
-            if line.operation == 'remove' and not line.original_line_id:
-                raise ValidationError(_(
-                    'Remove operation requires an original line reference.'
-                ))
-            if line.operation == 'add' and line.original_line_id:
-                raise ValidationError(_(
-                    'Add operation should not have an original line reference.'
-                ))
             if line.operation in ['update', 'add'] and line.new_qty <= 0:
                 raise ValidationError(_(
                     'Quantity must be greater than zero for add/update operations.'

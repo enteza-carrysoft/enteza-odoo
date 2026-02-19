@@ -1,136 +1,87 @@
 # -*- coding: utf-8 -*-
+"""
+Simplified JSON-RPC API for rental portal change requests.
+"""
 
-import logging
-from odoo import _, fields
+from odoo import _
 from odoo import http
 from odoo.http import request
-from odoo.exceptions import AccessError, ValidationError
-
-_logger = logging.getLogger(__name__)
 
 
 class RentalPortalJsonRpc(http.Controller):
     """JSON-RPC API endpoints for rental portal"""
 
-    def _validate_jsonrpc_request(self, params):
-        """Validate JSON-RPC request structure"""
-        required = ['jsonrpc', 'method', 'id', 'params']
-        for field in required:
-            if field not in params:
-                return False, _('Missing required field: %s') % field
-        return True, None
-
-    def _jsonrpc_response(self, request_id, result=None, error=None):
-        """Format JSON-RPC response"""
-        response = {
-            'jsonrpc': '2.0',
-            'id': request_id,
-        }
-        if result is not None:
-            response['result'] = result
-        if error is not None:
-            response['error'] = {'message': error}
-        return request.make_json_response(response)
+    def _check_order_access(self, order):
+        """Check if current user can access the order"""
+        if not order.exists():
+            return False
+        user_partner = request.env.user.partner_id.commercial_partner_id
+        order_partner = order.partner_id.commercial_partner_id
+        return user_partner.id == order_partner.id
 
     @http.route(
-        '/rental_portal/jsonrpc/change_request/start',
+        '/rental_portal/jsonrpc/order/load',
         type='json',
         auth='user',
         methods=['POST'],
         csrf=True
     )
-    def change_request_start(self, order_id, **kwargs):
+    def load_order(self, order_id, **kwargs):
         """
-        Start a new change request for an order.
+        Load order data for the change request editor.
 
-        JSON-RPC params:
-            order_id: int - ID of the sale order
+        Returns the current order lines that the user can edit.
+
+        Args:
+            order_id: int - Sale order ID
 
         Returns:
             dict: {
                 'success': bool,
-                'change_request': int (id),
-                'revision_order': int (id),
-                'name': str,
-                'error': str (if failed)
+                'order': {id, name, state},
+                'lines': [{product_id, product_name, product_code, qty, price_unit}],
+                'error': str
             }
         """
         try:
-            # Verify order belongs to user or company
             order = request.env['sale.order'].sudo().browse(order_id)
-            user_commercial_id = request.env.user.partner_id.commercial_partner_id.id
-            order_commercial_id = order.partner_id.commercial_partner_id.id
-            
-            if not order.exists() or order_commercial_id != user_commercial_id:
-                _logger.warning("Permission denied for Order %s: User CP=%s, Order CP=%s", 
-                                order_id, user_commercial_id, order_commercial_id)
+
+            if not self._check_order_access(order):
+                return {'success': False, 'error': _('Permission denied')}
+
+            if order.state != 'sale':
+                return {'success': False, 'error': _('Order must be confirmed')}
+
+            # Check if there's already a submitted request
+            if order.x_active_change_request_id and order.x_active_change_request_id.state == 'submitted':
                 return {
                     'success': False,
-                    'error': _('You do not have permission to access this order (CP mismatch)')
+                    'error': _('This order already has a pending change request')
                 }
 
-            result = request.env['rental.change_request'].sudo().start_from_order_atomic(order_id)
-            return result
+            # Build lines data
+            lines = []
+            for line in order.order_line:
+                lines.append({
+                    'product_id': line.product_id.id,
+                    'product_name': line.product_id.display_name,
+                    'product_code': line.product_id.default_code or '',
+                    'qty': line.product_uom_qty,
+                    'price_unit': line.price_unit,
+                })
+
+            return {
+                'success': True,
+                'order': {
+                    'id': order.id,
+                    'name': order.name,
+                    'state': order.state,
+                },
+                'lines': lines,
+            }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-    @http.route(
-        '/rental_portal/jsonrpc/change_request/patch',
-        type='json',
-        auth='user',
-        methods=['POST'],
-        csrf=True
-    )
-    def change_request_patch(self, change_request_id, patch_operations, token_order=None, token_revision=None, **kwargs):
-        """
-        Apply incremental changes to revision order.
-
-        JSON-RPC params:
-            change_request_id: int - ID of change request
-            patch_operations: list - List of operations
-                [{operation: str, product_id: int, qty: float, line_id: int}]
-            token_order: str - Order write date for concurrency check
-            token_revision: str - Revision write date for concurrency check
-
-        Returns:
-            dict: {
-                'success': bool,
-                'lines': list,
-                'new_revision_token': str,
-                'error': str (if failed)
-            }
-        """
-        try:
-            # Verify change request belongs to user/company
-            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
-            user_commercial_id = request.env.user.partner_id.commercial_partner_id.id
-            order_commercial_id = cr.order_id.partner_id.commercial_partner_id.id
-
-            if not cr.exists() or order_commercial_id != user_commercial_id:
-                _logger.warning("Permission denied for CR %s: User CP=%s, Order CP=%s", 
-                                change_request_id, user_commercial_id, order_commercial_id)
-                return {
-                    'success': False,
-                    'error': _('You do not have permission to access this change request')
-                }
-
-            result = request.env['rental.change_request'].sudo().patch_revision_atomic(
-                change_request_id,
-                patch_operations,
-                token_order,
-                token_revision
-            )
-            return result
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {'success': False, 'error': str(e)}
 
     @http.route(
         '/rental_portal/jsonrpc/change_request/submit',
@@ -139,177 +90,29 @@ class RentalPortalJsonRpc(http.Controller):
         methods=['POST'],
         csrf=True
     )
-    def change_request_submit(self, change_request_id, note='', **kwargs):
+    def submit_change_request(self, order_id, lines, note='', **kwargs):
         """
-        Submit change request for approval.
+        Submit a change request with the desired final state.
 
-        JSON-RPC params:
-            change_request_id: int - ID of change request
-            note: str - Submission note (optional)
+        Args:
+            order_id: int - Sale order ID
+            lines: list - Desired final lines
+                [{'product_id': int, 'qty': float}, ...]
+            note: str - Customer note
 
         Returns:
-            dict: {
-                'success': bool,
-                'error': str (if failed)
-            }
+            dict: {'success': bool, 'change_request_id': int, 'error': str}
         """
         try:
-            # Verify change request belongs to user/company
-            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
-            if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
-                return {
-                    'success': False,
-                    'error': _('You do not have permission to access this change request')
-                }
-
-            result = request.env['rental.change_request'].sudo().submit_atomic(
-                change_request_id,
-                note
+            result = request.env['rental.change_request'].submit_changes(
+                order_id=order_id,
+                requested_lines=lines,
+                note=note
             )
             return result
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-    @http.route(
-        '/rental_portal/jsonrpc/change_request/cancel',
-        type='json',
-        auth='user',
-        methods=['POST'],
-        csrf=True
-    )
-    def change_request_cancel(self, change_request_id, **kwargs):
-        """
-        Cancel change request.
-
-        JSON-RPC params:
-            change_request_id: int - ID of change request
-
-        Returns:
-            dict: {
-                'success': bool,
-                'error': str (if failed)
-            }
-        """
-        try:
-            # Verify change request belongs to user/company
-            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
-            if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
-                return {
-                    'success': False,
-                    'error': _('You do not have permission to access this change request')
-                }
-
-            cr.action_cancel()
-            return {'success': True}
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-    @http.route(
-        '/rental_portal/jsonrpc/change_request/load',
-        type='json',
-        auth='user',
-        methods=['POST'],
-        csrf=True
-    )
-    def change_request_load(self, change_request_id, **kwargs):
-        """
-        Load change request data for editing.
-
-        JSON-RPC params:
-            change_request_id: int - ID of change request (0 for new)
-
-        Returns:
-            dict: {
-                'success': bool,
-                'change_request': dict,
-                'order': dict,
-                'lines': list,
-                'error': str (if failed)
-            }
-        """
-        try:
-            if change_request_id:
-                # Load existing change request
-                cr = request.env['rental.change_request'].sudo().browse(change_request_id)
-                user_commercial_id = request.env.user.partner_id.commercial_partner_id.id
-                order_commercial_id = cr.order_id.partner_id.commercial_partner_id.id
-                
-                if not cr.exists() or order_commercial_id != user_commercial_id:
-                    return {
-                        'success': False,
-                        'error': _('You do not have permission to access this change request')
-                    }
-
-                return {
-                    'success': True,
-                    'change_request': cr.get_change_request_data(),
-                    'order': {
-                        'id': cr.order_id.id,
-                        'name': cr.order_id.name,
-                        'state': cr.order_id.state,
-                        'date_order': fields.Datetime.to_string(cr.order_id.date_order) if cr.order_id.date_order else None,
-                        'write_date': fields.Datetime.to_string(cr.order_id.write_date) if cr.order_id.write_date else None,
-                    },
-                    'lines': cr.get_revision_order_lines(),
-                }
-            else:
-                # New change request - return order data only
-                order_id = kwargs.get('order_id')
-                if not order_id:
-                    return {
-                        'success': False,
-                        'error': _('Order ID is required')
-                    }
-
-                order = request.env['sale.order'].sudo().browse(order_id)
-                user_commercial_id = request.env.user.partner_id.commercial_partner_id.id
-                order_commercial_id = order.partner_id.commercial_partner_id.id
-                
-                if not order.exists() or order_commercial_id != user_commercial_id:
-                    return {
-                        'success': False,
-                        'error': _('You do not have permission to access this order')
-                    }
-
-                lines = []
-                for line in order.order_line:
-                    lines.append({
-                        'id': line.id,
-                        'product_id': line.product_id.id,
-                        'product_name': line.product_id.name,
-                        'product_code': line.product_id.default_code,
-                        'qty': line.product_uom_qty,
-                        'price_unit': line.price_unit,
-                        'price_subtotal': line.price_subtotal,
-                        'is_rental': line.is_rental if hasattr(line, 'is_rental') else False,
-                    })
-
-                return {
-                    'success': True,
-                    'change_request': None,
-                    'order': {
-                        'id': order.id,
-                        'name': order.name,
-                        'state': order.state,
-                        'date_order': fields.Datetime.to_string(order.date_order) if order.date_order else None,
-                        'write_date': fields.Datetime.to_string(order.write_date) if order.write_date else None,
-                    },
-                    'lines': lines,
-                }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {'success': False, 'error': str(e)}
 
     @http.route(
         '/rental_portal/jsonrpc/catalog/search',
@@ -320,23 +123,19 @@ class RentalPortalJsonRpc(http.Controller):
     )
     def catalog_search(self, search_term='', limit=20, offset=0, **kwargs):
         """
-        Search rental products in catalog.
+        Search products in catalog.
 
-        JSON-RPC params:
-            search_term: str - Search query (SKU or name)
-            limit: int - Max results (default 20)
-            offset: int - Offset for pagination (default 0)
+        Args:
+            search_term: str - Search query
+            limit: int - Max results
+            offset: int - Pagination offset
 
         Returns:
-            dict: {
-                'success': bool,
-                'products': list,
-                'total_count': int,
-                'error': str (if failed)
-            }
+            dict: {'success': bool, 'products': list, 'total_count': int}
         """
         try:
-            Product = request.env['product.product']
+            Product = request.env['product.product'].sudo()
+
             domain = [
                 ('sale_ok', '=', True),
                 '|',
@@ -344,21 +143,16 @@ class RentalPortalJsonRpc(http.Controller):
                 ('name', 'ilike', search_term),
             ]
 
-            # Get total count
             total_count = Product.search_count(domain)
-
-            # Search with limit and offset
             products = Product.search(domain, limit=limit, offset=offset)
 
             product_data = []
-            for product in products:
+            for p in products:
                 product_data.append({
-                    'product_id': product.id,
-                    'product_name': product.name,
-                    'product_code': product.default_code,
-                    'price_unit': product.lst_price,
-                    'description_sale': product.description_sale,
-                    'image_url': f'/web/image/product.product/{product.id}/image_128' if product.image_128 else None,
+                    'product_id': p.id,
+                    'product_name': p.display_name,
+                    'product_code': p.default_code or '',
+                    'price_unit': p.lst_price,
                 })
 
             return {
@@ -368,51 +162,4 @@ class RentalPortalJsonRpc(http.Controller):
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
-
-    @http.route(
-        '/rental_portal/jsonrpc/catalog/check_availability',
-        type='json',
-        auth='user',
-        methods=['POST'],
-        csrf=True
-    )
-    def catalog_check_availability(self, product_ids, **kwargs):
-        """
-        Check rental availability for products.
-
-        JSON-RPC params:
-            product_ids: list[int] - Product IDs to check
-
-        Returns:
-            dict: {
-                'success': bool,
-                'availability': {product_id: {available_qty, status}},
-                'error': str (if failed)
-            }
-        """
-        try:
-            availability = {}
-            # For now, return basic availability
-            # In production, integrate with rental availability module
-            for product_id in product_ids:
-                product = request.env['product.product'].browse(product_id)
-                virtual_available = product.virtual_available
-                availability[str(product_id)] = {
-                    'available_qty': virtual_available if virtual_available > 0 else 0,
-                    'status': 'available' if virtual_available > 0 else 'unavailable',
-                }
-
-            return {
-                'success': True,
-                'availability': availability,
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {'success': False, 'error': str(e)}

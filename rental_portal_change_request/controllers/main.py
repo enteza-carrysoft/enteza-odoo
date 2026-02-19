@@ -3,7 +3,6 @@
 from odoo import _
 from odoo import http
 from odoo.http import request
-from odoo.exceptions import AccessError
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
 
@@ -52,7 +51,7 @@ class PortalRentalOrders(CustomerPortal):
         values = self._prepare_portal_layout_values()
         active_change_request = order.x_active_change_request_id or None
 
-        # Build a map of pending changes by product_id for display
+        # Build pending changes info for display
         pending_changes = {}
         pending_additions = []
         if active_change_request and active_change_request.state == 'submitted':
@@ -64,8 +63,6 @@ class PortalRentalOrders(CustomerPortal):
                         'operation': cr_line.operation,
                         'original_qty': cr_line.original_qty,
                         'new_qty': cr_line.new_qty,
-                        'original_price': cr_line.original_price_unit,
-                        'new_price': cr_line.new_price_unit,
                     }
 
         values.update({
@@ -77,54 +74,26 @@ class PortalRentalOrders(CustomerPortal):
 
         return request.render('rental_portal_change_request.portal_rental_order_page', values)
 
-    @http.route([
-        '/my/rentals/<int:order_id>/change-request/new',
-        '/my/rentals/<int:order_id>/change-request/<int:change_request_id>'
-    ], type='http', auth='user', website=True)
-    def portal_change_request_page(self, order_id, change_request_id=None, **kw):
-        """Display change request editor"""
+    @http.route(['/my/rentals/<int:order_id>/change-request'], type='http', auth='user', website=True)
+    def portal_change_request_editor(self, order_id, **kw):
+        """Display change request editor (OWL app)"""
         order = request.env['sale.order'].browse(order_id)
 
         # Security check
         if not order.exists() or order.partner_id.id != request.env.user.partner_id.id:
             return request.redirect('/my')
 
-        # Validate change request if provided
-        change_request = None
-        if change_request_id:
-            change_request = request.env['rental.change_request'].browse(change_request_id)
-            if not change_request.exists() or change_request.order_id.id != order.id:
-                return request.redirect('/my/rentals/%d' % order.id)
+        # Check order is eligible
+        if order.state != 'sale':
+            return request.redirect('/my/rentals/%d' % order_id)
+
+        # Check no pending request
+        if order.x_active_change_request_id and order.x_active_change_request_id.state == 'submitted':
+            return request.redirect('/my/rentals/%d' % order_id)
 
         values = self._prepare_portal_layout_values()
         values.update({
             'order': order,
-            'change_request': change_request,
         })
 
-        return request.render('rental_portal_change_request.portal_change_request_page', values)
-
-    @http.route(
-        ['/my/rentals/<int:order_id>/change-request/create'],
-        type='http', auth='user', website=True, methods=['POST']
-    )
-    def portal_create_change_request(self, order_id, **kw):
-        """Create a new change request and redirect to editor"""
-        order = request.env['sale.order'].browse(order_id)
-
-        # Security check
-        if not order.exists() or order.partner_id.id != request.env.user.partner_id.id:
-            return request.redirect('/my')
-
-        # Check if order is eligible
-        if order.state != 'sale' or order.x_active_change_request_id:
-            return request.redirect('/my/rentals/%d' % order.id)
-
-        # Create change request via atomic method
-        result = request.env['rental.change_request'].start_from_order_atomic(order_id)
-
-        if not result.get('success'):
-            return request.redirect('/my/rentals/%d' % order.id)
-
-        change_request_id = result.get('change_request')
-        return request.redirect('/my/rentals/%d/change-request/%d' % (order_id, change_request_id))
+        return request.render('rental_portal_change_request.portal_change_request_editor', values)

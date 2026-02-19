@@ -1,250 +1,233 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Portal: add "My Rentals" entry to portal home -->
-    <template id="portal_my_rentals" name="My Rental Orders" inherit_id="portal.portal_my_home">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="rental_count" t-call="portal.portal_docs_entry">
-                <t t-set="title">Rental Orders</t>
-                <t t-set="url">/my/rentals</t>
-                <t t-set="count" t-value="rental_count"/>
+    <data>
+        <!-- Portal: List of Rental Orders -->
+        <template id="portal_my_rentals_page" name="My Rental Orders">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title">My Rental Orders</t>
+                </t>
+
+                <t t-if="not orders">
+                    <div class="alert alert-info">
+                        You don't have any rental orders yet.
+                    </div>
+                </t>
+
+                <t t-if="orders">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Date</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="orders" t-as="order">
+                                    <td>
+                                        <strong t-out="order.name"/>
+                                        <t t-if="order.x_active_change_request_id and order.x_active_change_request_id.state == 'submitted'">
+                                            <span class="badge bg-warning text-dark ms-2">Change Pending</span>
+                                        </t>
+                                    </td>
+                                    <td t-out="order.date_order" t-options="{'widget': 'date'}"/>
+                                    <td class="text-center">
+                                        <span t-if="order.state == 'sale'" class="badge bg-success">Confirmed</span>
+                                        <span t-elif="order.state == 'done'" class="badge bg-info">Done</span>
+                                        <span t-elif="order.state == 'cancel'" class="badge bg-secondary">Cancelled</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <a t-attf-href="/my/rentals/#{order.id}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
             </t>
-        </xpath>
-    </template>
+        </template>
 
-    <!-- My Rentals list page -->
-    <template id="portal_my_rentals_page" name="My Rental Orders">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar">True</t>
+        <!-- Portal: Rental Order Details -->
+        <template id="portal_rental_order_page" name="Rental Order Details">
+            <t t-call="portal.portal_layout">
+                <t t-set="o_portal_fullwidth_alert" groups="sales_team.group_sale_salesman">
+                    <t t-call="portal.portal_back_in_edit_mode">
+                        <t t-set="backend_url" t-value="'/web#model=sale.order&amp;id=%d&amp;view_type=form' % order.id"/>
+                    </t>
+                </t>
 
-            <div class="o_portal_sale_details container mt-3 mb-5">
-                <div class="row">
-                    <div class="col-lg-8 offset-lg-2">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="mb-0">My Rental Orders</h4>
+                <div class="container py-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>
+                            <i class="fa fa-file-text-o me-2"/>
+                            <t t-out="order.name"/>
+                        </h2>
+                        <a href="/my/rentals" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"/> Back to Orders
+                        </a>
+                    </div>
+
+                    <!-- Pending Change Request Alert -->
+                    <t t-if="active_change_request and active_change_request.state == 'submitted'">
+                        <div class="alert alert-warning">
+                            <i class="fa fa-clock-o me-2"/>
+                            <strong>Change Request Pending:</strong>
+                            Your change request <t t-out="active_change_request.name"/> is pending approval.
+                        </div>
+                    </t>
+
+                    <div class="row">
+                        <!-- Order Info -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Order Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-5">Order Date:</dt>
+                                        <dd class="col-7" t-out="order.date_order" t-options="{'widget': 'date'}"/>
+
+                                        <dt class="col-5">Status:</dt>
+                                        <dd class="col-7">
+                                            <span t-if="order.state == 'sale'" class="badge bg-success">Confirmed</span>
+                                            <span t-elif="order.state == 'done'" class="badge bg-info">Done</span>
+                                            <span t-elif="order.state == 'cancel'" class="badge bg-secondary">Cancelled</span>
+                                        </dd>
+
+                                        <dt class="col-5">Total:</dt>
+                                        <dd class="col-7">
+                                            <strong t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </dd>
+                                    </dl>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <t t-if="not orders">
-                                    <p class="text-center text-muted">You have no rental orders yet.</p>
-                                </t>
-                                <t t-if="orders">
-                                    <table class="table table-sm table-hover">
-                                        <thead>
+
+                            <!-- Request Changes Button -->
+                            <t t-if="order.state == 'sale' and (not active_change_request or active_change_request.state not in ['draft', 'submitted'])">
+                                <div class="mt-3">
+                                    <a t-attf-href="/my/rentals/#{order.id}/change-request" class="btn btn-primary w-100">
+                                        <i class="fa fa-edit me-1"/> Request Changes
+                                    </a>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Order Lines -->
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Order Lines</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
                                             <tr>
-                                                <th>Order Number</th>
-                                                <th>Date</th>
-                                                <th>Pickup Date</th>
-                                                <th>State</th>
-                                                <th class="text-end">Total</th>
-                                                <th class="text-center">Action</th>
+                                                <th>Product</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-end">Price</th>
+                                                <th class="text-end">Subtotal</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr t-foreach="orders" t-as="order">
+                                            <tr t-foreach="order.order_line" t-as="line">
+                                                <t t-set="pending" t-value="pending_changes.get(line.product_id.id) if pending_changes else False"/>
                                                 <td>
-                                                    <a t-attf-href="/my/rentals/#{order.id}">
-                                                        <t t-out="order.name"/>
-                                                    </a>
+                                                    <span t-out="line.product_id.display_name"/>
+                                                    <small t-if="line.product_id.default_code" class="d-block text-muted">
+                                                        SKU: <t t-out="line.product_id.default_code"/>
+                                                    </small>
+                                                    <t t-if="pending and pending.get('operation') == 'remove'">
+                                                        <span class="badge bg-danger ms-1">Pending removal</span>
+                                                    </t>
                                                 </td>
-                                                <td><t t-out="order.date_order"/></td>
-                                                <td><t t-out="order.x_rental_pickup_date or '-'"/></td>
-                                                <td>
-                                                    <!-- Bootstrap 5: badge uses bg-* classes -->
-                                                    <span class="badge bg-info text-white">
-                                                        <t t-out="order.state"/>
-                                                    </span>
-                                                    <t t-if="order.x_active_change_request_id">
-                                                        <span class="badge bg-warning text-dark ms-1">Changes Pending</span>
+                                                <td class="text-center">
+                                                    <t t-if="pending and pending.get('operation') == 'update'">
+                                                        <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
+                                                        <i class="fa fa-arrow-right mx-1 text-primary"/>
+                                                        <span class="text-primary fw-bold"><t t-out="pending.get('new_qty')"/></span>
+                                                        <span class="badge bg-warning text-dark ms-1">Pending</span>
+                                                    </t>
+                                                    <t t-elif="pending and pending.get('operation') == 'remove'">
+                                                        <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <t t-out="line.product_uom_qty"/>
                                                     </t>
                                                 </td>
                                                 <td class="text-end">
-                                                    <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                    <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                                 </td>
-                                                <td class="text-center">
-                                                    <a t-attf-href="/my/rentals/#{order.id}" class="btn btn-sm btn-primary">View</a>
-                                                    <t t-if="not order.x_active_change_request_id and order.state == 'sale'">
-                                                        <a t-attf-href="/my/rentals/#{order.id}/change-request/new" class="btn btn-sm btn-secondary ms-1">Request Change</a>
-                                                    </t>
+                                                <td class="text-end">
+                                                    <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                                 </td>
                                             </tr>
-                                        </tbody>
-                                    </table>
-                                </t>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </t>
-    </template>
-
-    <!-- Rental Order detail page -->
-    <template id="portal_rental_order_page" name="Rental Order Details">
-        <t t-call="portal.portal_layout">
-            <t t-set="order" t-value="order"/>
-
-            <div class="o_portal_sale_details container mt-3 mb-5">
-                <div class="row">
-                    <div class="col-lg-8 offset-lg-2">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">Rental Order <t t-out="order.name"/></h4>
-                                <span class="badge bg-info text-white">
-                                    <t t-out="order.state"/>
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <strong>Order Date:</strong> <t t-out="order.date_order"/><br/>
-                                        <strong>Pickup Date:</strong> <t t-out="order.x_rental_pickup_date or '-'"/>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Total:</strong>
-                                        <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                    </div>
-                                </div>
-
-                                <h5>Order Lines</h5>
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Product</th>
-                                            <th class="text-center">Qty</th>
-                                            <th class="text-end">Unit Price</th>
-                                            <th class="text-end">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-foreach="order.order_line" t-as="line">
-                                            <t t-set="pending" t-value="pending_changes.get(line.product_id.id) if pending_changes else False"/>
-                                            <td>
-                                                <span t-out="line.product_id.display_name"/>
-                                                <small class="d-block text-muted" t-if="line.product_id.default_code">
-                                                    SKU: <t t-out="line.product_id.default_code"/>
-                                                </small>
-                                                <t t-if="pending and pending.get('operation') == 'remove'">
-                                                    <span class="badge bg-danger ms-1">Pending removal</span>
+                                            <!-- Pending additions -->
+                                            <t t-if="pending_additions">
+                                                <t t-foreach="pending_additions" t-as="add_line">
+                                                    <tr class="table-success">
+                                                        <td>
+                                                            <span t-out="add_line.product_id.display_name"/>
+                                                            <small t-if="add_line.product_id.default_code" class="d-block text-muted">
+                                                                SKU: <t t-out="add_line.product_id.default_code"/>
+                                                            </small>
+                                                            <span class="badge bg-success ms-1">New (Pending)</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="text-success fw-bold"><t t-out="add_line.new_qty"/></span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span t-out="add_line.new_price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                        </td>
+                                                        <td class="text-end text-muted">-</td>
+                                                    </tr>
                                                 </t>
-                                            </td>
-                                            <td class="text-center">
-                                                <t t-if="pending and pending.get('operation') == 'update'">
-                                                    <!-- Show original qty struck through and new qty -->
-                                                    <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
-                                                    <i class="fa fa-arrow-right mx-1 text-primary"/>
-                                                    <span class="text-primary fw-bold"><t t-out="pending.get('new_qty')"/></span>
-                                                    <span class="badge bg-warning text-dark ms-1">Pending</span>
-                                                </t>
-                                                <t t-elif="pending and pending.get('operation') == 'remove'">
-                                                    <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
-                                                </t>
-                                                <t t-else="">
-                                                    <t t-out="line.product_uom_qty"/>
-                                                </t>
-                                            </td>
-                                            <td class="text-end">
-                                                <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                            </td>
-                                            <td class="text-end">
-                                                <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                            </td>
-                                        </tr>
-                                        <!-- Show added lines from pending change request -->
-                                        <t t-if="pending_additions">
-                                            <t t-foreach="pending_additions" t-as="add_line">
-                                                <tr class="table-success">
-                                                    <td>
-                                                        <span t-out="add_line.product_id.display_name"/>
-                                                        <small class="d-block text-muted" t-if="add_line.product_id.default_code">
-                                                            SKU: <t t-out="add_line.product_id.default_code"/>
-                                                        </small>
-                                                        <span class="badge bg-success ms-1">New (Pending)</span>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <span class="text-success fw-bold"><t t-out="add_line.new_qty"/></span>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span t-out="add_line.new_price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                    </td>
-                                                    <td class="text-end text-muted">-</td>
-                                                </tr>
                                             </t>
-                                        </t>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                            <td class="text-end">
-                                                <strong>
-                                                    <span t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                </strong>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-
-                                <t t-if="active_change_request">
-                                    <div class="alert alert-info">
-                                        <strong>Active Change Request:</strong>
-                                        <a t-attf-href="/my/rentals/#{order.id}/change-request/#{active_change_request.id}">
-                                            <t t-out="active_change_request.name"/>
-                                        </a>
-                                        (<span t-out="active_change_request.state"/>)
-                                    </div>
-                                </t>
-                                <t t-else="">
-                                    <t t-if="order.state == 'sale'">
-                                        <a t-attf-href="/my/rentals/#{order.id}/change-request/new" class="btn btn-primary">
-                                            Request Changes
-                                        </a>
-                                    </t>
-                                </t>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </t>
-    </template>
-
-    <!-- Change Request editor page (OWL app mount point) -->
-    <template id="portal_change_request_page" name="Change Request Editor">
-        <t t-call="portal.portal_layout">
-            <t t-set="order" t-value="order"/>
-            <t t-set="change_request" t-value="change_request"/>
-
-            <div class="o_portal_change_request container mt-3 mb-5">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <!-- OWL App Mount Point -->
-                        <div id="rental_change_request_app"
-                             t-att-data-order-id="order.id"
-                             t-att-data-change-request-id="change_request.id if change_request else 0"
-                             t-att-data-csrf-token="request.csrf_token()">
-                            <div class="text-center py-5 o_app_loading_indicator">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                                        </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                                <td class="text-end">
+                                                    <strong t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
-                                <p class="mt-2 text-muted o_loading_fallback d-none">
-                                    Si la pantalla no carga, por favor recarga la página (Ctrl+F5).
-                                </p>
                             </div>
-                            <script>
-                                setTimeout(function() {
-                                    var indicator = document.querySelector('.o_app_loading_indicator');
-                                    var fallback = document.querySelector('.o_loading_fallback');
-                                    // Only show fallback if the mount point still contains the indicator 
-                                    // (meaning OWL hasn't cleared it yet)
-                                    if (indicator &amp;&amp; fallback &amp;&amp; indicator.contains(fallback)) {
-                                        fallback.classList.remove('d-none');
-                                    }
-                                }, 5000);
-                            </script>
                         </div>
                     </div>
                 </div>
-            </div>
-        </t>
-    </template>
+            </t>
+        </template>
 
+        <!-- Portal: Change Request Editor (OWL App) -->
+        <template id="portal_change_request_editor" name="Change Request Editor">
+            <t t-call="portal.portal_layout">
+                <div id="rental-change-request-app" t-att-data-order-id="order.id">
+                    <!-- OWL app will mount here -->
+                    <div class="text-center py-5">
+                        <i class="fa fa-spinner fa-spin fa-3x text-primary"/>
+                        <p class="mt-3">Loading editor...</p>
+                    </div>
+                </div>
+
+                <!-- Load OWL bundle -->
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/rental_portal_owl_bundle.js"/>
+            </t>
+        </template>
+
+    </data>
 </odoo>
