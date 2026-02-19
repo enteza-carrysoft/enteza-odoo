@@ -117,13 +117,31 @@
                                     </thead>
                                     <tbody>
                                         <tr t-foreach="order.order_line" t-as="line">
+                                            <t t-set="pending" t-value="pending_changes.get(line.product_id.id) if pending_changes else False"/>
                                             <td>
                                                 <span t-out="line.product_id.display_name"/>
                                                 <small class="d-block text-muted" t-if="line.product_id.default_code">
                                                     SKU: <t t-out="line.product_id.default_code"/>
                                                 </small>
+                                                <t t-if="pending and pending.get('operation') == 'remove'">
+                                                    <span class="badge bg-danger ms-1">Pending removal</span>
+                                                </t>
                                             </td>
-                                            <td class="text-center"><t t-out="line.product_uom_qty"/></td>
+                                            <td class="text-center">
+                                                <t t-if="pending and pending.get('operation') == 'update'">
+                                                    <!-- Show original qty struck through and new qty -->
+                                                    <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
+                                                    <i class="fa fa-arrow-right mx-1 text-primary"/>
+                                                    <span class="text-primary fw-bold"><t t-out="pending.get('new_qty')"/></span>
+                                                    <span class="badge bg-warning text-dark ms-1">Pending</span>
+                                                </t>
+                                                <t t-elif="pending and pending.get('operation') == 'remove'">
+                                                    <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-out="line.product_uom_qty"/>
+                                                </t>
+                                            </td>
                                             <td class="text-end">
                                                 <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                             </td>
@@ -131,6 +149,27 @@
                                                 <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
                                             </td>
                                         </tr>
+                                        <!-- Show added lines from pending change request -->
+                                        <t t-if="pending_additions">
+                                            <t t-foreach="pending_additions" t-as="add_line">
+                                                <tr class="table-success">
+                                                    <td>
+                                                        <span t-out="add_line.product_id.display_name"/>
+                                                        <small class="d-block text-muted" t-if="add_line.product_id.default_code">
+                                                            SKU: <t t-out="add_line.product_id.default_code"/>
+                                                        </small>
+                                                        <span class="badge bg-success ms-1">New (Pending)</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="text-success fw-bold"><t t-out="add_line.new_qty"/></span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span t-out="add_line.new_price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                    </td>
+                                                    <td class="text-end text-muted">-</td>
+                                                </tr>
+                                            </t>
+                                        </t>
                                     </tbody>
                                     <tfoot>
                                         <tr>

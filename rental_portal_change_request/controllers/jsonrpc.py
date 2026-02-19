@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from odoo import _
+from odoo import _, fields
 from odoo import http
 from odoo.http import request
 from odoo.exceptions import AccessError, ValidationError
@@ -255,8 +255,8 @@ class RentalPortalJsonRpc(http.Controller):
                         'id': cr.order_id.id,
                         'name': cr.order_id.name,
                         'state': cr.order_id.state,
-                        'date_order': cr.order_id.date_order,
-                        'write_date': cr.order_id.write_date,
+                        'date_order': fields.Datetime.to_string(cr.order_id.date_order) if cr.order_id.date_order else None,
+                        'write_date': fields.Datetime.to_string(cr.order_id.write_date) if cr.order_id.write_date else None,
                     },
                     'lines': cr.get_revision_order_lines(),
                 }
@@ -299,8 +299,8 @@ class RentalPortalJsonRpc(http.Controller):
                         'id': order.id,
                         'name': order.name,
                         'state': order.state,
-                        'date_order': order.date_order,
-                        'write_date': order.write_date,
+                        'date_order': fields.Datetime.to_string(order.date_order) if order.date_order else None,
+                        'write_date': fields.Datetime.to_string(order.write_date) if order.write_date else None,
                     },
                     'lines': lines,
                 }

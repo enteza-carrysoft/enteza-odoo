@@ -246,6 +246,7 @@ export class RentalChangeRequestApp extends Component {
             order: {},
             changeRequest: null,
             lines: [],
+            originalLines: [], // Track original lines to detect removals
             note: "",
             error: null,
             hasChanges: false,
@@ -269,6 +270,8 @@ export class RentalChangeRequestApp extends Component {
                 this.state.order = data.order;
                 this.state.changeRequest = data.change_request;
                 this.state.lines = data.lines || [];
+                // Store a copy of original lines to track removals
+                this.state.originalLines = JSON.parse(JSON.stringify(data.lines || []));
                 if (data.change_request) {
                     this.state.note = data.change_request.submission_note || "";
                     this.state.revision_token = data.change_request.expected_revision_write_date;
@@ -339,29 +342,101 @@ export class RentalChangeRequestApp extends Component {
     async onSaveDraft() {
         this.state.isLoading = true;
         try {
+            // Store current user edits before any API calls
+            const userEditedLines = JSON.parse(JSON.stringify(this.state.lines));
+            const originalLinesBeforeStart = JSON.parse(JSON.stringify(this.state.originalLines));
+
             // If no CR yet, start one
             if (!this.state.changeRequestId) {
                 const startRes = await rpc("/rental_portal/jsonrpc/change_request/start", { order_id: this.state.orderId });
                 if (!startRes.success) throw new Error(startRes.error);
                 this.state.changeRequestId = startRes.change_request;
+                this.state.order_token = startRes.order_write_date;
+                this.state.revision_token = startRes.revision_write_date;
+
+                // Load revision data to get the new line IDs
+                // The revision is a copy of the original order, so line IDs will be different
+                const loadRes = await rpc("/rental_portal/jsonrpc/change_request/load", {
+                    change_request_id: this.state.changeRequestId,
+                    order_id: this.state.orderId,
+                });
+
+                if (!loadRes.success) throw new Error(loadRes.error);
+
+                // Map from original product_id to new revision line_id
+                const revisionLineByProduct = {};
+                for (const revLine of (loadRes.lines || [])) {
+                    revisionLineByProduct[revLine.product_id] = revLine;
+                }
+
+                // Update the user edited lines with the new revision line IDs
+                for (const line of userEditedLines) {
+                    if (!line.id.toString().startsWith('temp')) {
+                        // This was an original line - find its corresponding revision line
+                        const revLine = revisionLineByProduct[line.product_id];
+                        if (revLine) {
+                            line.id = revLine.id; // Update to revision line ID
+                        }
+                    }
+                }
+
+                // Also update originalLines to reflect revision lines
+                this.state.originalLines = loadRes.lines || [];
+                this.state.revision_token = loadRes.change_request?.expected_revision_write_date || this.state.revision_token;
             }
 
-            // Patch with current lines
+            // Build patch operations based on user edits
+            const patchOperations = [];
+
+            // Current line IDs (non-temp)
+            const currentLineIds = new Set(
+                userEditedLines
+                    .filter(l => !l.id.toString().startsWith('temp'))
+                    .map(l => l.id)
+            );
+
+            // Find removed lines (were in originalLines but not in current)
+            for (const origLine of this.state.originalLines) {
+                if (!origLine.id.toString().startsWith('temp') && !currentLineIds.has(origLine.id)) {
+                    patchOperations.push({
+                        operation: 'remove',
+                        product_id: origLine.product_id,
+                        line_id: origLine.id,
+                    });
+                }
+            }
+
+            // Add/update operations for current lines
+            for (const line of userEditedLines) {
+                if (line.id.toString().startsWith('temp')) {
+                    patchOperations.push({
+                        operation: 'add',
+                        product_id: line.product_id,
+                        qty: line.qty,
+                        line_id: null,
+                    });
+                } else {
+                    patchOperations.push({
+                        operation: 'update',
+                        product_id: line.product_id,
+                        qty: line.qty,
+                        line_id: line.id,
+                    });
+                }
+            }
+
+            // Patch with operations
             const patchRes = await rpc("/rental_portal/jsonrpc/change_request/patch", {
                 change_request_id: this.state.changeRequestId,
-                patch_operations: this.state.lines.map(l => ({
-                    operation: l.id.toString().startsWith('temp') ? 'add' : 'update',
-                    product_id: l.product_id,
-                    qty: l.qty,
-                    line_id: l.id.toString().startsWith('temp') ? null : l.id,
-                })),
+                patch_operations: patchOperations,
                 token_order: this.state.order_token,
                 token_revision: this.state.revision_token,
             });
 
             if (patchRes.success) {
                 this.state.hasChanges = false;
-                await this._loadData(); // Refresh IDs
+                this.state.revision_token = patchRes.new_revision_token;
+                await this._loadData(); // Refresh IDs and originalLines
             } else {
                 this.state.error = patchRes.error;
             }

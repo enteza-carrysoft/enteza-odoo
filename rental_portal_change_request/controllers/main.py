@@ -52,9 +52,27 @@ class PortalRentalOrders(CustomerPortal):
         values = self._prepare_portal_layout_values()
         active_change_request = order.x_active_change_request_id or None
 
+        # Build a map of pending changes by product_id for display
+        pending_changes = {}
+        pending_additions = []
+        if active_change_request and active_change_request.state == 'submitted':
+            for cr_line in active_change_request.change_request_line_ids:
+                if cr_line.operation == 'add':
+                    pending_additions.append(cr_line)
+                else:
+                    pending_changes[cr_line.product_id.id] = {
+                        'operation': cr_line.operation,
+                        'original_qty': cr_line.original_qty,
+                        'new_qty': cr_line.new_qty,
+                        'original_price': cr_line.original_price_unit,
+                        'new_price': cr_line.new_price_unit,
+                    }
+
         values.update({
             'order': order,
             'active_change_request': active_change_request,
+            'pending_changes': pending_changes,
+            'pending_additions': pending_additions,
         })
 
         return request.render('rental_portal_change_request.portal_rental_order_page', values)

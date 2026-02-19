@@ -65,12 +65,14 @@
                         <notebook>
                             <page string="Changes" name="changes">
                                 <field name="change_request_line_ids">
-                                    <list>
+                                    <list decoration-success="operation == 'add'" decoration-danger="operation == 'remove'" decoration-warning="operation == 'update'">
                                         <field name="product_id"/>
-                                        <field name="operation"/>
-                                        <field name="original_qty" invisible="operation == 'add'"/>
-                                        <field name="new_qty" invisible="operation == 'remove'"/>
-                                        <field name="availability_status"/>
+                                        <field name="operation" decoration-bf="1"/>
+                                        <field name="original_qty" string="Original Qty"/>
+                                        <field name="new_qty" string="New Qty"/>
+                                        <field name="original_price_unit" string="Original Price" optional="hide"/>
+                                        <field name="new_price_unit" string="New Price" optional="hide"/>
+                                        <field name="availability_status" optional="hide"/>
                                     </list>
                                 </field>
                             </page>

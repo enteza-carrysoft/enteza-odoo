@@ -312,8 +312,8 @@ class RentalChangeRequest(models.Model):
                 'change_request': change_request.id,
                 'revision_order': revision_order.id,
                 'name': change_request.name,
-                'order_write_date': order_write_date,
-                'revision_write_date': revision_order.write_date,
+                'order_write_date': fields.Datetime.to_string(order_write_date),
+                'revision_write_date': fields.Datetime.to_string(revision_order.write_date),
             }
 
         except AccessError:
@@ -359,14 +359,27 @@ class RentalChangeRequest(models.Model):
                     'error': _('Change request is not in editable state')
                 }
 
-            # Verify concurrency tokens
-            if request.expected_order_write_date != token_order:
+            # Verify concurrency tokens (convert to string for comparison)
+            # Tokens can be datetime objects or ISO strings depending on source
+            def normalize_token(token):
+                if token is None:
+                    return None
+                if isinstance(token, str):
+                    return token
+                return fields.Datetime.to_string(token)
+
+            expected_order_token = normalize_token(request.expected_order_write_date)
+            expected_revision_token = normalize_token(request.expected_revision_write_date)
+            received_order_token = normalize_token(token_order)
+            received_revision_token = normalize_token(token_revision)
+
+            if expected_order_token and received_order_token and expected_order_token != received_order_token:
                 return {
                     'success': False,
                     'error': _('Order has been modified by another user. Please refresh.')
                 }
 
-            if request.expected_revision_write_date != token_revision:
+            if expected_revision_token and received_revision_token and expected_revision_token != received_revision_token:
                 return {
                     'success': False,
                     'error': _('Revision has been modified by another user. Please refresh.')
@@ -430,6 +443,9 @@ class RentalChangeRequest(models.Model):
                         'operation': 'remove',
                     })
 
+            # Refresh revision to get updated write_date
+            revision.invalidate_recordset(['write_date'])
+
             # Update concurrency token
             request.write({
                 'expected_revision_write_date': revision.write_date,
@@ -438,7 +454,7 @@ class RentalChangeRequest(models.Model):
             return {
                 'success': True,
                 'lines': created_lines,
-                'new_revision_token': revision.write_date,
+                'new_revision_token': fields.Datetime.to_string(revision.write_date),
             }
 
         except Exception as e:
@@ -860,8 +876,9 @@ class RentalChangeRequest(models.Model):
             'can_approve': self.can_approve,
             'line_count': self.line_count,
             'diff_json': self.diff_json,
-            'expected_order_write_date': self.expected_order_write_date,
-            'expected_revision_write_date': self.expected_revision_write_date,
+            'submission_note': self.submission_note or '',
+            'expected_order_write_date': fields.Datetime.to_string(self.expected_order_write_date) if self.expected_order_write_date else None,
+            'expected_revision_write_date': fields.Datetime.to_string(self.expected_revision_write_date) if self.expected_revision_write_date else None,
         }
 
     def get_revision_order_lines(self):
