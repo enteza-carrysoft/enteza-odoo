@@ -108,7 +108,6 @@ class RentalChangeRequestLine(models.Model):
                     'Quantity must be greater than zero for add/update operations.'
                 ))
 
-    @api.depends('product_id', 'operation', 'original_line_id', 'original_qty', 'new_qty')
     def _compute_display_name(self):
         """Odoo 19 replacement for deprecated name_get()"""
         for line in self:

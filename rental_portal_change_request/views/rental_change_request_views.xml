@@ -6,6 +6,7 @@
         <record id="rental_change_request_tree_view" model="ir.ui.view">
             <field name="name">rental.change_request.tree</field>
             <field name="model">rental.change_request</field>
+            <field name="priority">16</field>
             <field name="arch" type="xml">
                 <list string="Change Requests"
                       decoration-muted="state == 'cancelled'"
@@ -30,6 +31,7 @@
         <record id="rental_change_request_form_view" model="ir.ui.view">
             <field name="name">rental.change_request.form</field>
             <field name="model">rental.change_request</field>
+            <field name="priority">16</field>
             <field name="arch" type="xml">
                 <form string="Change Request">
                     <header>
@@ -96,6 +98,7 @@
         <record id="rental_change_request_search_view" model="ir.ui.view">
             <field name="name">rental.change_request.search</field>
             <field name="model">rental.change_request</field>
+            <field name="priority">16</field>
             <field name="arch" type="xml">
                 <search>
                     <field name="name"/>
