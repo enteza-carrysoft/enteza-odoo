@@ -213,19 +213,19 @@
             </t>
         </template>
 
-        <!-- Portal: Change Request Editor (OWL App) -->
+        <!-- Portal: Change Request Editor -->
         <template id="portal_change_request_editor" name="Change Request Editor">
             <t t-call="portal.portal_layout">
                 <div id="rental-change-request-app" t-att-data-order-id="order.id">
-                    <!-- OWL app will mount here -->
+                    <!-- Editor will mount here -->
                     <div class="text-center py-5">
                         <i class="fa fa-spinner fa-spin fa-3x text-primary"/>
                         <p class="mt-3">Loading editor...</p>
                     </div>
                 </div>
 
-                <!-- Load OWL bundle -->
-                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/rental_portal_owl_bundle.js"/>
+                <!-- Load editor script -->
+                <script type="text/javascript" src="/rental_portal_change_request/static/src/js/rental_portal_editor.js"/>
             </t>
         </template>
 
