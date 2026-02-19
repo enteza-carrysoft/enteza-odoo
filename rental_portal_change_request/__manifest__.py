@@ -35,7 +35,7 @@
     'depends': [
         'base',
         'sale_management',
-        'sale_rental',
+        'sale_renting',
         'website_sale',
         'portal',
         'mail',
