@@ -7,7 +7,7 @@ from odoo.tools import float_compare
 
 
 class RentalChangeRequestRejectWizard(models.TransientModel):
-    _name = 'rental.change.request.reject.wizard'
+    _name = 'rental.change_request.reject.wizard'
     _description = 'Reject Change Request Wizard'
 
     change_request_id = fields.Many2one(
@@ -321,7 +321,7 @@ class RentalChangeRequest(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': _('Reject Change Request'),
-            'res_model': 'rental.change.request.reject.wizard',
+            'res_model': 'rental.change_request.reject.wizard',
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_change_request_id': self.id}
