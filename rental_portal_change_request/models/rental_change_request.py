@@ -408,7 +408,6 @@ class RentalChangeRequest(models.Model):
                         'order_id': revision.id,
                         'product_id': product.id,
                         'product_uom_qty': qty,
-                        'product_uom': product.uom_id.id,
                     })
                     created_lines.append({
                         'id': new_line.id,
@@ -562,10 +561,12 @@ class RentalChangeRequest(models.Model):
                 })
             else:
                 orig_line = original_lines[product_id]
+                # Use product's UoM rounding for quantity comparison
+                uom_rounding = rev_line.product_id.uom_id.rounding if rev_line.product_id.uom_id else 0.01
                 if (float_compare(
                     rev_line.product_uom_qty,
                     orig_line.product_uom_qty,
-                    precision_rounding=rev_line.product_uom.rounding
+                    precision_rounding=uom_rounding
                 ) != 0 or
                     float_compare(
                     rev_line.price_unit,

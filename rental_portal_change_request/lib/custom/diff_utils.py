@@ -56,10 +56,12 @@ class DiffUtils(models.AbstractModel):
             else:
                 # Check if product was updated
                 orig_line = original_dict[product_id]
+                # Use product's UoM rounding for quantity comparison
+                uom_rounding = rev_line.product_id.uom_id.rounding if rev_line.product_id.uom_id else 0.01
                 qty_changed = float_compare(
                     rev_line.product_uom_qty,
                     orig_line.product_uom_qty,
-                    precision_rounding=rev_line.product_uom.rounding
+                    precision_rounding=uom_rounding
                 ) != 0
                 price_changed = float_compare(
                     rev_line.price_unit,
