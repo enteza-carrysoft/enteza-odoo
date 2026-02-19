@@ -393,33 +393,50 @@ class RentalChangeRequest(models.Model):
                     'error': _('Revision order not found')
                 }
 
+            # Build a map of revision lines by product_id for easier lookup
+            revision_lines_by_product = {
+                line.product_id.id: line for line in revision.order_line
+            }
+
             # Apply operations
             created_lines = []
             for op in patch_operations:
                 operation = op.get('operation')
                 product_id = op.get('product_id')
                 qty = op.get('qty', 1.0)
-                line_id = op.get('line_id')
 
                 if operation == 'add':
-                    # Add new line to revision
-                    product = self.env['product.product'].browse(product_id)
-                    new_line = self.env['sale.order.line'].create({
-                        'order_id': revision.id,
-                        'product_id': product.id,
-                        'product_uom_qty': qty,
-                    })
-                    created_lines.append({
-                        'id': new_line.id,
-                        'product_id': product_id,
-                        'operation': 'add',
-                        'new_qty': qty,
-                    })
+                    # Check if product already exists in revision (should not happen, but handle it)
+                    existing_line = revision_lines_by_product.get(product_id)
+                    if existing_line:
+                        # Update instead of add
+                        existing_line.write({'product_uom_qty': qty})
+                        created_lines.append({
+                            'id': existing_line.id,
+                            'product_id': product_id,
+                            'operation': 'update',
+                            'new_qty': qty,
+                        })
+                    else:
+                        # Add new line to revision
+                        product = self.env['product.product'].browse(product_id)
+                        new_line = self.env['sale.order.line'].create({
+                            'order_id': revision.id,
+                            'product_id': product.id,
+                            'product_uom_qty': qty,
+                        })
+                        revision_lines_by_product[product_id] = new_line
+                        created_lines.append({
+                            'id': new_line.id,
+                            'product_id': product_id,
+                            'operation': 'add',
+                            'new_qty': qty,
+                        })
 
                 elif operation == 'update':
-                    # Update existing line
-                    line = self.env['sale.order.line'].browse(line_id)
-                    if line.order_id.id != revision.id:
+                    # Find line by product_id instead of line_id (more robust)
+                    line = revision_lines_by_product.get(product_id)
+                    if not line:
                         continue
                     line.write({
                         'product_uom_qty': qty,
@@ -432,12 +449,12 @@ class RentalChangeRequest(models.Model):
                     })
 
                 elif operation == 'remove':
-                    # Remove line
-                    line = self.env['sale.order.line'].browse(line_id)
-                    if line.order_id.id == revision.id:
+                    # Find line by product_id instead of line_id (more robust)
+                    line = revision_lines_by_product.get(product_id)
+                    if line:
                         line.unlink()
+                        del revision_lines_by_product[product_id]
                     created_lines.append({
-                        'id': line_id,
                         'product_id': product_id,
                         'operation': 'remove',
                     })

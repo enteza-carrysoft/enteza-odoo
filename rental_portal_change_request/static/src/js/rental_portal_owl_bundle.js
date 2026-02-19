@@ -344,7 +344,6 @@ export class RentalChangeRequestApp extends Component {
         try {
             // Store current user edits before any API calls
             const userEditedLines = JSON.parse(JSON.stringify(this.state.lines));
-            const originalLinesBeforeStart = JSON.parse(JSON.stringify(this.state.originalLines));
 
             // If no CR yet, start one
             if (!this.state.changeRequestId) {
@@ -353,74 +352,43 @@ export class RentalChangeRequestApp extends Component {
                 this.state.changeRequestId = startRes.change_request;
                 this.state.order_token = startRes.order_write_date;
                 this.state.revision_token = startRes.revision_write_date;
-
-                // Load revision data to get the new line IDs
-                // The revision is a copy of the original order, so line IDs will be different
-                const loadRes = await rpc("/rental_portal/jsonrpc/change_request/load", {
-                    change_request_id: this.state.changeRequestId,
-                    order_id: this.state.orderId,
-                });
-
-                if (!loadRes.success) throw new Error(loadRes.error);
-
-                // Map from original product_id to new revision line_id
-                const revisionLineByProduct = {};
-                for (const revLine of (loadRes.lines || [])) {
-                    revisionLineByProduct[revLine.product_id] = revLine;
-                }
-
-                // Update the user edited lines with the new revision line IDs
-                for (const line of userEditedLines) {
-                    if (!line.id.toString().startsWith('temp')) {
-                        // This was an original line - find its corresponding revision line
-                        const revLine = revisionLineByProduct[line.product_id];
-                        if (revLine) {
-                            line.id = revLine.id; // Update to revision line ID
-                        }
-                    }
-                }
-
-                // Also update originalLines to reflect revision lines
-                this.state.originalLines = loadRes.lines || [];
-                this.state.revision_token = loadRes.change_request?.expected_revision_write_date || this.state.revision_token;
             }
 
             // Build patch operations based on user edits
+            // We use product_id to identify lines (more robust than line_id mapping)
             const patchOperations = [];
 
-            // Current line IDs (non-temp)
-            const currentLineIds = new Set(
-                userEditedLines
-                    .filter(l => !l.id.toString().startsWith('temp'))
-                    .map(l => l.id)
-            );
+            // Build set of current product_ids
+            const currentProductIds = new Set(userEditedLines.map(l => l.product_id));
 
-            // Find removed lines (were in originalLines but not in current)
+            // Find removed products (were in original but not in current)
             for (const origLine of this.state.originalLines) {
-                if (!origLine.id.toString().startsWith('temp') && !currentLineIds.has(origLine.id)) {
+                if (!currentProductIds.has(origLine.product_id)) {
                     patchOperations.push({
                         operation: 'remove',
                         product_id: origLine.product_id,
-                        line_id: origLine.id,
                     });
                 }
             }
 
+            // Build set of original product_ids
+            const originalProductIds = new Set(this.state.originalLines.map(l => l.product_id));
+
             // Add/update operations for current lines
             for (const line of userEditedLines) {
-                if (line.id.toString().startsWith('temp')) {
+                if (!originalProductIds.has(line.product_id)) {
+                    // New product - add operation
                     patchOperations.push({
                         operation: 'add',
                         product_id: line.product_id,
                         qty: line.qty,
-                        line_id: null,
                     });
                 } else {
+                    // Existing product - update operation
                     patchOperations.push({
                         operation: 'update',
                         product_id: line.product_id,
                         qty: line.qty,
-                        line_id: line.id,
                     });
                 }
             }
@@ -436,7 +404,7 @@ export class RentalChangeRequestApp extends Component {
             if (patchRes.success) {
                 this.state.hasChanges = false;
                 this.state.revision_token = patchRes.new_revision_token;
-                await this._loadData(); // Refresh IDs and originalLines
+                await this._loadData(); // Refresh data
             } else {
                 this.state.error = patchRes.error;
             }
