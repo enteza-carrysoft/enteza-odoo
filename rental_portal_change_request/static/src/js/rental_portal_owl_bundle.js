@@ -146,7 +146,15 @@ class CatalogPanel extends Component {
     }
     async search(term) {
         const result = await rpc("/rental_portal/jsonrpc/catalog/search", { search_term: term });
-        if (result.success) this.state.products = result.products;
+        if (result.success) {
+            // Defensive mapping for old/new Python fields
+            this.state.products = (result.products || []).map(p => ({
+                product_id: p.product_id || p.id,
+                product_name: p.product_name || p.name || 'Unknown Product',
+                product_code: p.product_code || p.default_code || '',
+                price_unit: p.price_unit || p.lst_price || 0,
+            }));
+        }
     }
 }
 

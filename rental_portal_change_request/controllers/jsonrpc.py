@@ -54,15 +54,15 @@ class RentalPortalJsonRpc(http.Controller):
             }
         """
         try:
-            # Verify order belongs to user
-            order = request.env['sale.order'].browse(order_id)
-            if order.partner_id.id != request.env.user.partner_id.id:
+            # Verify order belongs to user or company
+            order = request.env['sale.order'].sudo().browse(order_id)
+            if not order.exists() or order.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                 return {
                     'success': False,
                     'error': _('You do not have permission to access this order')
                 }
 
-            result = request.env['rental.change_request'].start_from_order_atomic(order_id)
+            result = request.env['rental.change_request'].sudo().start_from_order_atomic(order_id)
             return result
 
         except Exception as e:
@@ -98,15 +98,15 @@ class RentalPortalJsonRpc(http.Controller):
             }
         """
         try:
-            # Verify change request belongs to user
-            cr = request.env['rental.change_request'].browse(change_request_id)
-            if cr.order_id.partner_id.id != request.env.user.partner_id.id:
+            # Verify change request belongs to user/company
+            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
+            if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                 return {
                     'success': False,
                     'error': _('You do not have permission to access this change request')
                 }
 
-            result = request.env['rental.change_request'].patch_revision_atomic(
+            result = request.env['rental.change_request'].sudo().patch_revision_atomic(
                 change_request_id,
                 patch_operations,
                 token_order,
@@ -142,15 +142,15 @@ class RentalPortalJsonRpc(http.Controller):
             }
         """
         try:
-            # Verify change request belongs to user
-            cr = request.env['rental.change_request'].browse(change_request_id)
-            if cr.order_id.partner_id.id != request.env.user.partner_id.id:
+            # Verify change request belongs to user/company
+            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
+            if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                 return {
                     'success': False,
                     'error': _('You do not have permission to access this change request')
                 }
 
-            result = request.env['rental.change_request'].submit_atomic(
+            result = request.env['rental.change_request'].sudo().submit_atomic(
                 change_request_id,
                 note
             )
@@ -183,9 +183,9 @@ class RentalPortalJsonRpc(http.Controller):
             }
         """
         try:
-            # Verify change request belongs to user
-            cr = request.env['rental.change_request'].browse(change_request_id)
-            if cr.order_id.partner_id.id != request.env.user.partner_id.id:
+            # Verify change request belongs to user/company
+            cr = request.env['rental.change_request'].sudo().browse(change_request_id)
+            if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                 return {
                     'success': False,
                     'error': _('You do not have permission to access this change request')
@@ -226,8 +226,8 @@ class RentalPortalJsonRpc(http.Controller):
         try:
             if change_request_id:
                 # Load existing change request
-                cr = request.env['rental.change_request'].browse(change_request_id)
-                if cr.order_id.partner_id.id != request.env.user.partner_id.id:
+                cr = request.env['rental.change_request'].sudo().browse(change_request_id)
+                if not cr.exists() or cr.order_id.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                     return {
                         'success': False,
                         'error': _('You do not have permission to access this change request')
@@ -253,8 +253,8 @@ class RentalPortalJsonRpc(http.Controller):
                         'error': _('Order ID is required')
                     }
 
-                order = request.env['sale.order'].browse(order_id)
-                if order.partner_id.id != request.env.user.partner_id.id:
+                order = request.env['sale.order'].sudo().browse(order_id)
+                if not order.exists() or order.partner_id.commercial_partner_id.id != request.env.user.partner_id.commercial_partner_id.id:
                     return {
                         'success': False,
                         'error': _('You do not have permission to access this order')
