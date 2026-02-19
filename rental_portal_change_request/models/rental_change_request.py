@@ -174,20 +174,20 @@ class RentalChangeRequest(models.Model):
         for request in self:
             request.can_edit = (
                 request.state in ['draft', 'editing'] and
-                request.order_id.partner_id.id == self.env.user.partner_id.id
+                request.order_id.partner_id.commercial_partner_id.id == self.env.user.partner_id.commercial_partner_id.id
             )
 
     def _compute_can_submit(self):
         for request in self:
             request.can_submit = (
                 request.state in ['draft', 'editing'] and
-                request.order_id.partner_id.id == self.env.user.partner_id.id and
+                request.order_id.partner_id.commercial_partner_id.id == self.env.user.partner_id.commercial_partner_id.id and
                 request.line_count > 0
             )
 
     def _compute_can_approve(self):
         for request in self:
-            is_commercial = self.user_has_groups('sales_team.group_sale_manager')
+            is_commercial = self.env.user.has_group('sales_team.group_sale_manager')
             request.can_approve = (
                 request.state == 'submitted' and is_commercial
             )
