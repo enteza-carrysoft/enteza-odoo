@@ -201,7 +201,7 @@ export class RentalChangeRequestApp extends Component {
             <div t-else="" class="row">
                 <div class="col-lg-8">
                     <!-- Lines Table Component -->
-                    <OrderLinesTable lines="state.lines" onLineUpdate.bind="this.onLineUpdate" onLineRemove.bind="this.onLineRemove" formatMonetary.bind="this.formatMonetary"/>
+                    <OrderLinesTable lines="state.lines" onLineUpdate="onLineUpdate" onLineRemove="onLineRemove" formatMonetary="formatMonetary"/>
                     
                     <!-- Submission Note -->
                     <div class="card mt-3">
@@ -224,8 +224,8 @@ export class RentalChangeRequestApp extends Component {
                 <div class="col-lg-4">
                     <!-- Right Sidebar: Quick Add & Catalog -->
                     <div class="sticky-top" style="top: 20px;">
-                        <QuickAddBySKU onProductAdded.bind="this.onProductAdded"/>
-                        <CatalogPanel onProductAdded.bind="this.onProductAdded"/>
+                        <QuickAddBySKU onProductAdded="onProductAdded"/>
+                        <CatalogPanel onProductAdded="onProductAdded"/>
                     </div>
                 </div>
             </div>
