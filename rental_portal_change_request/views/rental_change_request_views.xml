@@ -105,14 +105,14 @@
                     <field name="name"/>
                     <field name="order_id"/>
                     <field name="partner_id"/>
-                    <field name="state"/>
+                    <separator/>
                     <filter string="Draft" name="state_draft" domain="[('state', '=', 'draft')]"/>
                     <filter string="Editing" name="state_editing" domain="[('state', '=', 'editing')]"/>
                     <filter string="Submitted" name="state_submitted" domain="[('state', '=', 'submitted')]"/>
                     <filter string="Approved" name="state_approved" domain="[('state', '=', 'approved')]"/>
                     <filter string="Rejected" name="state_rejected" domain="[('state', '=', 'rejected')]"/>
                     <separator/>
-                    <filter string="My Orders" name="my_orders" domain="[('order_id.partner_id', '=', uid)]"/>
+                    <filter string="My Orders" name="my_orders" domain="[('partner_id', '=', uid)]"/>
                     <group expand="0" string="Group By">
                         <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
                         <filter string="Customer" name="group_customer" context="{'group_by': 'partner_id'}"/>
