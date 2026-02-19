@@ -35,10 +35,14 @@
                         <button name="action_reject" string="Reject" type="object"
                                 invisible="state != 'submitted' or not can_approve"/>
                         <button name="action_cancel" string="Cancel" type="object"
-                                invisible="state not in ['draft', 'editing', 'submitted']"/>
+                                invisible="state not in ('draft', 'editing', 'submitted')"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,editing,submitted,approved,rejected,cancelled,applied"/>
                     </header>
                     <sheet>
+                        <!-- Hidden computed fields needed for invisible expressions -->
+                        <field name="can_edit" invisible="1"/>
+                        <field name="can_submit" invisible="1"/>
+                        <field name="can_approve" invisible="1"/>
                         <div class="oe_title">
                             <h1>
                                 <field name="name" readonly="1"/>
