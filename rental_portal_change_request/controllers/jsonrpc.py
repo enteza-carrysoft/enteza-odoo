@@ -115,18 +115,110 @@ class RentalPortalJsonRpc(http.Controller):
             return {'success': False, 'error': str(e)}
 
     @http.route(
+        '/rental_portal/jsonrpc/catalog/categories',
+        type='json',
+        auth='user',
+        methods=['POST'],
+        csrf=True
+    )
+    def catalog_categories(self, **kwargs):
+        """
+        Get product categories with parent-child hierarchy for tree navigation.
+
+        Returns:
+            dict: {
+                'success': bool,
+                'categories': [{'id', 'name', 'parent_id', 'product_count'}]
+            }
+        """
+        try:
+            Category = request.env['product.category'].sudo()
+            Product = request.env['product.product'].sudo()
+
+            categories = Category.search([])
+
+            category_data = []
+            for cat in categories:
+                product_count = Product.search_count([
+                    ('categ_id', 'child_of', cat.id),
+                    ('sale_ok', '=', True),
+                ])
+                if product_count > 0:
+                    category_data.append({
+                        'id': cat.id,
+                        'name': cat.name,  # Short name for tree nodes
+                        'parent_id': cat.parent_id.id if cat.parent_id else None,
+                        'product_count': product_count,
+                    })
+
+            return {
+                'success': True,
+                'categories': category_data,
+            }
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @http.route(
+        '/rental_portal/jsonrpc/catalog/by_sku',
+        type='json',
+        auth='user',
+        methods=['POST'],
+        csrf=True
+    )
+    def catalog_by_sku(self, sku, **kwargs):
+        """
+        Find a single product by exact SKU (default_code).
+
+        Args:
+            sku: str - The product reference/SKU to look up
+
+        Returns:
+            dict: {'success': bool, 'found': bool, 'product': dict}
+        """
+        try:
+            sku = (sku or '').strip()
+            if not sku:
+                return {'success': True, 'found': False}
+
+            Product = request.env['product.product'].sudo()
+            product = Product.search([
+                ('default_code', '=ilike', sku),
+                ('sale_ok', '=', True),
+            ], limit=1)
+
+            if not product:
+                return {'success': True, 'found': False}
+
+            return {
+                'success': True,
+                'found': True,
+                'product': {
+                    'product_id': product.id,
+                    'product_name': product.display_name,
+                    'product_code': product.default_code or '',
+                    'price_unit': product.lst_price,
+                    'category_name': product.categ_id.name if product.categ_id else '',
+                }
+            }
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @http.route(
         '/rental_portal/jsonrpc/catalog/search',
         type='json',
         auth='user',
         methods=['POST'],
         csrf=True
     )
-    def catalog_search(self, search_term='', limit=20, offset=0, **kwargs):
+    def catalog_search(self, search_term='', category_id=None, limit=20, offset=0, **kwargs):
         """
         Search products in catalog.
 
         Args:
             search_term: str - Search query
+            category_id: int - Filter by category (optional)
             limit: int - Max results
             offset: int - Pagination offset
 
@@ -136,15 +228,23 @@ class RentalPortalJsonRpc(http.Controller):
         try:
             Product = request.env['product.product'].sudo()
 
-            domain = [
-                ('sale_ok', '=', True),
-                '|',
-                ('default_code', 'ilike', search_term),
-                ('name', 'ilike', search_term),
-            ]
+            # Base domain
+            domain = [('sale_ok', '=', True)]
+
+            # Add category filter
+            if category_id:
+                domain.append(('categ_id', 'child_of', int(category_id)))
+
+            # Add search term filter
+            if search_term:
+                domain.extend([
+                    '|',
+                    ('default_code', 'ilike', search_term),
+                    ('name', 'ilike', search_term),
+                ])
 
             total_count = Product.search_count(domain)
-            products = Product.search(domain, limit=limit, offset=offset)
+            products = Product.search(domain, limit=limit, offset=offset, order='name')
 
             product_data = []
             for p in products:
@@ -153,6 +253,7 @@ class RentalPortalJsonRpc(http.Controller):
                     'product_name': p.display_name,
                     'product_code': p.default_code or '',
                     'price_unit': p.lst_price,
+                    'category_name': p.categ_id.display_name if p.categ_id else '',
                 })
 
             return {
