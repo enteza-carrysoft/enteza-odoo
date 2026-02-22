@@ -125,88 +125,165 @@
                             </t>
                         </div>
 
-                        <!-- Order Lines -->
+                        <!-- Order Lines grouped by family -->
                         <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Order Lines</h5>
-                                </div>
-                                <div class="card-body p-0">
-                                    <table class="table table-sm mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Product</th>
-                                                <th class="text-center">Qty</th>
-                                                <th class="text-end">Price</th>
-                                                <th class="text-end">Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr t-foreach="order.order_line" t-as="line">
-                                                <t t-set="pending" t-value="pending_changes.get(line.product_id.id) if pending_changes else False"/>
-                                                <td>
-                                                    <span t-out="line.product_id.display_name"/>
-                                                    <small t-if="line.product_id.default_code" class="d-block text-muted">
-                                                        SKU: <t t-out="line.product_id.default_code"/>
-                                                    </small>
-                                                    <t t-if="pending and pending.get('operation') == 'remove'">
-                                                        <span class="badge bg-danger ms-1">Pending removal</span>
-                                                    </t>
-                                                </td>
-                                                <td class="text-center">
-                                                    <t t-if="pending and pending.get('operation') == 'update'">
-                                                        <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
-                                                        <i class="fa fa-arrow-right mx-1 text-primary"/>
-                                                        <span class="text-primary fw-bold"><t t-out="pending.get('new_qty')"/></span>
-                                                        <span class="badge bg-warning text-dark ms-1">Pending</span>
-                                                    </t>
-                                                    <t t-elif="pending and pending.get('operation') == 'remove'">
-                                                        <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
-                                                    </t>
-                                                    <t t-else="">
-                                                        <t t-out="line.product_uom_qty"/>
-                                                    </t>
-                                                </td>
-                                                <td class="text-end">
-                                                    <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                </td>
-                                                <td class="text-end">
-                                                    <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                </td>
-                                            </tr>
-                                            <!-- Pending additions -->
-                                            <t t-if="pending_additions">
-                                                <t t-foreach="pending_additions" t-as="add_line">
-                                                    <tr class="table-success">
-                                                        <td>
-                                                            <span t-out="add_line.product_id.display_name"/>
-                                                            <small t-if="add_line.product_id.default_code" class="d-block text-muted">
-                                                                SKU: <t t-out="add_line.product_id.default_code"/>
-                                                            </small>
-                                                            <span class="badge bg-success ms-1">New (Pending)</span>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="text-success fw-bold"><t t-out="add_line.new_qty"/></span>
-                                                        </td>
-                                                        <td class="text-end">
-                                                            <span t-out="add_line.new_price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                        </td>
-                                                        <td class="text-end text-muted">-</td>
-                                                    </tr>
-                                                </t>
-                                            </t>
-                                        </tbody>
-                                        <tfoot class="table-light">
-                                            <tr>
-                                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                                <td class="text-end">
-                                                    <strong t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+
+                            <!-- Header + Expand/Collapse All -->
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0">Order Lines</h5>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-expand-all">
+                                        <i class="fa fa-plus-square-o me-1"/>Expand all
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-collapse-all">
+                                        <i class="fa fa-minus-square-o me-1"/>Collapse all
+                                    </button>
                                 </div>
                             </div>
+
+                            <!-- Accordion: one item per family -->
+                            <div class="accordion border rounded" id="orderLinesAccordion">
+
+                                <t t-foreach="grouped_lines" t-as="group">
+                                    <t t-set="categ_name" t-value="group[0]"/>
+                                    <t t-set="categ_lines" t-value="group[1]"/>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" t-attf-id="heading-#{group_index}">
+                                            <button class="accordion-button py-2 collapsed" type="button"
+                                                    data-bs-toggle="collapse"
+                                                    t-attf-data-bs-target="#collapse-#{group_index}"
+                                                    aria-expanded="false"
+                                                    t-attf-aria-controls="collapse-#{group_index}">
+                                                <i class="fa fa-tag me-2 text-muted" style="font-size:0.8rem;"/>
+                                                <span class="fw-semibold me-2"><t t-out="categ_name"/></span>
+                                                <span class="badge bg-secondary rounded-pill fw-normal" t-out="len(categ_lines)"/>
+                                            </button>
+                                        </h2>
+                                        <div t-attf-id="collapse-#{group_index}"
+                                             class="accordion-collapse collapse"
+                                             t-attf-aria-labelledby="heading-#{group_index}">
+                                            <div class="accordion-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Product</th>
+                                                                <th class="text-center" style="width:80px;">Qty</th>
+                                                                <th class="text-end" style="width:90px;">Price</th>
+                                                                <th class="text-end" style="width:100px;">Subtotal</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <t t-foreach="categ_lines" t-as="line">
+                                                                <t t-set="pending" t-value="pending_changes.get(line.product_id.id) if pending_changes else False"/>
+                                                                <tr>
+                                                                    <td>
+                                                                        <span t-out="line.product_id.display_name"/>
+                                                                        <t t-if="pending and pending.get('operation') == 'remove'">
+                                                                            <span class="badge bg-danger ms-1">Pending removal</span>
+                                                                        </t>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <t t-if="pending and pending.get('operation') == 'update'">
+                                                                            <span class="text-decoration-line-through text-muted me-1"><t t-out="line.product_uom_qty"/></span>
+                                                                            <i class="fa fa-arrow-right mx-1 text-primary"/>
+                                                                            <span class="text-primary fw-bold"><t t-out="pending.get('new_qty')"/></span>
+                                                                            <span class="badge bg-warning text-dark ms-1">Pending</span>
+                                                                        </t>
+                                                                        <t t-elif="pending and pending.get('operation') == 'remove'">
+                                                                            <span class="text-decoration-line-through text-muted"><t t-out="line.product_uom_qty"/></span>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <t t-out="line.product_uom_qty"/>
+                                                                        </t>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <span t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <span t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                                    </td>
+                                                                </tr>
+                                                            </t>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+
+                                <!-- Pending Additions (separate section, always visible) -->
+                                <t t-if="pending_additions">
+                                    <div class="accordion-item border-success">
+                                        <h2 class="accordion-header" id="headingAdditions">
+                                            <button class="accordion-button py-2" type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapseAdditions"
+                                                    aria-expanded="true"
+                                                    aria-controls="collapseAdditions"
+                                                    style="background-color:rgba(25,135,84,.08); color:#146c43;">
+                                                <i class="fa fa-plus-circle me-2"/>
+                                                <span class="fw-semibold me-2">Pending Additions</span>
+                                                <span class="badge bg-success rounded-pill fw-normal" t-out="len(pending_additions)"/>
+                                            </button>
+                                        </h2>
+                                        <div id="collapseAdditions"
+                                             class="accordion-collapse collapse show"
+                                             aria-labelledby="headingAdditions">
+                                            <div class="accordion-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Product</th>
+                                                                <th class="text-center" style="width:80px;">Qty</th>
+                                                                <th class="text-end" style="width:90px;">Price</th>
+                                                                <th class="text-end" style="width:100px;">Subtotal</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <t t-foreach="pending_additions" t-as="add_line">
+                                                                <tr class="table-success">
+                                                                    <td>
+                                                                        <span t-out="add_line.product_id.display_name"/>
+                                                                        <span class="badge bg-success ms-1">New · Pending</span>
+                                                                    </td>
+                                                                    <td class="text-center text-success fw-bold">
+                                                                        <t t-out="add_line.new_qty"/>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <span t-out="add_line.new_price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                                                    </td>
+                                                                    <td class="text-end text-muted">—</td>
+                                                                </tr>
+                                                            </t>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+
+                            </div><!-- /accordion -->
+
+                            <!-- Total -->
+                            <div class="d-flex justify-content-end mt-3">
+                                <table class="table table-sm w-auto mb-0">
+                                    <tr>
+                                        <td class="text-end border-0 pe-3"><strong>Total:</strong></td>
+                                        <td class="text-end border-0">
+                                            <strong t-out="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- JS for expand/collapse all -->
+                            <script type="text/javascript" src="/rental_portal_change_request/static/src/js/rental_portal_order.js"/>
+
                         </div>
                     </div>
                 </div>

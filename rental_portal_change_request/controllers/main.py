@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
+
 from odoo import _
 from odoo import http
 from odoo.http import request
@@ -65,11 +67,26 @@ class PortalRentalOrders(CustomerPortal):
                         'new_qty': cr_line.new_qty,
                     }
 
+        # Group order lines by product family (category), sorted alphabetically
+        lines_by_categ = defaultdict(list)
+        for line in order.order_line:
+            categ = line.product_id.categ_id
+            categ_name = categ.display_name if categ else _('Uncategorized')
+            lines_by_categ[categ_name].append(line)
+
+        # Sort products alphabetically within each family
+        for lines in lines_by_categ.values():
+            lines.sort(key=lambda l: (l.product_id.display_name or '').lower())
+
+        # Sort families alphabetically
+        grouped_lines = sorted(lines_by_categ.items(), key=lambda x: x[0].lower())
+
         values.update({
             'order': order,
             'active_change_request': active_change_request,
             'pending_changes': pending_changes,
             'pending_additions': pending_additions,
+            'grouped_lines': grouped_lines,
         })
 
         return request.render('rental_portal_change_request.portal_rental_order_page', values)
