@@ -81,12 +81,18 @@ class PortalRentalOrders(CustomerPortal):
         # Sort families alphabetically
         grouped_lines = sorted(lines_by_categ.items(), key=lambda x: x[0].lower())
 
+        # Full history of change requests for this order (newest first)
+        cr_history = request.env['rental.change_request'].sudo().search([
+            ('order_id', '=', order.id),
+        ], order='create_date desc')
+
         values.update({
             'order': order,
             'active_change_request': active_change_request,
             'pending_changes': pending_changes,
             'pending_additions': pending_additions,
             'grouped_lines': grouped_lines,
+            'cr_history': cr_history,
         })
 
         return request.render('rental_portal_change_request.portal_rental_order_page', values)

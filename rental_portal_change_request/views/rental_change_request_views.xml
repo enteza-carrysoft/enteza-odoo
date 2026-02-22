@@ -35,11 +35,18 @@
             <field name="arch" type="xml">
                 <form string="Change Request">
                     <header>
-                        <button name="action_approve" string="Approve" type="object"
+                        <!-- Approve ALL lines and apply everything -->
+                        <button name="action_approve" string="Approve All &amp; Apply" type="object"
                                 class="btn-primary"
                                 invisible="state != 'submitted'"
                                 groups="sales_team.group_sale_manager"/>
-                        <button name="action_reject" string="Reject" type="object"
+                        <!-- Apply only lines already marked as Approved, reject the rest -->
+                        <button name="action_apply_partial" string="Apply Approved Lines" type="object"
+                                class="btn-success"
+                                invisible="state != 'submitted' or approved_lines_count == 0"
+                                groups="sales_team.group_sale_manager"/>
+                        <!-- Reject everything -->
+                        <button name="action_reject" string="Reject All" type="object"
                                 invisible="state != 'submitted'"
                                 groups="sales_team.group_sale_manager"/>
                         <button name="action_cancel" string="Cancel" type="object"
@@ -57,7 +64,6 @@
                             <group>
                                 <field name="order_id"/>
                                 <field name="partner_id"/>
-                                <field name="line_count"/>
                             </group>
                             <group>
                                 <field name="submitted_date"/>
@@ -66,16 +72,54 @@
                                 <field name="approved_by" invisible="state not in ('approved',)"/>
                             </group>
                         </group>
+
+                        <!-- Decision summary (visible when submitted) -->
+                        <div class="alert alert-info d-flex gap-4 mb-0"
+                             invisible="state != 'submitted'">
+                            <span>
+                                <i class="fa fa-clock-o me-1"/>
+                                <strong><field name="pending_lines_count" readonly="1"/></strong> pending
+                            </span>
+                            <span>
+                                <i class="fa fa-check-circle text-success me-1"/>
+                                <strong><field name="approved_lines_count" readonly="1"/></strong> approved
+                            </span>
+                            <span>
+                                <i class="fa fa-times-circle text-danger me-1"/>
+                                <strong><field name="rejected_lines_count" readonly="1"/></strong> rejected
+                            </span>
+                        </div>
+
                         <notebook>
-                            <page string="Requested Changes" name="changes">
-                                <field name="change_request_line_ids" readonly="1">
-                                    <list decoration-success="operation == 'add'"
-                                          decoration-danger="operation == 'remove'"
-                                          decoration-warning="operation == 'update'">
-                                        <field name="product_id"/>
-                                        <field name="operation" widget="badge"/>
-                                        <field name="original_qty"/>
-                                        <field name="new_qty"/>
+                            <page string="Lines" name="changes">
+                                <field name="change_request_line_ids">
+                                    <list decoration-success="approval_state == 'approved'"
+                                          decoration-danger="approval_state == 'rejected'"
+                                          decoration-muted="approval_state == 'rejected'">
+                                        <field name="product_id" readonly="1"/>
+                                        <field name="operation" widget="badge"
+                                               decoration-success="operation == 'add'"
+                                               decoration-danger="operation == 'remove'"
+                                               decoration-warning="operation == 'update'"
+                                               readonly="1"/>
+                                        <field name="original_qty" string="Original" readonly="1"/>
+                                        <field name="new_qty" string="Requested" readonly="1"/>
+                                        <field name="approval_state" widget="badge"
+                                               decoration-warning="approval_state == 'pending'"
+                                               decoration-success="approval_state == 'approved'"
+                                               decoration-danger="approval_state == 'rejected'"
+                                               readonly="1"/>
+                                        <field name="staff_note" string="Note" optional="show"
+                                               readonly="parent.state != 'submitted'"/>
+                                        <!-- Per-line approve/reject buttons (only visible when pending + CR is submitted) -->
+                                        <button name="action_approve_line" type="object"
+                                                string="Approve" icon="fa-check"
+                                                class="btn-success btn-sm"
+                                                invisible="approval_state != 'pending' or parent.state != 'submitted'"/>
+                                        <button name="action_reject_line" type="object"
+                                                string="Reject" icon="fa-times"
+                                                class="btn-danger btn-sm"
+                                                invisible="approval_state != 'pending' or parent.state != 'submitted'"/>
                                     </list>
                                 </field>
                             </page>

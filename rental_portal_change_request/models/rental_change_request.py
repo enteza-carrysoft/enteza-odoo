@@ -89,12 +89,19 @@ class RentalChangeRequest(models.Model):
     rejection_reason = fields.Text(string='Rejection Reason', readonly=True)
 
     # Computed fields
-    line_count = fields.Integer(string='Number of Changes', compute='_compute_line_count', store=True)
+    line_count = fields.Integer(string='Lines', compute='_compute_line_count', store=True)
+    approved_lines_count = fields.Integer(string='Approved', compute='_compute_line_count', store=True)
+    rejected_lines_count = fields.Integer(string='Rejected', compute='_compute_line_count', store=True)
+    pending_lines_count = fields.Integer(string='Pending', compute='_compute_line_count', store=True)
 
-    @api.depends('change_request_line_ids')
+    @api.depends('change_request_line_ids', 'change_request_line_ids.approval_state')
     def _compute_line_count(self):
-        for request in self:
-            request.line_count = len(request.change_request_line_ids)
+        for cr in self:
+            lines = cr.change_request_line_ids
+            cr.line_count = len(lines)
+            cr.approved_lines_count = len(lines.filtered(lambda l: l.approval_state == 'approved'))
+            cr.rejected_lines_count = len(lines.filtered(lambda l: l.approval_state == 'rejected'))
+            cr.pending_lines_count = len(lines.filtered(lambda l: l.approval_state == 'pending'))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -267,10 +274,14 @@ class RentalChangeRequest(models.Model):
     # -------------------------------------------------------------------------
 
     def action_approve(self):
-        """Approve and apply change request"""
+        """Approve ALL pending lines and apply all changes"""
         self.ensure_one()
         if self.state != 'submitted':
             raise UserError(_('Only submitted requests can be approved'))
+
+        # Set all pending lines to approved
+        pending = self.change_request_line_ids.filtered(lambda l: l.approval_state == 'pending')
+        pending.write({'approval_state': 'approved'})
 
         self._apply_changes()
 
@@ -279,40 +290,80 @@ class RentalChangeRequest(models.Model):
             'approved_date': fields.Datetime.now(),
             'approved_by': self.env.user.id,
         })
-
         self.order_id.write({'x_active_change_request_id': False})
+        self.message_post(body=_('Approved in full by %s (%d lines applied).') % (
+            self.env.user.name, len(self.change_request_line_ids)
+        ))
+        self.order_id.message_post(
+            body=_('Change request %s has been approved and fully applied.') % self.name
+        )
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {'message': _('All changes approved and applied'), 'type': 'success'},
+        }
 
-        self.message_post(body=_('Approved by %s') % self.env.user.name)
-        self.order_id.message_post(body=_('Change request %s has been approved and applied.') % self.name)
+    def action_apply_partial(self):
+        """Apply only approved lines; pending lines are marked as rejected."""
+        self.ensure_one()
+        if self.state != 'submitted':
+            raise UserError(_('Only submitted requests can be processed'))
 
+        approved = self.change_request_line_ids.filtered(lambda l: l.approval_state == 'approved')
+        if not approved:
+            raise UserError(_(
+                'No lines have been approved yet. '
+                'Approve individual lines first, or use "Approve All" to approve everything.'
+            ))
+
+        # Mark remaining pending lines as rejected
+        pending = self.change_request_line_ids.filtered(lambda l: l.approval_state == 'pending')
+        pending.write({'approval_state': 'rejected'})
+
+        self._apply_changes()
+
+        n_approved = len(approved)
+        n_rejected = len(self.change_request_line_ids.filtered(lambda l: l.approval_state == 'rejected'))
+
+        self.write({
+            'state': 'approved',
+            'approved_date': fields.Datetime.now(),
+            'approved_by': self.env.user.id,
+        })
+        self.order_id.write({'x_active_change_request_id': False})
+        self.message_post(body=_(
+            'Partially approved by %s: %d line(s) applied, %d line(s) rejected.'
+        ) % (self.env.user.name, n_approved, n_rejected))
+        self.order_id.message_post(
+            body=_('Change request %s has been partially applied (%d/%d lines).') % (
+                self.name, n_approved, n_approved + n_rejected
+            )
+        )
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'message': _('Change request approved'),
+                'message': _('%d change(s) applied, %d rejected') % (n_approved, n_rejected),
                 'type': 'success',
-            }
+            },
         }
 
     def _apply_changes(self):
-        """Apply the requested changes to the order"""
+        """Apply only lines with approval_state == 'approved'"""
         self.ensure_one()
         order = self.order_id
 
-        for line in self.change_request_line_ids:
+        for line in self.change_request_line_ids.filtered(lambda l: l.approval_state == 'approved'):
             if line.operation == 'add':
-                # Add new line
                 self.env['sale.order.line'].create({
                     'order_id': order.id,
                     'product_id': line.product_id.id,
                     'product_uom_qty': line.new_qty,
                 })
             elif line.operation == 'update':
-                # Update existing line
                 if line.original_line_id:
                     line.original_line_id.write({'product_uom_qty': line.new_qty})
             elif line.operation == 'remove':
-                # Remove line
                 if line.original_line_id:
                     line.original_line_id.unlink()
 
@@ -328,19 +379,19 @@ class RentalChangeRequest(models.Model):
         }
 
     def _do_reject(self, reason):
-        """Reject the change request"""
+        """Reject the change request (all lines marked as rejected)"""
         self.ensure_one()
         if self.state != 'submitted':
             raise UserError(_('Only submitted requests can be rejected'))
+
+        self.change_request_line_ids.write({'approval_state': 'rejected'})
 
         self.write({
             'state': 'rejected',
             'rejection_reason': reason,
         })
-
         self.order_id.write({'x_active_change_request_id': False})
-
-        self.message_post(body=_('Rejected: %s') % reason)
+        self.message_post(body=_('Rejected by %s: %s') % (self.env.user.name, reason))
         self.order_id.message_post(body=_('Change request %s has been rejected.') % self.name)
 
     def action_cancel(self):

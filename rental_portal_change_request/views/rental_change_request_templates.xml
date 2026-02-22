@@ -286,6 +286,175 @@
 
                         </div>
                     </div>
+                <!-- ── Change Request History ──────────────────────────────── -->
+                <t t-if="cr_history">
+                    <div class="mt-5">
+                        <div class="d-flex align-items-center mb-3">
+                            <h5 class="mb-0">
+                                <i class="fa fa-history me-2 text-muted"/>
+                                Change Request History
+                            </h5>
+                            <span class="badge bg-secondary ms-2" t-out="len(cr_history)"/>
+                        </div>
+
+                        <div class="accordion" id="crHistoryAccordion">
+                            <t t-foreach="cr_history" t-as="cr">
+                                <div class="accordion-item">
+
+                                    <!-- Header -->
+                                    <h2 class="accordion-header" t-attf-id="crh-heading-#{cr_index}">
+                                        <button class="accordion-button collapsed py-2" type="button"
+                                                data-bs-toggle="collapse"
+                                                t-attf-data-bs-target="#crh-collapse-#{cr_index}"
+                                                aria-expanded="false"
+                                                t-attf-aria-controls="crh-collapse-#{cr_index}">
+                                            <span class="fw-semibold me-3" t-out="cr.name"/>
+                                            <span class="text-muted small me-3">
+                                                <t t-out="cr.submitted_date" t-options="{'widget': 'date'}"/>
+                                            </span>
+                                            <!-- State badge -->
+                                            <span t-if="cr.state == 'submitted'"
+                                                  class="badge bg-warning text-dark me-2">
+                                                <i class="fa fa-clock-o me-1"/>Awaiting review
+                                            </span>
+                                            <span t-elif="cr.state == 'approved'"
+                                                  class="badge bg-success me-2">
+                                                <i class="fa fa-check me-1"/>Applied
+                                            </span>
+                                            <span t-elif="cr.state == 'rejected'"
+                                                  class="badge bg-danger me-2">
+                                                <i class="fa fa-times me-1"/>Rejected
+                                            </span>
+                                            <span t-elif="cr.state == 'cancelled'"
+                                                  class="badge bg-secondary me-2">Cancelled</span>
+                                            <!-- Line counts -->
+                                            <span class="badge bg-light text-dark border small">
+                                                <t t-out="cr.line_count"/> lines
+                                            </span>
+                                        </button>
+                                    </h2>
+
+                                    <!-- Body -->
+                                    <div t-attf-id="crh-collapse-#{cr_index}"
+                                         class="accordion-collapse collapse"
+                                         t-attf-aria-labelledby="crh-heading-#{cr_index}">
+                                        <div class="accordion-body pt-3">
+
+                                            <!-- Customer note -->
+                                            <t t-if="cr.submission_note">
+                                                <div class="alert alert-light border mb-3">
+                                                    <strong>
+                                                        <i class="fa fa-comment me-1"/>Your message:
+                                                    </strong>
+                                                    <p class="mb-0 mt-1" t-out="cr.submission_note"/>
+                                                </div>
+                                            </t>
+
+                                            <!-- Global rejection reason -->
+                                            <t t-if="cr.rejection_reason">
+                                                <div class="alert alert-danger mb-3">
+                                                    <strong>
+                                                        <i class="fa fa-times-circle me-1"/>Rejection reason:
+                                                    </strong>
+                                                    <p class="mb-0 mt-1" t-out="cr.rejection_reason"/>
+                                                </div>
+                                            </t>
+
+                                            <!-- Lines detail table -->
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Product</th>
+                                                            <th class="text-center" style="width:80px;">Change</th>
+                                                            <th class="text-center" style="width:80px;">Original</th>
+                                                            <th class="text-center" style="width:80px;">Requested</th>
+                                                            <th class="text-center" style="width:90px;">Decision</th>
+                                                            <th>Note</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="cr.change_request_line_ids" t-as="cr_line">
+                                                            <tr t-att-class="{
+                                                                'table-success': cr_line.approval_state == 'approved',
+                                                                'table-danger': cr_line.approval_state == 'rejected'
+                                                            }">
+                                                                <td>
+                                                                    <span t-out="cr_line.product_id.display_name"/>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <span t-if="cr_line.operation == 'add'"
+                                                                          class="badge bg-success">Add</span>
+                                                                    <span t-elif="cr_line.operation == 'remove'"
+                                                                          class="badge bg-danger">Remove</span>
+                                                                    <span t-elif="cr_line.operation == 'update'"
+                                                                          class="badge bg-warning text-dark">Update</span>
+                                                                </td>
+                                                                <td class="text-center text-muted">
+                                                                    <t t-if="cr_line.original_qty"
+                                                                       t-out="cr_line.original_qty"/>
+                                                                    <t t-else="">&#8212;</t>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <t t-if="cr_line.new_qty"
+                                                                       t-out="cr_line.new_qty"/>
+                                                                    <t t-else="">&#8212;</t>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <span t-if="cr_line.approval_state == 'approved'"
+                                                                          class="badge bg-success">
+                                                                        <i class="fa fa-check me-1"/>Approved
+                                                                    </span>
+                                                                    <span t-elif="cr_line.approval_state == 'rejected'"
+                                                                          class="badge bg-danger">
+                                                                        <i class="fa fa-times me-1"/>Rejected
+                                                                    </span>
+                                                                    <span t-else=""
+                                                                          class="badge bg-warning text-dark">
+                                                                        <i class="fa fa-clock-o me-1"/>Pending
+                                                                    </span>
+                                                                </td>
+                                                                <td class="small text-muted">
+                                                                    <t t-if="cr_line.staff_note"
+                                                                       t-out="cr_line.staff_note"/>
+                                                                    <t t-else="">&#8212;</t>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div><!-- /table-responsive -->
+
+                                            <!-- Approval summary footer -->
+                                            <t t-if="cr.state == 'approved'">
+                                                <div class="d-flex gap-3 mt-3 small text-muted">
+                                                    <span>
+                                                        <i class="fa fa-check-circle text-success me-1"/>
+                                                        <strong t-out="cr.approved_lines_count"/> applied
+                                                    </span>
+                                                    <t t-if="cr.rejected_lines_count">
+                                                        <span>
+                                                            <i class="fa fa-times-circle text-danger me-1"/>
+                                                            <strong t-out="cr.rejected_lines_count"/> rejected
+                                                        </span>
+                                                    </t>
+                                                    <span class="ms-auto">
+                                                        Reviewed by
+                                                        <strong t-out="cr.approved_by.name"/>
+                                                        on <t t-out="cr.approved_date" t-options="{'widget': 'date'}"/>
+                                                    </span>
+                                                </div>
+                                            </t>
+
+                                        </div><!-- /accordion-body -->
+                                    </div><!-- /accordion-collapse -->
+                                </div><!-- /accordion-item -->
+                            </t>
+                        </div><!-- /accordion -->
+                    </div>
+                </t>
+                <!-- ── /Change Request History ─────────────────────────────── -->
+
                 </div>
             </t>
         </template>

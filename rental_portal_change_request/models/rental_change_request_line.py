@@ -81,6 +81,18 @@ class RentalChangeRequestLine(models.Model):
         help='New unit price'
     )
 
+    # Line-level approval decision
+    approval_state = fields.Selection([
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ], string='Decision', default='pending', tracking=True, index=True)
+
+    staff_note = fields.Text(
+        string='Staff Note',
+        help='Internal note about the decision on this line (visible to customer in portal)'
+    )
+
     # Additional info
     note = fields.Text(
         string='Note',
@@ -98,6 +110,18 @@ class RentalChangeRequestLine(models.Model):
         digits='Product Unit of Measure',
         help='Quantity available for rental'
     )
+
+    def action_approve_line(self):
+        """Approve this individual line (called from backend list view button)"""
+        for line in self:
+            if line.change_request_id.state == 'submitted':
+                line.approval_state = 'approved'
+
+    def action_reject_line(self):
+        """Reject this individual line (called from backend list view button)"""
+        for line in self:
+            if line.change_request_id.state == 'submitted':
+                line.approval_state = 'rejected'
 
     @api.constrains('operation', 'new_qty')
     def _check_operation_consistency(self):
