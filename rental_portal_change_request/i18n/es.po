@@ -16,634 +16,461 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. Module name and description
-#: __manifest__.py
 msgid "Rental Portal Change Request"
 msgstr "Portal de Alquiler - Solicitudes de Cambio"
 
-#: __manifest__.py
 msgid "Private rental portal with change request and review workflow"
 msgstr "Portal privado de alquiler con solicitudes de cambio y flujo de revisión"
 
-#: __manifest__.py
 msgid "Rental"
 msgstr "Alquiler"
 
-#. ── models/rental_change_request.py ──────────────────────────────────────
-
-#: models/rental_change_request.py
 msgid "Reject Change Request Wizard"
 msgstr "Asistente de Rechazo de Solicitud de Cambio"
 
-#: models/rental_change_request.py
-#: views/rental_change_request_views.xml
 msgid "Reject Change Request"
 msgstr "Rechazar solicitud de cambio"
 
-#: models/rental_change_request.py
-#: models/rental_change_request_line.py
 msgid "Change Request"
 msgstr "Solicitud de cambio"
 
-#: models/rental_change_request.py
 msgid "Rental Change Request"
 msgstr "Solicitud de cambio de alquiler"
 
-#: models/rental_change_request.py
 msgid "Reference"
 msgstr "Referencia"
 
-#: models/rental_change_request.py
 msgid "Order"
 msgstr "Pedido"
 
-#: models/rental_change_request.py
 msgid "Customer"
 msgstr "Cliente"
 
-#: models/rental_change_request.py
 msgid "Draft"
 msgstr "Borrador"
 
-#: models/rental_change_request.py
 msgid "Editing"
 msgstr "En edición"
 
-#: models/rental_change_request.py
 msgid "Submitted"
 msgstr "Enviada"
 
-#: models/rental_change_request.py
 msgid "Approved"
 msgstr "Aprobada"
 
-#: models/rental_change_request.py
 msgid "Rejected"
 msgstr "Rechazada"
 
-#: models/rental_change_request.py
 msgid "Cancelled"
 msgstr "Cancelada"
 
-#: models/rental_change_request.py
 msgid "Applied"
 msgstr "Aplicada"
 
-#: models/rental_change_request.py
 msgid "State"
 msgstr "Estado"
 
-#: models/rental_change_request.py
 msgid "Changes"
 msgstr "Cambios"
 
-#: models/rental_change_request.py
 msgid "Submitted Date"
 msgstr "Fecha de envío"
 
-#: models/rental_change_request.py
 msgid "Submitted By"
 msgstr "Enviada por"
 
-#: models/rental_change_request.py
 msgid "Customer Message"
 msgstr "Mensaje del cliente"
 
-#: models/rental_change_request.py
 msgid "Internal Note"
 msgstr "Nota interna"
 
-#: models/rental_change_request.py
 msgid "Only visible to staff"
 msgstr "Solo visible para el personal"
 
-#: models/rental_change_request.py
 msgid "Approved Date"
 msgstr "Fecha de aprobación"
 
-#: models/rental_change_request.py
 msgid "Approved By"
 msgstr "Aprobada por"
 
-#: models/rental_change_request.py
-#: views/rental_change_request_views.xml
 msgid "Rejection Reason"
 msgstr "Motivo de rechazo"
 
-#: models/rental_change_request.py
 msgid "Lines"
 msgstr "Líneas"
 
-#: models/rental_change_request.py
 msgid "Pending"
 msgstr "Pendiente"
 
-#: models/rental_change_request.py
 msgid "New"
 msgstr "Nueva"
 
-#: models/rental_change_request.py
 msgid "Only one active change request is allowed per order. Please complete or cancel the existing request first."
 msgstr "Solo se permite una solicitud de cambio activa por pedido. Por favor, completa o cancela la solicitud existente primero."
 
-#: models/rental_change_request.py
 msgid "Order not found"
 msgstr "Pedido no encontrado"
 
-#: models/rental_change_request.py
 msgid "Permission denied"
 msgstr "Permiso denegado"
 
-#: models/rental_change_request.py
 msgid "Order must be confirmed"
 msgstr "El pedido debe estar confirmado"
 
-#: models/rental_change_request.py
 msgid "Only rental orders allowed"
 msgstr "Solo se permiten pedidos de alquiler"
 
-#: models/rental_change_request.py
 msgid "Order already has an active change request"
 msgstr "El pedido ya tiene una solicitud de cambio activa"
 
-#: models/rental_change_request.py
 msgid "No changes detected"
 msgstr "No se detectaron cambios"
 
-#: models/rental_change_request.py
 msgid "Change request submitted by customer."
 msgstr "Solicitud de cambio enviada por el cliente."
 
-#: models/rental_change_request.py
 msgid "Change request %s has been submitted for review."
 msgstr "La solicitud de cambio %s ha sido enviada para revisión."
 
-#: models/rental_change_request.py
 msgid "Review change request %s"
 msgstr "Revisar solicitud de cambio %s"
 
-#: models/rental_change_request.py
 msgid "Only submitted requests can be approved"
 msgstr "Solo se pueden aprobar solicitudes enviadas"
 
-#: models/rental_change_request.py
 msgid "Approved in full by %s (%d lines applied)."
 msgstr "Aprobada íntegramente por %s (%d líneas aplicadas)."
 
-#: models/rental_change_request.py
 msgid "Change request %s has been approved and fully applied."
 msgstr "La solicitud de cambio %s ha sido aprobada y aplicada íntegramente."
 
-#: models/rental_change_request.py
 msgid "All changes approved and applied"
 msgstr "Todos los cambios aprobados y aplicados"
 
-#: models/rental_change_request.py
 msgid "Only submitted requests can be processed"
 msgstr "Solo se pueden procesar solicitudes enviadas"
 
-#: models/rental_change_request.py
 msgid "No lines have been approved yet. Approve individual lines first, or use \"Approve All\" to approve everything."
 msgstr "Aún no se han aprobado líneas. Aprueba líneas individuales primero, o usa \"Aprobar todo\" para aprobarlas todas."
 
-#: models/rental_change_request.py
 msgid "Partially approved by %s: %d line(s) applied, %d line(s) rejected."
 msgstr "Aprobada parcialmente por %s: %d línea(s) aplicada(s), %d línea(s) rechazada(s)."
 
-#: models/rental_change_request.py
 msgid "Change request %s has been partially applied (%d/%d lines)."
 msgstr "La solicitud de cambio %s ha sido aplicada parcialmente (%d/%d líneas)."
 
-#: models/rental_change_request.py
 msgid "%d change(s) applied, %d rejected"
 msgstr "%d cambio(s) aplicado(s), %d rechazado(s)"
 
-#: models/rental_change_request.py
 msgid "Only submitted requests can be rejected"
 msgstr "Solo se pueden rechazar solicitudes enviadas"
 
-#: models/rental_change_request.py
 msgid "Rejected by %s: %s"
 msgstr "Rechazada por %s: %s"
 
-#: models/rental_change_request.py
 msgid "Change request %s has been rejected."
 msgstr "La solicitud de cambio %s ha sido rechazada."
 
-#: models/rental_change_request.py
 msgid "Cannot cancel an approved change request."
 msgstr "No se puede cancelar una solicitud de cambio ya aprobada."
 
-#: models/rental_change_request.py
 msgid "Cancelled by %s"
 msgstr "Cancelada por %s"
 
-#. ── models/rental_change_request_line.py ────────────────────────────────
-
-#: models/rental_change_request_line.py
 msgid "Rental Change Request Line"
 msgstr "Línea de solicitud de cambio de alquiler"
 
-#: models/rental_change_request_line.py
 msgid "Sequence"
 msgstr "Secuencia"
 
-#: models/rental_change_request_line.py
 msgid "Product"
 msgstr "Producto"
 
-#: models/rental_change_request_line.py
 msgid "Unit of Measure"
 msgstr "Unidad de medida"
 
-#: models/rental_change_request_line.py
 msgid "Add"
 msgstr "Añadir"
 
-#: models/rental_change_request_line.py
 msgid "Update"
 msgstr "Actualizar"
 
-#: models/rental_change_request_line.py
 msgid "Remove"
 msgstr "Eliminar"
 
-#: models/rental_change_request_line.py
 msgid "Operation"
 msgstr "Operación"
 
-#: models/rental_change_request_line.py
 msgid "Original Line"
 msgstr "Línea original"
 
-#: models/rental_change_request_line.py
 msgid "Original order line being modified"
 msgstr "Línea del pedido original que se está modificando"
 
-#: models/rental_change_request_line.py
 msgid "Revision Line"
 msgstr "Línea de revisión"
 
-#: models/rental_change_request_line.py
 msgid "Line in the revision order"
 msgstr "Línea en el pedido de revisión"
 
-#: models/rental_change_request_line.py
 msgid "Original Quantity"
 msgstr "Cantidad original"
 
-#: models/rental_change_request_line.py
 msgid "Original quantity in the order"
 msgstr "Cantidad original en el pedido"
 
-#: models/rental_change_request_line.py
 msgid "Original Price"
 msgstr "Precio original"
 
-#: models/rental_change_request_line.py
 msgid "Original unit price"
 msgstr "Precio unitario original"
 
-#: models/rental_change_request_line.py
 msgid "New Quantity"
 msgstr "Nueva cantidad"
 
-#: models/rental_change_request_line.py
 msgid "New quantity in the revision"
 msgstr "Nueva cantidad en la revisión"
 
-#: models/rental_change_request_line.py
 msgid "New Price"
 msgstr "Nuevo precio"
 
-#: models/rental_change_request_line.py
 msgid "New unit price"
 msgstr "Nuevo precio unitario"
 
-#: models/rental_change_request_line.py
 msgid "Decision"
 msgstr "Decisión"
 
-#: models/rental_change_request_line.py
 msgid "Staff Note"
 msgstr "Nota del responsable"
 
-#: models/rental_change_request_line.py
 msgid "Internal note about the decision on this line (visible to customer in portal)"
 msgstr "Nota interna sobre la decisión en esta línea (visible para el cliente en el portal)"
 
-#: models/rental_change_request_line.py
 msgid "Note"
 msgstr "Nota"
 
-#: models/rental_change_request_line.py
 msgid "Additional notes about this change"
 msgstr "Notas adicionales sobre este cambio"
 
-#: models/rental_change_request_line.py
 msgid "Available"
 msgstr "Disponible"
 
-#: models/rental_change_request_line.py
 msgid "Partially Available"
 msgstr "Disponible parcialmente"
 
-#: models/rental_change_request_line.py
 msgid "Unavailable"
 msgstr "No disponible"
 
-#: models/rental_change_request_line.py
 msgid "Unknown"
 msgstr "Desconocido"
 
-#: models/rental_change_request_line.py
 msgid "Availability Status"
 msgstr "Estado de disponibilidad"
 
-#: models/rental_change_request_line.py
 msgid "Available Quantity"
 msgstr "Cantidad disponible"
 
-#: models/rental_change_request_line.py
 msgid "Quantity available for rental"
 msgstr "Cantidad disponible para alquiler"
 
-#: models/rental_change_request_line.py
 msgid "Quantity must be greater than zero for add/update operations."
 msgstr "La cantidad debe ser mayor que cero para operaciones de añadir/actualizar."
 
-#. ── models/sale_order.py ────────────────────────────────────────────────
-
-#: models/sale_order.py
 msgid "Parent Order"
 msgstr "Pedido padre"
 
-#: models/sale_order.py
 msgid "Original order if this is a revision"
 msgstr "Pedido original si este es una revisión"
 
-#: models/sale_order.py
 msgid "Revisions"
 msgstr "Revisiones"
 
-#: models/sale_order.py
 msgid "Change request revisions created from this order"
 msgstr "Revisiones de solicitudes de cambio creadas a partir de este pedido"
 
-#: models/sale_order.py
 msgid "Active Change Request"
 msgstr "Solicitud de cambio activa"
 
-#: models/sale_order.py
 msgid "Currently active change request for this order"
 msgstr "Solicitud de cambio actualmente activa para este pedido"
 
-#: models/sale_order.py
 msgid "Rental Pickup Date"
 msgstr "Fecha de recogida del alquiler"
 
-#: models/sale_order.py
 msgid "Expected pickup/end date for rental orders (= rental return date)"
 msgstr "Fecha prevista de recogida/fin para pedidos de alquiler (= fecha de devolución)"
 
-#: models/sale_order.py
 msgid "Circular reference detected in parent order hierarchy."
 msgstr "Se ha detectado una referencia circular en la jerarquía del pedido padre."
 
-#. ── views/rental_change_request_views.xml ──────────────────────────────
-
-#: views/rental_change_request_views.xml
 msgid "Change Requests"
 msgstr "Solicitudes de cambio"
 
-#: views/rental_change_request_views.xml
 msgid "Approve All & Apply"
 msgstr "Aprobar todo y aplicar"
 
-#: views/rental_change_request_views.xml
 msgid "Apply Approved Lines"
 msgstr "Aplicar líneas aprobadas"
 
-#: views/rental_change_request_views.xml
 msgid "Reject All"
 msgstr "Rechazar todo"
 
-#: views/rental_change_request_views.xml
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: views/rental_change_request_views.xml
 msgid "pending"
 msgstr "pendiente"
 
-#: views/rental_change_request_views.xml
 msgid "approved"
 msgstr "aprobada"
 
-#: views/rental_change_request_views.xml
 msgid "rejected"
 msgstr "rechazada"
 
-#: views/rental_change_request_views.xml
 msgid "Original"
 msgstr "Original"
 
-#: views/rental_change_request_views.xml
 msgid "Requested"
 msgstr "Solicitado"
 
-#: views/rental_change_request_views.xml
 msgid "Approve"
 msgstr "Aprobar"
 
-#: views/rental_change_request_views.xml
 msgid "Reject"
 msgstr "Rechazar"
 
-#: views/rental_change_request_views.xml
 msgid "Notes"
 msgstr "Notas"
 
-#: views/rental_change_request_views.xml
 msgid "Search Change Requests"
 msgstr "Buscar solicitudes de cambio"
 
-#: views/rental_change_request_views.xml
 msgid "No change requests yet"
 msgstr "Aún no hay solicitudes de cambio"
 
-#: views/rental_change_request_views.xml
 msgid "Customers can submit change requests from the portal."
 msgstr "Los clientes pueden enviar solicitudes de cambio desde el portal."
 
-#. ── views/rental_change_request_templates.xml ──────────────────────────
-
-#: views/rental_change_request_templates.xml
 msgid "My Rental Orders"
 msgstr "Mis pedidos de alquiler"
 
-#: views/rental_change_request_templates.xml
 msgid "You don't have any rental orders yet."
 msgstr "Aún no tienes ningún pedido de alquiler."
 
-#: views/rental_change_request_templates.xml
 msgid "Date"
 msgstr "Fecha"
 
-#: views/rental_change_request_templates.xml
 msgid "Status"
 msgstr "Estado"
 
-#: views/rental_change_request_templates.xml
 msgid "Total"
 msgstr "Total"
 
-#: views/rental_change_request_templates.xml
 msgid "Actions"
 msgstr "Acciones"
 
-#: views/rental_change_request_templates.xml
 msgid "Change Pending"
 msgstr "Cambio pendiente"
 
-#: views/rental_change_request_templates.xml
 msgid "Confirmed"
 msgstr "Confirmado"
 
-#: views/rental_change_request_templates.xml
 msgid "Done"
 msgstr "Realizado"
 
-#: views/rental_change_request_templates.xml
 msgid "View"
 msgstr "Ver"
 
-#: views/rental_change_request_templates.xml
 msgid "Rental Order Details"
 msgstr "Detalles del pedido de alquiler"
 
-#: views/rental_change_request_templates.xml
 msgid "Back to Orders"
 msgstr "Volver a pedidos"
 
-#: views/rental_change_request_templates.xml
 msgid "Change Request Pending:"
 msgstr "Solicitud de cambio pendiente:"
 
-#: views/rental_change_request_templates.xml
 msgid "Your change request %s is pending approval."
 msgstr "Tu solicitud de cambio %s está pendiente de aprobación."
 
-#: views/rental_change_request_templates.xml
 msgid "Order Information"
 msgstr "Información del pedido"
 
-#: views/rental_change_request_templates.xml
 msgid "Order Date:"
 msgstr "Fecha del pedido:"
 
-#: views/rental_change_request_templates.xml
 msgid "Status:"
 msgstr "Estado:"
 
-#: views/rental_change_request_templates.xml
 msgid "Total:"
 msgstr "Total:"
 
-#: views/rental_change_request_templates.xml
 msgid "Request Changes"
 msgstr "Solicitar cambios"
 
-#: views/rental_change_request_templates.xml
 msgid "Order Lines"
 msgstr "Líneas de pedido"
 
-#: views/rental_change_request_templates.xml
 msgid "Expand all"
 msgstr "Expandir todo"
 
-#: views/rental_change_request_templates.xml
 msgid "Collapse all"
 msgstr "Contraer todo"
 
-#: views/rental_change_request_templates.xml
 msgid "Pending removal"
 msgstr "Eliminación pendiente"
 
-#: views/rental_change_request_templates.xml
 msgid "Qty"
 msgstr "Cant."
 
-#: views/rental_change_request_templates.xml
 msgid "Price"
 msgstr "Precio"
 
-#: views/rental_change_request_templates.xml
 msgid "Subtotal"
 msgstr "Subtotal"
 
-#: views/rental_change_request_templates.xml
 msgid "Pending Additions"
 msgstr "Adiciones pendientes"
 
-#: views/rental_change_request_templates.xml
 msgid "New · Pending"
 msgstr "Nuevo · Pendiente"
 
-#: views/rental_change_request_templates.xml
 msgid "Change Request History"
 msgstr "Historial de solicitudes de cambio"
 
-#: views/rental_change_request_templates.xml
 msgid "Awaiting review"
 msgstr "Pendiente de revisión"
 
-#: views/rental_change_request_templates.xml
 msgid "lines"
 msgstr "líneas"
 
-#: views/rental_change_request_templates.xml
 msgid "Your message:"
 msgstr "Tu mensaje:"
 
-#: views/rental_change_request_templates.xml
 msgid "Rejection reason:"
 msgstr "Motivo de rechazo:"
 
-#: views/rental_change_request_templates.xml
 msgid "Change"
 msgstr "Cambio"
 
-#: views/rental_change_request_templates.xml
 msgid "applied"
 msgstr "aplicado"
 
-#: views/rental_change_request_templates.xml
 msgid "Reviewed by %s on %s"
 msgstr "Revisado por %s el %s"
 
-#: views/rental_change_request_templates.xml
 msgid "Loading editor..."
 msgstr "Cargando editor..."
 
-#. ── views/sale_order_views.xml ─────────────────────────────────────────
-
-#: views/sale_order_views.xml
 msgid "Rental Orders"
 msgstr "Pedidos de alquiler"
 
-#: views/sale_order_views.xml
 msgid "Has Active Change Request"
 msgstr "Tiene solicitud de cambio activa"
 
-#. ── controllers/main.py ────────────────────────────────────────────────
-
-#: controllers/main.py
 msgid "Uncategorized"
 msgstr "Sin categoría"
 
-#. ── controllers/jsonrpc.py ─────────────────────────────────────────────
-
-#: controllers/jsonrpc.py
 msgid "This order already has a pending change request"
 msgstr "Este pedido ya tiene una solicitud de cambio pendiente"
