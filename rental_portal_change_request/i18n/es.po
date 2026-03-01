@@ -126,6 +126,7 @@ msgid "Approved By"
 msgstr "Aprobada por"
 
 #: models/rental_change_request.py
+#: views/rental_change_request_views.xml
 msgid "Rejection Reason"
 msgstr "Motivo de rechazo"
 
@@ -474,10 +475,6 @@ msgstr "Aún no hay solicitudes de cambio"
 #: views/rental_change_request_views.xml
 msgid "Customers can submit change requests from the portal."
 msgstr "Los clientes pueden enviar solicitudes de cambio desde el portal."
-
-#: views/rental_change_request_views.xml
-msgid "Rejection Reason"
-msgstr "Motivo de rechazo"
 
 #. ── views/rental_change_request_templates.xml ──────────────────────────
 
