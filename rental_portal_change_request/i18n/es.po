@@ -16,461 +16,614 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#. module: rental_portal_change_request
 msgid "Rental Portal Change Request"
 msgstr "Portal de Alquiler - Solicitudes de Cambio"
 
+#. module: rental_portal_change_request
 msgid "Private rental portal with change request and review workflow"
 msgstr "Portal privado de alquiler con solicitudes de cambio y flujo de revisión"
 
+#. module: rental_portal_change_request
 msgid "Rental"
 msgstr "Alquiler"
 
+#. module: rental_portal_change_request
 msgid "Reject Change Request Wizard"
 msgstr "Asistente de Rechazo de Solicitud de Cambio"
 
+#. module: rental_portal_change_request
 msgid "Reject Change Request"
 msgstr "Rechazar solicitud de cambio"
 
+#. module: rental_portal_change_request
 msgid "Change Request"
 msgstr "Solicitud de cambio"
 
+#. module: rental_portal_change_request
 msgid "Rental Change Request"
 msgstr "Solicitud de cambio de alquiler"
 
+#. module: rental_portal_change_request
 msgid "Reference"
 msgstr "Referencia"
 
+#. module: rental_portal_change_request
 msgid "Order"
 msgstr "Pedido"
 
+#. module: rental_portal_change_request
 msgid "Customer"
 msgstr "Cliente"
 
+#. module: rental_portal_change_request
 msgid "Draft"
 msgstr "Borrador"
 
+#. module: rental_portal_change_request
 msgid "Editing"
 msgstr "En edición"
 
+#. module: rental_portal_change_request
 msgid "Submitted"
 msgstr "Enviada"
 
+#. module: rental_portal_change_request
 msgid "Approved"
 msgstr "Aprobada"
 
+#. module: rental_portal_change_request
 msgid "Rejected"
 msgstr "Rechazada"
 
+#. module: rental_portal_change_request
 msgid "Cancelled"
 msgstr "Cancelada"
 
+#. module: rental_portal_change_request
 msgid "Applied"
 msgstr "Aplicada"
 
+#. module: rental_portal_change_request
 msgid "State"
 msgstr "Estado"
 
+#. module: rental_portal_change_request
 msgid "Changes"
 msgstr "Cambios"
 
+#. module: rental_portal_change_request
 msgid "Submitted Date"
 msgstr "Fecha de envío"
 
+#. module: rental_portal_change_request
 msgid "Submitted By"
 msgstr "Enviada por"
 
+#. module: rental_portal_change_request
 msgid "Customer Message"
 msgstr "Mensaje del cliente"
 
+#. module: rental_portal_change_request
 msgid "Internal Note"
 msgstr "Nota interna"
 
+#. module: rental_portal_change_request
 msgid "Only visible to staff"
 msgstr "Solo visible para el personal"
 
+#. module: rental_portal_change_request
 msgid "Approved Date"
 msgstr "Fecha de aprobación"
 
+#. module: rental_portal_change_request
 msgid "Approved By"
 msgstr "Aprobada por"
 
+#. module: rental_portal_change_request
 msgid "Rejection Reason"
 msgstr "Motivo de rechazo"
 
+#. module: rental_portal_change_request
 msgid "Lines"
 msgstr "Líneas"
 
+#. module: rental_portal_change_request
 msgid "Pending"
 msgstr "Pendiente"
 
+#. module: rental_portal_change_request
 msgid "New"
 msgstr "Nueva"
 
+#. module: rental_portal_change_request
 msgid "Only one active change request is allowed per order. Please complete or cancel the existing request first."
 msgstr "Solo se permite una solicitud de cambio activa por pedido. Por favor, completa o cancela la solicitud existente primero."
 
+#. module: rental_portal_change_request
 msgid "Order not found"
 msgstr "Pedido no encontrado"
 
+#. module: rental_portal_change_request
 msgid "Permission denied"
 msgstr "Permiso denegado"
 
+#. module: rental_portal_change_request
 msgid "Order must be confirmed"
 msgstr "El pedido debe estar confirmado"
 
+#. module: rental_portal_change_request
 msgid "Only rental orders allowed"
 msgstr "Solo se permiten pedidos de alquiler"
 
+#. module: rental_portal_change_request
 msgid "Order already has an active change request"
 msgstr "El pedido ya tiene una solicitud de cambio activa"
 
+#. module: rental_portal_change_request
 msgid "No changes detected"
 msgstr "No se detectaron cambios"
 
+#. module: rental_portal_change_request
 msgid "Change request submitted by customer."
 msgstr "Solicitud de cambio enviada por el cliente."
 
+#. module: rental_portal_change_request
 msgid "Change request %s has been submitted for review."
 msgstr "La solicitud de cambio %s ha sido enviada para revisión."
 
+#. module: rental_portal_change_request
 msgid "Review change request %s"
 msgstr "Revisar solicitud de cambio %s"
 
+#. module: rental_portal_change_request
 msgid "Only submitted requests can be approved"
 msgstr "Solo se pueden aprobar solicitudes enviadas"
 
+#. module: rental_portal_change_request
 msgid "Approved in full by %s (%d lines applied)."
 msgstr "Aprobada íntegramente por %s (%d líneas aplicadas)."
 
+#. module: rental_portal_change_request
 msgid "Change request %s has been approved and fully applied."
 msgstr "La solicitud de cambio %s ha sido aprobada y aplicada íntegramente."
 
+#. module: rental_portal_change_request
 msgid "All changes approved and applied"
 msgstr "Todos los cambios aprobados y aplicados"
 
+#. module: rental_portal_change_request
 msgid "Only submitted requests can be processed"
 msgstr "Solo se pueden procesar solicitudes enviadas"
 
+#. module: rental_portal_change_request
 msgid "No lines have been approved yet. Approve individual lines first, or use \"Approve All\" to approve everything."
 msgstr "Aún no se han aprobado líneas. Aprueba líneas individuales primero, o usa \"Aprobar todo\" para aprobarlas todas."
 
+#. module: rental_portal_change_request
 msgid "Partially approved by %s: %d line(s) applied, %d line(s) rejected."
 msgstr "Aprobada parcialmente por %s: %d línea(s) aplicada(s), %d línea(s) rechazada(s)."
 
+#. module: rental_portal_change_request
 msgid "Change request %s has been partially applied (%d/%d lines)."
 msgstr "La solicitud de cambio %s ha sido aplicada parcialmente (%d/%d líneas)."
 
+#. module: rental_portal_change_request
 msgid "%d change(s) applied, %d rejected"
 msgstr "%d cambio(s) aplicado(s), %d rechazado(s)"
 
+#. module: rental_portal_change_request
 msgid "Only submitted requests can be rejected"
 msgstr "Solo se pueden rechazar solicitudes enviadas"
 
+#. module: rental_portal_change_request
 msgid "Rejected by %s: %s"
 msgstr "Rechazada por %s: %s"
 
+#. module: rental_portal_change_request
 msgid "Change request %s has been rejected."
 msgstr "La solicitud de cambio %s ha sido rechazada."
 
+#. module: rental_portal_change_request
 msgid "Cannot cancel an approved change request."
 msgstr "No se puede cancelar una solicitud de cambio ya aprobada."
 
+#. module: rental_portal_change_request
 msgid "Cancelled by %s"
 msgstr "Cancelada por %s"
 
+#. module: rental_portal_change_request
 msgid "Rental Change Request Line"
 msgstr "Línea de solicitud de cambio de alquiler"
 
+#. module: rental_portal_change_request
 msgid "Sequence"
 msgstr "Secuencia"
 
+#. module: rental_portal_change_request
 msgid "Product"
 msgstr "Producto"
 
+#. module: rental_portal_change_request
 msgid "Unit of Measure"
 msgstr "Unidad de medida"
 
+#. module: rental_portal_change_request
 msgid "Add"
 msgstr "Añadir"
 
+#. module: rental_portal_change_request
 msgid "Update"
 msgstr "Actualizar"
 
+#. module: rental_portal_change_request
 msgid "Remove"
 msgstr "Eliminar"
 
+#. module: rental_portal_change_request
 msgid "Operation"
 msgstr "Operación"
 
+#. module: rental_portal_change_request
 msgid "Original Line"
 msgstr "Línea original"
 
+#. module: rental_portal_change_request
 msgid "Original order line being modified"
 msgstr "Línea del pedido original que se está modificando"
 
+#. module: rental_portal_change_request
 msgid "Revision Line"
 msgstr "Línea de revisión"
 
+#. module: rental_portal_change_request
 msgid "Line in the revision order"
 msgstr "Línea en el pedido de revisión"
 
+#. module: rental_portal_change_request
 msgid "Original Quantity"
 msgstr "Cantidad original"
 
+#. module: rental_portal_change_request
 msgid "Original quantity in the order"
 msgstr "Cantidad original en el pedido"
 
+#. module: rental_portal_change_request
 msgid "Original Price"
 msgstr "Precio original"
 
+#. module: rental_portal_change_request
 msgid "Original unit price"
 msgstr "Precio unitario original"
 
+#. module: rental_portal_change_request
 msgid "New Quantity"
 msgstr "Nueva cantidad"
 
+#. module: rental_portal_change_request
 msgid "New quantity in the revision"
 msgstr "Nueva cantidad en la revisión"
 
+#. module: rental_portal_change_request
 msgid "New Price"
 msgstr "Nuevo precio"
 
+#. module: rental_portal_change_request
 msgid "New unit price"
 msgstr "Nuevo precio unitario"
 
+#. module: rental_portal_change_request
 msgid "Decision"
 msgstr "Decisión"
 
+#. module: rental_portal_change_request
 msgid "Staff Note"
 msgstr "Nota del responsable"
 
+#. module: rental_portal_change_request
 msgid "Internal note about the decision on this line (visible to customer in portal)"
 msgstr "Nota interna sobre la decisión en esta línea (visible para el cliente en el portal)"
 
+#. module: rental_portal_change_request
 msgid "Note"
 msgstr "Nota"
 
+#. module: rental_portal_change_request
 msgid "Additional notes about this change"
 msgstr "Notas adicionales sobre este cambio"
 
+#. module: rental_portal_change_request
 msgid "Available"
 msgstr "Disponible"
 
+#. module: rental_portal_change_request
 msgid "Partially Available"
 msgstr "Disponible parcialmente"
 
+#. module: rental_portal_change_request
 msgid "Unavailable"
 msgstr "No disponible"
 
+#. module: rental_portal_change_request
 msgid "Unknown"
 msgstr "Desconocido"
 
+#. module: rental_portal_change_request
 msgid "Availability Status"
 msgstr "Estado de disponibilidad"
 
+#. module: rental_portal_change_request
 msgid "Available Quantity"
 msgstr "Cantidad disponible"
 
+#. module: rental_portal_change_request
 msgid "Quantity available for rental"
 msgstr "Cantidad disponible para alquiler"
 
+#. module: rental_portal_change_request
 msgid "Quantity must be greater than zero for add/update operations."
 msgstr "La cantidad debe ser mayor que cero para operaciones de añadir/actualizar."
 
+#. module: rental_portal_change_request
 msgid "Parent Order"
 msgstr "Pedido padre"
 
+#. module: rental_portal_change_request
 msgid "Original order if this is a revision"
 msgstr "Pedido original si este es una revisión"
 
+#. module: rental_portal_change_request
 msgid "Revisions"
 msgstr "Revisiones"
 
+#. module: rental_portal_change_request
 msgid "Change request revisions created from this order"
 msgstr "Revisiones de solicitudes de cambio creadas a partir de este pedido"
 
+#. module: rental_portal_change_request
 msgid "Active Change Request"
 msgstr "Solicitud de cambio activa"
 
+#. module: rental_portal_change_request
 msgid "Currently active change request for this order"
 msgstr "Solicitud de cambio actualmente activa para este pedido"
 
+#. module: rental_portal_change_request
 msgid "Rental Pickup Date"
 msgstr "Fecha de recogida del alquiler"
 
+#. module: rental_portal_change_request
 msgid "Expected pickup/end date for rental orders (= rental return date)"
 msgstr "Fecha prevista de recogida/fin para pedidos de alquiler (= fecha de devolución)"
 
+#. module: rental_portal_change_request
 msgid "Circular reference detected in parent order hierarchy."
 msgstr "Se ha detectado una referencia circular en la jerarquía del pedido padre."
 
+#. module: rental_portal_change_request
 msgid "Change Requests"
 msgstr "Solicitudes de cambio"
 
+#. module: rental_portal_change_request
 msgid "Approve All & Apply"
 msgstr "Aprobar todo y aplicar"
 
+#. module: rental_portal_change_request
 msgid "Apply Approved Lines"
 msgstr "Aplicar líneas aprobadas"
 
+#. module: rental_portal_change_request
 msgid "Reject All"
 msgstr "Rechazar todo"
 
+#. module: rental_portal_change_request
 msgid "Cancel"
 msgstr "Cancelar"
 
+#. module: rental_portal_change_request
 msgid "pending"
 msgstr "pendiente"
 
+#. module: rental_portal_change_request
 msgid "approved"
 msgstr "aprobada"
 
+#. module: rental_portal_change_request
 msgid "rejected"
 msgstr "rechazada"
 
+#. module: rental_portal_change_request
 msgid "Original"
 msgstr "Original"
 
+#. module: rental_portal_change_request
 msgid "Requested"
 msgstr "Solicitado"
 
+#. module: rental_portal_change_request
 msgid "Approve"
 msgstr "Aprobar"
 
+#. module: rental_portal_change_request
 msgid "Reject"
 msgstr "Rechazar"
 
+#. module: rental_portal_change_request
 msgid "Notes"
 msgstr "Notas"
 
+#. module: rental_portal_change_request
 msgid "Search Change Requests"
 msgstr "Buscar solicitudes de cambio"
 
+#. module: rental_portal_change_request
 msgid "No change requests yet"
 msgstr "Aún no hay solicitudes de cambio"
 
+#. module: rental_portal_change_request
 msgid "Customers can submit change requests from the portal."
 msgstr "Los clientes pueden enviar solicitudes de cambio desde el portal."
 
+#. module: rental_portal_change_request
 msgid "My Rental Orders"
 msgstr "Mis pedidos de alquiler"
 
+#. module: rental_portal_change_request
 msgid "You don't have any rental orders yet."
 msgstr "Aún no tienes ningún pedido de alquiler."
 
+#. module: rental_portal_change_request
 msgid "Date"
 msgstr "Fecha"
 
+#. module: rental_portal_change_request
 msgid "Status"
 msgstr "Estado"
 
+#. module: rental_portal_change_request
 msgid "Total"
 msgstr "Total"
 
+#. module: rental_portal_change_request
 msgid "Actions"
 msgstr "Acciones"
 
+#. module: rental_portal_change_request
 msgid "Change Pending"
 msgstr "Cambio pendiente"
 
+#. module: rental_portal_change_request
 msgid "Confirmed"
 msgstr "Confirmado"
 
+#. module: rental_portal_change_request
 msgid "Done"
 msgstr "Realizado"
 
+#. module: rental_portal_change_request
 msgid "View"
 msgstr "Ver"
 
+#. module: rental_portal_change_request
 msgid "Rental Order Details"
 msgstr "Detalles del pedido de alquiler"
 
+#. module: rental_portal_change_request
 msgid "Back to Orders"
 msgstr "Volver a pedidos"
 
+#. module: rental_portal_change_request
 msgid "Change Request Pending:"
 msgstr "Solicitud de cambio pendiente:"
 
+#. module: rental_portal_change_request
 msgid "Your change request %s is pending approval."
 msgstr "Tu solicitud de cambio %s está pendiente de aprobación."
 
+#. module: rental_portal_change_request
 msgid "Order Information"
 msgstr "Información del pedido"
 
+#. module: rental_portal_change_request
 msgid "Order Date:"
 msgstr "Fecha del pedido:"
 
+#. module: rental_portal_change_request
 msgid "Status:"
 msgstr "Estado:"
 
+#. module: rental_portal_change_request
 msgid "Total:"
 msgstr "Total:"
 
+#. module: rental_portal_change_request
 msgid "Request Changes"
 msgstr "Solicitar cambios"
 
+#. module: rental_portal_change_request
 msgid "Order Lines"
 msgstr "Líneas de pedido"
 
+#. module: rental_portal_change_request
 msgid "Expand all"
 msgstr "Expandir todo"
 
+#. module: rental_portal_change_request
 msgid "Collapse all"
 msgstr "Contraer todo"
 
+#. module: rental_portal_change_request
 msgid "Pending removal"
 msgstr "Eliminación pendiente"
 
+#. module: rental_portal_change_request
 msgid "Qty"
 msgstr "Cant."
 
+#. module: rental_portal_change_request
 msgid "Price"
 msgstr "Precio"
 
+#. module: rental_portal_change_request
 msgid "Subtotal"
 msgstr "Subtotal"
 
+#. module: rental_portal_change_request
 msgid "Pending Additions"
 msgstr "Adiciones pendientes"
 
+#. module: rental_portal_change_request
 msgid "New · Pending"
 msgstr "Nuevo · Pendiente"
 
+#. module: rental_portal_change_request
 msgid "Change Request History"
 msgstr "Historial de solicitudes de cambio"
 
+#. module: rental_portal_change_request
 msgid "Awaiting review"
 msgstr "Pendiente de revisión"
 
+#. module: rental_portal_change_request
 msgid "lines"
 msgstr "líneas"
 
+#. module: rental_portal_change_request
 msgid "Your message:"
 msgstr "Tu mensaje:"
 
+#. module: rental_portal_change_request
 msgid "Rejection reason:"
 msgstr "Motivo de rechazo:"
 
+#. module: rental_portal_change_request
 msgid "Change"
 msgstr "Cambio"
 
+#. module: rental_portal_change_request
 msgid "applied"
 msgstr "aplicado"
 
+#. module: rental_portal_change_request
 msgid "Reviewed by %s on %s"
 msgstr "Revisado por %s el %s"
 
+#. module: rental_portal_change_request
 msgid "Loading editor..."
 msgstr "Cargando editor..."
 
+#. module: rental_portal_change_request
 msgid "Rental Orders"
 msgstr "Pedidos de alquiler"
 
+#. module: rental_portal_change_request
 msgid "Has Active Change Request"
 msgstr "Tiene solicitud de cambio activa"
 
+#. module: rental_portal_change_request
 msgid "Uncategorized"
 msgstr "Sin categoría"
 
+#. module: rental_portal_change_request
 msgid "This order already has a pending change request"
 msgstr "Este pedido ya tiene una solicitud de cambio pendiente"
