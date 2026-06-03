@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright 2021 - Daniel Domínguez https://xtendoo.es/
 
-from odoo import api, fields, models, _
-
+from odoo import api, fields, models
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -26,6 +25,7 @@ class SaleOrder(models.Model):
         string='Categoria',
         compute=_compute_used_categories,
     )
+
     def _prepare_invoice(self):
         vals = super()._prepare_invoice()
 
