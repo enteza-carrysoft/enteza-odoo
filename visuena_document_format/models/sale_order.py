@@ -26,3 +26,10 @@ class SaleOrder(models.Model):
         string='Categoria',
         compute=_compute_used_categories,
     )
+    def _prepare_invoice(self):
+        vals = super()._prepare_invoice()
+
+        if self.event_date:
+            vals["event_date"]= self.event_date
+
+        return vals
