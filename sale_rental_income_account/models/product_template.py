@@ -10,7 +10,7 @@ class ProductTemplate(models.Model):
         string="Cuenta de ingresos por alquiler",
         company_dependent=True,
         check_company=True,
-        domain="[('account_type', 'in', ('income', 'income_other')), ('deprecated', '=', False)]",
+        domain="[('account_type', 'in', ('income', 'income_other'))]",
         help=(
             "Cuenta de ingresos utilizada cuando el producto se factura desde un "
             "pedido de alquiler. Si no se configura, Odoo utiliza la cuenta de "
