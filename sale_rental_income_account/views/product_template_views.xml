@@ -12,10 +12,15 @@
                     <group string="Ingresos por alquiler">
                         <field name="property_account_rental_income_id"
                                options="{'no_create': True, 'no_open': True}"/>
+                        <field name="rental_taxes_id"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"/>
                         <div class="text-muted" colspan="2">
-                            Si se deja vacío, las facturas de alquiler usarán la cuenta
-                            de ingresos normal del producto o de su categoría. En pedidos
-                            que no sean de alquiler no se modifica el comportamiento estándar.
+                            Campos aplicados solo a las líneas de alquiler. Si se dejan
+                            vacíos se usa lo definido en la categoría del producto y, en
+                            su defecto, la cuenta e impuestos de venta estándar. Las
+                            líneas que no son de alquiler mantienen el comportamiento
+                            nativo de Odoo.
                         </div>
                     </group>
                 </page>

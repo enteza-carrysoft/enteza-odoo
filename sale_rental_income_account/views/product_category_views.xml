@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_category_form_rental_fiscal" model="ir.ui.view">
+        <field name="name">product.category.form.rental.fiscal</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Configuración fiscal por tipo de operación"
+                       name="rental_fiscal_config"
+                       groups="account.group_account_user">
+                    <group string="Venta" name="categ_sale_fiscal">
+                        <field name="sale_taxes_id"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group string="Alquiler" name="categ_rental_fiscal">
+                        <field name="property_account_income_rental_categ_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="rental_taxes_id"
+                               widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <div class="text-muted" colspan="2">
+                        Estos valores solo se usan cuando el producto no tiene su propia
+                        configuración. La cuenta de ingresos de venta se sigue tomando del
+                        campo estándar de la categoría.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
