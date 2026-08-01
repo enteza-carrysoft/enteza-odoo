@@ -1,0 +1,99 @@
+.o_enteza_panel {
+    background-color: var(--o-view-background-color, #fff);
+
+    .o_enteza_panel_calendario {
+        flex: 0 0 auto;
+        min-width: 17rem;
+    }
+
+    // Siete columnas fijas: la rejilla del mes.
+    .o_enteza_rejilla {
+        display: grid;
+        grid-template-columns: repeat(7, 2.2rem);
+        gap: 2px;
+    }
+
+    .o_enteza_cabecera_dia {
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: var(--o-main-text-color, #6c757d);
+    }
+
+    .o_enteza_celda {
+        position: relative;
+        height: 2.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.85rem;
+
+        &:hover {
+            border-color: var(--o-brand-primary, #714b67);
+        }
+    }
+
+    .o_enteza_celda_vacia {
+        cursor: default;
+        border: 0;
+    }
+
+    // Escala de carga. Se mantiene deliberadamente monocroma sobre el color de marca en vez
+    // de usar rojo/amarillo: aquí "muchos pedidos" es un buen día de trabajo, no una alarma.
+    .o_enteza_nivel_1 { background-color: rgba(113, 75, 103, 0.15); }
+    .o_enteza_nivel_2 { background-color: rgba(113, 75, 103, 0.35); }
+    .o_enteza_nivel_3 { background-color: rgba(113, 75, 103, 0.60); color: #fff; }
+
+    .o_enteza_hoy {
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    .o_enteza_seleccionado {
+        border-color: var(--o-brand-primary, #714b67);
+        border-width: 2px;
+    }
+
+    // Contador de pedidos en la esquina de la celda.
+    .o_enteza_contador {
+        position: absolute;
+        top: 0;
+        right: 2px;
+        font-size: 0.6rem;
+        line-height: 1;
+        opacity: 0.75;
+    }
+
+    .o_enteza_muestra {
+        display: inline-block;
+        width: 0.8rem;
+        height: 0.8rem;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin: 0 0.15rem 0 0.5rem;
+    }
+
+    .o_enteza_titulo {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--o-main-text-color, #6c757d);
+    }
+
+    // Los dos bloques de abajo se reparten la altura; cada tabla hace su propio scroll.
+    .o_enteza_panel_pedidos {
+        flex: 0 0 45%;
+    }
+
+    .o_enteza_fila_pedido {
+        cursor: pointer;
+    }
+
+    // Las notas pueden ser largas: se recortan para no romper la tabla.
+    .o_enteza_panel_pedidos td.text-truncate {
+        max-width: 20rem;
+    }
+}

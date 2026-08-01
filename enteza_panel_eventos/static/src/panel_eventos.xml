@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="enteza_panel_eventos.PanelEventos">
+        <div class="o_enteza_panel o_action d-flex flex-column h-100">
+
+            <!-- Barra superior -->
+            <div class="o_enteza_panel_barra d-flex align-items-center gap-2 p-2 border-bottom">
+                <button class="btn btn-secondary btn-sm" t-on-click="() => this.cambiarMes(-1)">
+                    <i class="oi oi-chevron-left"/>
+                </button>
+                <button class="btn btn-secondary btn-sm" t-on-click="() => this.cambiarMes(1)">
+                    <i class="oi oi-chevron-right"/>
+                </button>
+                <button class="btn btn-secondary btn-sm" t-on-click="irAHoy">Hoy</button>
+                <span class="o_enteza_panel_mes fw-bold ms-2" t-esc="nombreMes"/>
+                <div class="flex-grow-1"/>
+                <span class="text-muted">
+                    <t t-esc="state.totales.pedidos"/> pedidos ·
+                    <t t-esc="state.totales.importe"/>
+                </span>
+                <button class="btn btn-primary btn-sm" t-on-click="verPedidosDelDia">
+                    Ver en lista
+                </button>
+            </div>
+
+            <div class="o_enteza_panel_cuerpo d-flex flex-grow-1 overflow-auto">
+
+                <!-- Bloque 1: calendario mensual -->
+                <div class="o_enteza_panel_calendario p-2 border-end">
+                    <div class="o_enteza_rejilla">
+                        <div t-foreach="diasSemana" t-as="nombreDia" t-key="nombreDia_index"
+                             class="o_enteza_cabecera_dia" t-esc="nombreDia"/>
+                        <t t-foreach="celdas" t-as="celda" t-key="celda_index">
+                            <div t-if="!celda" class="o_enteza_celda o_enteza_celda_vacia"/>
+                            <div t-else=""
+                                 class="o_enteza_celda"
+                                 t-att-class="{
+                                     'o_enteza_nivel_1': celda.nivel === 1,
+                                     'o_enteza_nivel_2': celda.nivel === 2,
+                                     'o_enteza_nivel_3': celda.nivel === 3,
+                                     'o_enteza_hoy': celda.esHoy,
+                                     'o_enteza_seleccionado': celda.seleccionado,
+                                 }"
+                                 t-att-title="celda.pedidos ? celda.pedidos + ' pedidos' : 'Sin pedidos'"
+                                 t-on-click="() => this.seleccionarDia(celda.clave)">
+                                <span t-esc="celda.dia"/>
+                                <span t-if="celda.pedidos" class="o_enteza_contador"
+                                      t-esc="celda.pedidos"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="o_enteza_leyenda mt-2 small text-muted">
+                        <span class="o_enteza_muestra o_enteza_nivel_1"/> 1-2
+                        <span class="o_enteza_muestra o_enteza_nivel_2"/> 3-5
+                        <span class="o_enteza_muestra o_enteza_nivel_3"/> 6+
+                    </div>
+                </div>
+
+                <!-- Bloque 2: material del día -->
+                <div class="o_enteza_panel_material flex-grow-1 p-2 overflow-auto">
+                    <h5 class="o_enteza_titulo">Material del día</h5>
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Artículo</th>
+                                <th>Categoría</th>
+                                <th class="text-end">Unidades</th>
+                                <th class="text-end">Existencias</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.articulos" t-as="articulo" t-key="articulo.id">
+                                <td t-esc="articulo.articulo"/>
+                                <td class="text-muted" t-esc="articulo.categoria"/>
+                                <td class="text-end fw-bold" t-esc="articulo.unidades"/>
+                                <td class="text-end" t-esc="articulo.existencias"/>
+                            </tr>
+                            <tr t-if="!state.articulos.length">
+                                <td colspan="4" class="text-center text-muted p-3">
+                                    Sin material para este día
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bloque 3: pedidos del día -->
+            <div class="o_enteza_panel_pedidos border-top p-2 overflow-auto">
+                <h5 class="o_enteza_titulo">Pedidos del día</h5>
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nº</th>
+                            <th>Cliente</th>
+                            <th>Lugar de entrega</th>
+                            <th>Salida</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.pedidos" t-as="pedido" t-key="pedido.id"
+                            class="o_enteza_fila_pedido"
+                            t-on-click="() => this.abrirPedido(pedido.id)">
+                            <td t-esc="pedido.nombre"/>
+                            <td t-esc="pedido.cliente"/>
+                            <td class="text-muted" t-esc="pedido.lugar"/>
+                            <td t-esc="pedido.hora"/>
+                            <td t-esc="pedido.estado"/>
+                            <td class="text-end" t-esc="pedido.importe"/>
+                            <td class="text-muted text-truncate" t-esc="pedido.notas"/>
+                        </tr>
+                        <tr t-if="!state.pedidos.length">
+                            <td colspan="7" class="text-center text-muted p-3">
+                                No hay eventos este día
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+
+</templates>

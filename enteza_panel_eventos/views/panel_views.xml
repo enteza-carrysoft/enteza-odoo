@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- El `tag` tiene que coincidir con la clave registrada en
+         registry.category("actions") dentro de panel_eventos.js. -->
+    <record id="action_panel_eventos" model="ir.actions.client">
+        <field name="name">Panel de eventos</field>
+        <field name="tag">enteza_panel_eventos.panel</field>
+    </record>
+
+    <menuitem id="menu_panel_eventos"
+              name="Panel de eventos"
+              parent="sale_renting.rental_order_menu"
+              action="action_panel_eventos"
+              sequence="16"/>
+
+</odoo>
