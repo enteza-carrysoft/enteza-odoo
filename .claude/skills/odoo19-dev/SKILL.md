@@ -1,0 +1,143 @@
+---
+name: odoo19-dev
+description: Conocimiento y operativa para desarrollar módulos en la instancia Odoo 19 EE de Enteza (`enteza26`). Activar al crear o modificar módulos de este repositorio, investigar modelos y campos de la 19, consultar o escribir datos por RPC, resolver dudas sobre el alquiler nativo (sale_renting / sale_stock_renting), decidir dependencias de un manifiesto, o depurar por qué un módulo no instala. Cubre el catálogo de módulos del repo y su estado real de instalación, las convenciones de la 19, el motor de disponibilidad de alquiler y dónde está el código fuente de Odoo Enterprise.
+license: MIT
+---
+
+# Odoo 19 — Desarrollo de módulos para Enteza
+
+## Propósito
+
+Este repositorio (`enteza-odoo`, rama `19.0`) es el **directorio de addons** de la instancia
+Odoo 19 Enterprise del cliente. Cada carpeta de la raíz es un módulo.
+
+Este skill concentra lo que hace falta para desarrollar aquí sin equivocarse: cómo consultar
+la instancia, cómo funciona el alquiler nativo, qué convenciones tiene la 19 y qué módulos
+hay ya —que es la equivocación más cara, porque **varias cosas que parecen faltar ya están
+escritas**.
+
+> **La migración 15→19 es otro proyecto.** Vive en `E:\apps\AI\MigrarOdoo` con su propio
+> skill `odoo-ops` (specs S1–S16, `id_map`, cuadre de facturas, delta). Si la pregunta es
+> "cómo migro este registro de la 15", es allí; aquí no.
+
+## Cuándo usarlo
+
+- "Crea/modifica un módulo", "añade un campo", "haz una vista"
+- "¿Cómo se llama este campo en la 19?", "¿existe este modelo?"
+- "Consulta/cuenta X en la 19", "ejecuta este método"
+- "¿De qué tiene que depender el manifiesto?"
+- "¿Por qué no instala el módulo?"
+- Cualquier duda sobre alquiler: disponibilidad, padding, albaranes, `rental_status`
+
+## Reglas de oro
+
+1. **`enteza26` es PRODUCCIÓN** con la contabilidad migrada y cuadrada al céntimo. Antes de
+   escribir, confirmar con el usuario. `archive` antes que `unlink`.
+2. **No hay instancia de pruebas ni acceso al filesystem del servidor** (hosting Xtendoo).
+   No se pueden ejecutar pruebas con `odoo-bin --test-enable`. Todo lo que se entregue está
+   validado por sintaxis, no por ejecución: **decirlo siempre al entregar**.
+3. **Verificar contra la instancia antes de asumir.** Un campo puede llamarse distinto o no
+   existir. Una consulta cuesta segundos; un manifiesto mal es una instalación rota.
+4. **Mirar primero si ya existe.** Ver `references/catalogo-modulos.md`. Hay 33 módulos y
+   varios resuelven cosas que parecen pendientes.
+5. **Credenciales solo en `.env.local`** (no versionado). Nunca en código ni en salidas.
+
+## Cómo consultar la instancia
+
+Cliente JSON-RPC autónomo, solo biblioteca estándar de Python:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/odoo19.py fields sale.order --filtro rental
+python .claude/skills/odoo19-dev/scripts/odoo19.py search res.company '[]' id,name
+python .claude/skills/odoo19-dev/scripts/odoo19.py count sale.order '[["is_rental_order","=",true]]'
+python .claude/skills/odoo19-dev/scripts/odoo19.py read res.partner 176 name,vat
+python .claude/skills/odoo19-dev/scripts/odoo19.py search ir.module.module '[["state","=","installed"]]' name --limit 300
+```
+
+Las escrituras (`create`, `write`, `exec`) **no hacen nada sin `--execute`**: sin el flag
+muestran lo que harían. Es deliberado, porque la base es producción.
+
+Flags: `--limit`, `--order`, `--company N` (1 Visueña, 2 Stileum — obligatorio en campos
+company-dependent como el código de `account.account`), `--filtro` (solo en `fields`).
+
+Requiere `.env.local` en la raíz del repo con `ODOO19_URL`, `ODOO19_DB`, `ODOO19_USER`,
+`ODOO19_API_KEY`. Detalle en `references/instancia-y-conexion.md`.
+
+## Cómo se instala un módulo aquí
+
+🔴 **No hay acceso al filesystem del servidor**, así que no se puede hacer `odoo -u`. La vía
+es empaquetar el módulo en zip e importarlo por `base.import.module`.
+
+Ese camino tiene dos trampas medidas, las dos con fallo **silencioso**:
+
+1. **Si una vista falla al validar, Odoo hace rollback del módulo entero.** Y falla en casos
+   que en un arranque normal no fallarían: una vista que referencia un campo nuevo del propio
+   módulo puede no encontrarlo, porque en la instalación "en caliente" el registro ORM aún no
+   lo tiene listo dentro de la misma transacción.
+2. **El zip debe llevar separadores `/`.** `Compress-Archive` de PowerShell genera rutas con
+   `\` y Odoo no las reconoce como estructura de directorios: el módulo queda "importado" sin
+   registrar ni un fichero, sin error.
+
+Consecuencia práctica: **entregar módulos pequeños y con pocas vistas**, y probar la
+instalación antes de darla por buena. Ver `references/instancia-y-conexion.md`.
+
+## Conocimiento crítico (detalle en references/)
+
+- **Instancia**: `enteza26`, Odoo 19 EE, hosting Xtendoo. Dos compañías **sin jerarquía**:
+  `1` Visueña de Material Plegable ("Vimaple") y `2` Stileum.
+- **Productos compartidos**: 1.908 plantillas con `company_id = False`, 1.054 con
+  `rent_ok = True`. **No romper esto**: que un mismo producto tenga existencias en las dos
+  compañías es la premisa de todo el desarrollo de alquiler.
+- **Negocio**: alquiler de material para eventos (sillas, mesas, vajilla). Muy estacional y
+  concentrado en fines de semana.
+- **Renombrados y cambios de la 19 que más muerden**: `product_uom`→`product_uom_id` ·
+  `tax_id`→`tax_ids` · `type='product'`→`type='consu'` + `is_storable=True` ·
+  `detailed_type` y `uom_po_id` eliminados · `attrs`/`states` eliminados en vistas (usar
+  `invisible="..."`, `readonly="..."` directos) · en `uom.uom` el factor es
+  `relative_factor`, no `factor`.
+- **Alquiler**: `sale_renting` **y `sale_stock_renting`** están instalados. El segundo trae
+  el **motor de disponibilidad completo** (`product._get_unavailable_qty`), el padding y la
+  ubicación de alquiler. Antes de calcular disponibilidad a mano, leer
+  `references/alquiler-en-19.md`: casi siempre ya está resuelto.
+- **El material alquilado sigue siendo inventario de su compañía**: `rental_loc_id` apunta a
+  una ubicación con `usage='internal'` bajo `Customers`. Por eso `qty_available` no responde
+  "¿puedo alquilar esto el día 15?" — esa pregunta es temporal, no de existencias.
+- **Albaranes de alquiler activos**: el grupo `sale_stock_renting.group_rental_stock_picking`
+  está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
+  alquileres generan albaranes reales por la ruta `route_rental`.
+- **Existencias a cero**: `stock.quant` = 0. Hasta que se carguen, cualquier cálculo de
+  disponibilidad dirá "no hay stock", y no es un fallo del código.
+- **Un solo almacén**: solo existe `Vimaple` (`WH`, compañía 1). Stileum no tiene almacén y
+  el grupo "Manage Multiple Warehouses" no está activado.
+- **Direcciones de cliente**: el grupo es `account.group_delivery_invoice_address` — en la 19
+  vive en `account`, **no** en `sale`. Referenciarlo con el prefijo antiguo rompe la
+  instalación. Está activado desde el 2026-08-01.
+- **Contexto del equipo**: arrancaron en Odoo 19 la primera semana de agosto de 2026 y llevan
+  el almacén **en paralelo** con una aplicación externa hasta confiar en Odoo. Priorizar que
+  nada se mueva sin aprobación humana, y que todo sea reversible y trazable, por encima de la
+  automatización.
+
+## Ficheros de referencia
+
+- `references/instancia-y-conexion.md` — instancia, credenciales, el cliente RPC, cómo se
+  instala un módulo y las trampas del import en caliente.
+- `references/convenciones-modulo.md` — estructura de un módulo, sintaxis de vistas de la 19,
+  renombrados, seguridad y multi-compañía, errores frecuentes de manifiesto.
+- `references/alquiler-en-19.md` — `sale_renting` y `sale_stock_renting`: motor de
+  disponibilidad, padding, `reservation_begin`, `rental_status`, campos almacenados y no
+  almacenados, y qué NO reimplementar.
+- `references/catalogo-modulos.md` — los 33 módulos del repositorio con su estado real de
+  instalación, y cuáles solapan entre sí.
+- `references/codigo-fuente-odoo.md` — dónde está el código de Odoo Enterprise y cómo
+  consultarlo sin descargarse el repo entero.
+
+## Ejemplos
+
+- "¿Cómo se llama el campo de unidad de medida en la línea de pedido?" →
+  `odoo19.py fields sale.order.line --filtro uom` (es `product_uom_id`).
+- "¿Está instalado X?" → `odoo19.py search ir.module.module '[["name","=","X"]]' name,state`.
+- "Añade un campo al pedido" → módulo nuevo o existente, `_inherit = 'sale.order'`, y
+  **sin vista en el mismo módulo** si se va a instalar en caliente (ver trampa 1).
+- "Calcula si hay material disponible el 15 de agosto" → **no lo calcules a mano**:
+  `product._get_unavailable_qty(desde, hasta, warehouse_id=...)`. Ver
+  `references/alquiler-en-19.md`.

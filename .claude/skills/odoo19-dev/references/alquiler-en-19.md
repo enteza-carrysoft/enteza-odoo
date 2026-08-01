@@ -1,0 +1,166 @@
+# El alquiler en Odoo 19 — lo que hay que saber antes de tocarlo
+
+Todo lo de este documento está **verificado por RPC contra `enteza26` y contra el código
+fuente de Odoo 19/18 Enterprise** (2026-08-01). Donde el código y la intuición chocan, manda
+el código.
+
+## Los tres módulos que intervienen
+
+| Módulo | Estado | Qué aporta |
+|---|---|---|
+| `sale_renting` | instalado | Alquiler nativo: `is_rental_order`, fechas, `rental_status`, precios |
+| `sale_stock_renting` | **instalado** | **El motor de disponibilidad**, `rental_loc_id`, el padding y los albaranes de alquiler |
+| `rental_custom` | instalado | Módulo del cliente. Aporta **`event_date`** en `sale.order` y en `sale.order.line` |
+
+🔴 **`sale_stock_renting` se pasa por alto con facilidad** y es el que contiene casi todo lo
+importante. Si un análisis concluye "Odoo no trae cálculo de disponibilidad de alquiler", está
+mirando solo `sale_renting`.
+
+## Campos y su almacenamiento
+
+Lo que está o no almacenado condiciona qué se puede hacer con cada campo.
+
+### `sale.order`
+
+| Campo | Tipo | Store | Nota |
+|---|---|---|---|
+| `is_rental_order` | bool | ✅ | |
+| `rental_start_date` | datetime | ✅ | Cuándo SALE el material del almacén |
+| `rental_return_date` | datetime | ✅ | |
+| `rental_status` | selection | ✅ | Valores abajo |
+| `warehouse_id` | m2o | ✅ | De qué almacén sale |
+| `event_date` | date | ✅ | De `rental_custom`. Informado en los 1.153 pedidos migrados |
+
+**`rental_status`**: `draft` (Quotation) · `sent` · `pickup` (Reserved) · `return` (Pickedup)
+· `returned` · `cancel`.
+
+### `sale.order.line`
+
+| Campo | Tipo | Store | Nota |
+|---|---|---|---|
+| `is_rental` | bool | ✅ | Calculado pero `readonly=False`: se puede escribir |
+| `product_uom_qty`, `qty_delivered`, `qty_returned` | float | ✅ | |
+| `product_uom_id` | m2o | ✅ | ⚠️ En la 15 era `product_uom` |
+| `reservation_begin` | datetime | ✅ | Ver abajo: **lleva el padding restado** |
+| `start_date` / `return_date` | datetime | ❌ | `related` de las fechas del pedido |
+| `event_date` | date | ✅ | |
+
+⚠️ **Matiz importante sobre `start_date` / `return_date`.** No están almacenados, así que **no
+sirven para `read_group` ni para SQL**. Pero **sí son buscables en un `search`**: son `related`
+de campos almacenados y el ORM traduce el dominio. El propio Odoo los usa así en
+`_get_active_rental_lines`. La idea de que "no se pueden usar para filtrar" es falsa a medias.
+
+### `is_rental` al crear pedidos
+
+Se calcula como `is_product_rentable and context.get('in_rental_app')`. Para crear un pedido
+de alquiler por código o en una prueba:
+
+```python
+pedido = env['sale.order'].with_context(in_rental_app=True).create({...})
+```
+
+Sin ese contexto las líneas **no serán de alquiler** aunque el producto tenga `rent_ok`.
+
+## El padding: dos campos que se confunden
+
+| Campo | Dónde | Unidad | Qué es |
+|---|---|---|---|
+| `res.company.padding_time` | compañía | **horas** | Solo el **valor por defecto**. Al instalar se copia a un `ir.default` de `product.template.preparation_time` |
+| `product.template.preparation_time` | producto, `company_dependent` | **horas** | **El que manda de verdad** |
+
+Hoy ambos valen **0** en `enteza26`.
+
+`sale_stock_renting` **sobrescribe** el cálculo de `reservation_begin`:
+
+```python
+reservation_begin = start_date - timedelta(hours=product.preparation_time)
+```
+
+Es decir: **el padding es previo al alquiler** (tiempo de preparación) y **ya viene aplicado
+en `reservation_begin`**. No hay que volver a restarlo. Ojo: en `sale_renting` a secas
+`reservation_begin` es igual a `rental_start_date`; la resta la añade `sale_stock_renting`.
+
+## El motor de disponibilidad — NO lo reimplementes
+
+`product.product._get_unavailable_qty(from_date, to_date=None, ignored_soline_id=False, warehouse_id=False)`
+
+Devuelve **el máximo de unidades no disponibles** en el intervalo. Por dentro hace un barrido
+por eventos sobre las fechas de interés y se queda con el pico, que es exactamente lo que hace
+falta para saber si se puede comprometer material durante todo un periodo.
+
+Incluye cosas que es fácil no ver:
+
+- **`ignored_soline_id`**: excluye una línea del cálculo. Es lo que permite recalcular un
+  pedido que se está modificando sin que compita consigo mismo.
+- **`warehouse_id`**: todo el cálculo nativo se scopea **por almacén**, no por compañía.
+- **Ajustes por recogida y devolución tempranas** (`_get_rented_quantities`): si el material
+  se recogió antes de tiempo o volvió antes, lo corrige desde la fecha actual. Reimplementar
+  el motor sin esto da cifras distintas a las que ve el comercial en pantalla.
+
+### La fórmula completa de disponibilidad
+
+Está en `RentalOrderLine._compute_qty_at_date` (`sale_stock_renting/models/sale_order_line.py`):
+
+```python
+if desde <= now:
+    rentable = producto.with_context(from_date=desde, to_date=hasta,
+                                     warehouse_id=wh).qty_available
+else:
+    rentable = producto.with_context(from_date=False, to_date=desde,
+                                     warehouse_id=wh).virtual_available
+    # Suma de vuelta lo que `virtual_available` ya había descontado por movimientos de
+    # alquiler planificados, para no restarlo dos veces con _get_unavailable_qty.
+    rentable += producto._get_virtual_unavailable_qty_in_rent(pivot_date=desde, ...)
+
+alquilado = producto._get_unavailable_qty(desde, hasta, ignored_soline_id=..., warehouse_id=wh)
+disponible = max(rentable - alquilado, 0)
+```
+
+⚠️ **Odoo no busca el mínimo de todo el periodo** para stock futuro: usa el previsto del
+**primer día**, por rendimiento y con comentario explícito en su código. Si un desarrollo
+necesita el mínimo real del intervalo, es una divergencia deliberada que hay que documentar,
+porque dará números distintos a la ficha del producto.
+
+### Rendimiento
+
+`_get_unavailable_qty` hace `ensure_one()` y **una búsqueda por producto**. Para decenas de
+líneas va sobrado; para barrer 1.000 productos no. Si hace falta analizar el catálogo entero,
+hay que asumirlo o construir una vía agrupada aparte.
+
+## Dónde está el material alquilado
+
+`res.company.rental_loc_id` apunta a una ubicación **`usage='internal'`** creada bajo
+`stock.stock_location_customers` (aparece como `Customers/Alquiler`).
+
+Consecuencia: **el material que está fuera en un evento sigue contando como inventario de su
+compañía**. Lo que hace a una unidad no disponible no es dónde está, sino estar comprometida
+en una fecha. Por eso `qty_available` y `free_qty` **no responden** a "¿puedo alquilar esto el
+día 15?".
+
+## Albaranes de alquiler
+
+El grupo `sale_stock_renting.group_rental_stock_picking` decide si los alquileres generan
+albaranes reales o si solo se manejan cantidades a mano.
+
+**En `enteza26` está implicado por `base.group_user`**, así que lo tienen todos los usuarios
+internos: los alquileres **sí** generan albaranes, por la ruta `route_rental`
+(`rental_loc → lot_stock` del almacén).
+
+## Estado de la instancia que condiciona cualquier prueba
+
+- `stock.quant` = **0**. No hay existencias cargadas.
+- Un solo almacén: `Vimaple` (`WH`, compañía 1). Stileum **no tiene almacén**.
+- "Manage Multiple Warehouses" **sin activar**.
+- 1.153 pedidos de alquiler migrados de la 15, todos con `rental_status='returned'` y fechas
+  de 2026 ya pasadas. **Filtrarlos siempre** en cualquier análisis de demanda, o generan
+  déficits fantasma masivos.
+
+## Errores clásicos
+
+1. Calcular disponibilidad con `qty_available` → ignora la dimensión temporal.
+2. Reimplementar el barrido → se pierden los ajustes por recogida/devolución temprana.
+3. Restar el padding otra vez sobre `reservation_begin` → se cuenta dos veces.
+4. Usar `res.company.padding_time` como si fuera el padding real → es solo el defecto.
+5. Escribir `start_date`/`return_date` de línea → no están almacenados.
+6. Crear pedidos de prueba sin `in_rental_app=True` → no salen de alquiler.
+7. Razonar por compañía cuando el nativo razona **por almacén**.

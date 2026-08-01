@@ -1,0 +1,15 @@
+# Credenciales de la instancia Odoo 19. NUNCA se versionan.
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editores y sistema
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
