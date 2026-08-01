@@ -73,6 +73,12 @@ Las vistas `tree` se llaman `list`.
 | `uom_po_id` | eliminado |
 | `uom.uom.factor` | **`relative_factor`** (existe `rounding`) |
 | `rental` (en producto) | `rent_ok` |
+| `ir.ui.menu.groups_id` | **`group_ids`** (verificado por RPC el 2026-08-01) |
+
+En `res.groups` conviven cuatro campos y es fácil coger el que no es: `implied_ids` (los que
+implica, almacenado), `implied_by_ids` (los que le implican, almacenado) y las versiones
+transitivas `all_implied_ids` / `all_implied_by_ids`, que **no** están almacenadas y por tanto
+no se pueden usar en un `search`.
 
 Comparación de cantidades: `float_compare` con
 `self.env['decimal.precision'].precision_get('Product Unit of Measure')`, que es el idioma que

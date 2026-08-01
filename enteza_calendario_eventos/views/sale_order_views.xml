@@ -4,34 +4,32 @@
     <!--
         Calendario pivotado en la fecha del evento.
 
-        Hereda en modo `primary` de la vista base de pedidos (sale.view_sale_order_calendar),
-        igual que hace el calendario nativo de alquiler (sale_renting.rental_order_view_calendar).
-        No heredamos de ese último a propósito: son dos calendarios hermanos e independientes,
-        y encadenarlos haría que cualquier cambio de Odoo en el nativo arrastrase a éste.
+        Hereda en modo `primary` del calendario nativo de alquiler
+        (sale_renting.rental_order_view_calendar), que a su vez hereda del de ventas
+        (sale.view_sale_order_calendar). Así este calendario es "el de alquiler, pero por
+        fecha de evento": `color="rental_status"`, `edit="0"` y la sustitución de `state`
+        por `rental_status` ya vienen dadas y no hay que repetirlas aquí.
 
-        Sin `date_stop`: el evento es de un día. Si negocio pide luego mostrar la duración
-        completa del alquiler, se añade aquí `rental_return_date`.
+        Contrapartida asumida: cualquier cambio de Odoo en el calendario de alquiler llega
+        también a éste.
+
+        Se anula `date_stop` (un `<attribute>` vacío elimina el atributo): el evento es de un
+        día. Si negocio pide luego mostrar la duración completa del alquiler, basta con
+        devolverle el valor `rental_return_date`.
     -->
     <record id="view_sale_order_calendar_evento" model="ir.ui.view">
         <field name="name">sale.order.calendar.evento</field>
         <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_sale_order_calendar"/>
+        <field name="inherit_id" ref="sale_renting.rental_order_view_calendar"/>
         <field name="mode">primary</field>
         <field name="priority">99</field>
         <field name="arch" type="xml">
             <calendar position="attributes">
                 <attribute name="string">Calendario de eventos</attribute>
                 <attribute name="date_start">event_date</attribute>
-                <attribute name="color">rental_status</attribute>
+                <attribute name="date_stop"/>
                 <attribute name="mode">month</attribute>
-                <attribute name="edit">0</attribute>
             </calendar>
-
-            <!-- El color pivota sobre rental_status, así que el campo tiene que estar en la
-                 vista. Sustituye a `state`, que es el que colorea el calendario de ventas. -->
-            <field name="state" position="replace">
-                <field name="rental_status" filters="1" invisible="1"/>
-            </field>
 
             <!-- Lugar de entrega justo debajo del cliente: es lo que pidió el cliente.
                  `groups` replica el comportamiento nativo del campo — si el ajuste

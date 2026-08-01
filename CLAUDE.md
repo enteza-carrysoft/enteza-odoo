@@ -24,9 +24,12 @@ que ser reversible y trazable. Eso pesa más que la automatización.
 
 1. **`enteza26` es producción**, con la contabilidad migrada y cuadrada al céntimo. No hay
    staging. Confirmar con el usuario antes de cualquier escritura.
-2. **No hay acceso al filesystem del servidor** (hosting Xtendoo): no hay `odoo -u` ni
-   `odoo-bin --test-enable`. Los módulos se instalan por zip vía `base.import.module`, que
-   tiene dos trampas con fallo silencioso — están documentadas en el skill.
+2. **El despliegue es por `git pull`**: Xtendoo sincroniza la rama `19.0` de este repositorio
+   contra el addons path de `enteza26`. Commit → push → `git pull` → Actualizar lista de
+   aplicaciones → Instalar. Que un módulo **aparezca** en la lista no quiere decir que esté
+   instalado: comprobar el `state` por RPC. Sigue sin haber acceso a `odoo -u` ni a
+   `odoo-bin --test-enable`. El camino alternativo del zip por `base.import.module` tiene dos
+   trampas con fallo silencioso — están documentadas en el skill.
 3. **No se pueden ejecutar pruebas automatizadas.** Se escriben igualmente, pero al entregar
    hay que decir siempre que están validadas por sintaxis y **no ejecutadas**.
 4. **Las existencias están a cero** (`stock.quant` = 0). Cualquier cálculo de disponibilidad

@@ -67,11 +67,33 @@ campo exacto que falla**. Merece la pena leerlo antes de suponer nada.
 
 ## Cómo se instala un módulo
 
-🔴 **No hay acceso al filesystem del servidor**, así que no hay `odoo -u`. La única vía es
-empaquetar el módulo en un zip e importarlo con `base.import.module` (Aplicaciones → Importar
-módulo, o por RPC).
+### La vía real: `git pull` de Xtendoo (confirmado el 2026-08-01)
 
-Ese camino tiene dos trampas medidas en este proyecto, **las dos con fallo silencioso**:
+**Este repositorio se despliega en el servidor por `git pull`.** Xtendoo sincroniza la rama
+`19.0` contra el addons path de `enteza26`. El flujo es:
+
+1. Commit y push a la rama `19.0`.
+2. Xtendoo hace `git pull` en el servidor.
+3. En Odoo: Aplicaciones → **Actualizar lista de aplicaciones**, y luego Instalar o Actualizar.
+
+Cómo distinguirlo por RPC: en `ir.module.module`, el campo **`imported`** vale `False` cuando
+Odoo leyó el manifiesto **del filesystem** (llegó por `git pull`) y `True` cuando entró por
+`base.import.module`. Es la comprobación que revela por qué vía llegó un módulo.
+
+> Un módulo del repositorio puede aparecer en la lista de aplicaciones **sin estar instalado**:
+> `git pull` solo pone los ficheros en el addons path. Y como casi todos llevan
+> `application: False`, no salen en Aplicaciones con el filtro por defecto — hay que quitarlo.
+> Es fácil creer que un módulo está instalado cuando solo está presente. Verificar siempre el
+> `state` por RPC.
+
+Seguir sin acceso a `odoo -u`: **no se pueden ejecutar pruebas** ni forzar actualizaciones
+desde CLI. La actualización se pide por la interfaz o por
+`ir.module.module.button_immediate_upgrade` por RPC.
+
+### La otra vía: zip por `base.import.module`
+
+Sigue disponible (Aplicaciones → Importar módulo, o por RPC) y es la que se usó en la
+migración. Tiene dos trampas medidas en este proyecto, **las dos con fallo silencioso**:
 
 ### 1. Una vista que falla tira el módulo entero
 
@@ -100,12 +122,21 @@ justo por este motivo y sirve de referencia.
 ## Comprobar el resultado de una instalación
 
 ```bash
-python ... search ir.module.module '[["name","=","mi_modulo"]]' name,state,latest_version
+python ... search ir.module.module '[["name","=","mi_modulo"]]' name,state,latest_version,imported
 python ... count ir.model.data '[["module","=","mi_modulo"]]'
 ```
 
-Si el estado es `installed` pero `ir.model.data` no tiene registros, se ha dado el fallo
-silencioso del zip.
+Cómo leer el resultado:
+
+| `state` | `ir.model.data` | Qué pasó |
+|---|---|---|
+| `installed` | con registros | Instalado de verdad |
+| `installed` | **vacío** | Fallo silencioso del zip (trampa 2) |
+| `uninstalled` | vacío | **No está instalado**: o llegó por `git pull` y nadie pulsó Instalar, o la instalación hizo rollback |
+
+Para saber si un `uninstalled` es "nunca se intentó" o "se intentó y falló", **lanzar la
+instalación por RPC**: `button_immediate_install` devuelve el traceback completo, que la
+interfaz a veces se traga.
 
 ## El otro proyecto
 

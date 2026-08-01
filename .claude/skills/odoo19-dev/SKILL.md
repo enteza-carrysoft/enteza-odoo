@@ -65,10 +65,18 @@ Requiere `.env.local` en la raíz del repo con `ODOO19_URL`, `ODOO19_DB`, `ODOO1
 
 ## Cómo se instala un módulo aquí
 
-🔴 **No hay acceso al filesystem del servidor**, así que no se puede hacer `odoo -u`. La vía
-es empaquetar el módulo en zip e importarlo por `base.import.module`.
+**La vía real es `git pull`** (confirmado el 2026-08-01): Xtendoo sincroniza la rama `19.0` de
+este repositorio contra el addons path de `enteza26`. Commit → push → `git pull` de Xtendoo →
+Aplicaciones → Actualizar lista de aplicaciones → Instalar/Actualizar.
 
-Ese camino tiene dos trampas medidas, las dos con fallo **silencioso**:
+🔴 **Ojo:** que un módulo aparezca en la lista **no significa que esté instalado**. `git pull`
+solo deja los ficheros. Comprobar siempre el `state` por RPC antes de dar por buena una
+instalación. En `ir.module.module`, `imported = False` indica que llegó por filesystem.
+
+Sigue sin haber acceso a `odoo -u`, así que **no se pueden ejecutar pruebas**.
+
+La otra vía, zip por `base.import.module`, sigue disponible y tiene dos trampas medidas, las
+dos con fallo **silencioso**:
 
 1. **Si una vista falla al validar, Odoo hace rollback del módulo entero.** Y falla en casos
    que en un arranque normal no fallarían: una vista que referencia un campo nuevo del propio

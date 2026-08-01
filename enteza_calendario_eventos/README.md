@@ -16,6 +16,25 @@ muestra el día de la entrega; éste muestra el día del evento.
 **Los dos calendarios conviven.** El nativo responde «qué sale hoy del almacén», éste responde
 «qué eventos hay el sábado». Este módulo no modifica ni sustituye la vista nativa.
 
+## De qué vista hereda
+
+Hereda en modo **`primary`** de `sale_renting.rental_order_view_calendar`, el calendario nativo
+de alquiler (`ir.ui.view` id 1703 en `enteza26`). Al ser `primary`, crea una vista nueva y **no
+altera la original**.
+
+Verificado por RPC el 2026-08-01: en Odoo 19 no existe una vista calendario propia del alquiler
+independiente de la de ventas. `sale_renting.rental_order_view_calendar` es a su vez una herencia
+`primary` de `sale.view_sale_order_calendar` (id 1504) que solo cambia cuatro atributos.
+
+Heredando del de alquiler en lugar del de ventas, este módulo se queda en lo mínimo:
+`color="rental_status"`, `edit="0"` y la sustitución de `state` por `rental_status` ya vienen
+dadas. Solo se cambian `date_start` a `event_date` y se anula `date_stop` (un `<attribute>`
+vacío elimina el atributo), porque el evento es de un día.
+
+**Contrapartida asumida:** cualquier cambio que Odoo haga en el calendario de alquiler llega
+también a éste. Fue una decisión explícita frente a la alternativa de heredar directamente del
+calendario de ventas y quedar desacoplado a cambio de más XML duplicado.
+
 En la ventana flotante se muestra el **lugar de entrega** (`partner_shipping_id`) justo debajo
 del cliente.
 
@@ -43,12 +62,24 @@ Si el campo no aparece en el popover, mira primero el ajuste antes de tocar la v
 
 ## Instalación
 
-No hay acceso al filesystem del servidor, así que la instalación va por `base.import.module`
-(mismo camino que `enteza_migration_fields`, ver `scripts/build-target-module.ts`).
+El despliegue es por **`git pull`**: Xtendoo sincroniza la rama `19.0` de este repositorio
+contra el addons path de `enteza26`.
 
-⚠️ **Riesgo conocido de ese flujo:** si una vista falla al validar, Odoo hace *rollback del
-módulo entero* y lo deja "importado" sin registrar nada, en silencio. Instalar primero en la
-instancia de staging y comprobar que el menú aparece antes de tocar `enteza26`.
+1. Commit y push a `19.0`.
+2. Xtendoo hace `git pull`.
+3. Odoo → Aplicaciones → **Actualizar lista de aplicaciones**.
+4. Quitar el filtro «Aplicaciones» (este módulo lleva `application: False` y si no, no sale),
+   buscarlo e **Instalar**.
+
+⚠️ **Que el módulo aparezca en la lista no significa que esté instalado.** `git pull` solo deja
+los ficheros en el servidor. Verificar siempre:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/odoo19.py search ir.module.module \
+    '[["name","=","enteza_calendario_eventos"]]' name,state,latest_version,imported
+```
+
+Si tras instalar el menú no aparece, recargar con `Ctrl+F5`: Odoo cachea la barra de menús.
 
 ## Verificación tras instalar
 

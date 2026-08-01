@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Calendario de eventos de alquiler',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Sales/Rental',
     'summary': 'Calendario de pedidos de alquiler pivotado en la fecha del evento',
     'description': """
