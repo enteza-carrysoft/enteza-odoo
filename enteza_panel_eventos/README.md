@@ -6,6 +6,10 @@ del evento), no sobre `rental_start_date` (el día en que el material sale del a
 
 **Alquiler → Pedidos → Panel de eventos.**
 
+La pantalla original que se reproduce está en **`.claude/PRPs/eventos.png`** («Eventos de
+Alquileres y Banquetes», la aplicación que Enteza usaba antes). Es la referencia de diseño:
+mirarla antes de cambiar la disposición de los bloques.
+
 ```
 ┌──────────────┬────────────────────────────────┐
 │ CALENDARIO   │ MATERIAL DEL DÍA               │
