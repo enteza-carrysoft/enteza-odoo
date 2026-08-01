@@ -15,7 +15,8 @@ from datetime import timedelta
 
 from psycopg2 import IntegrityError
 
-from odoo import Command
+from odoo import Command, fields
+from odoo.exceptions import UserError
 from odoo.fields import Datetime
 from odoo.tests import TransactionCase, tagged
 from odoo.tools import mute_logger
@@ -287,6 +288,77 @@ class TestDisponibilidad(TransactionCase):
             {self.producto.id: 850},
         )
         self.assertEqual(faltas.get(self.producto.id), 50)
+
+    # ------------------------------------------------------------------
+    # Fachada RPC
+    # ------------------------------------------------------------------
+
+    def _consultar(self, **kwargs):
+        """Llama a la fachada como lo haría un cliente RPC: ids y fechas en texto."""
+        return self.motor.consultar(
+            self.productos.ids,
+            self.almacen.id,
+            fields.Datetime.to_string(self.desde),
+            fields.Datetime.to_string(self.hasta),
+            **kwargs,
+        )
+
+    def test_fachada_acepta_ids_y_fechas_en_texto(self):
+        """Es lo único que atraviesa una llamada RPC.
+
+        Con la API interna la consulta reventaba en `'<=' not supported between str and
+        datetime`, comprobado contra `enteza26` el 2026-08-01.
+        """
+        self._dar_stock(900)
+        self._crear_pedido(300)
+        filas = self._consultar()
+        self.assertEqual(len(filas), 1)
+        self.assertEqual(filas[0]['product_id'], self.producto.id)
+        self.assertEqual(filas[0]['disponible'], 600)
+        self.assertEqual(filas[0]['prestable'], 600)
+
+    def test_fachada_devuelve_la_falta_si_se_le_pasan_cantidades(self):
+        """El caso del §1 preguntado desde fuera: 900 en casa, hacen falta 1.000."""
+        self._dar_stock(900)
+        filas = self._consultar(cantidades={self.producto.id: 1000})
+        self.assertEqual(filas[0]['necesita'], 1000)
+        self.assertEqual(filas[0]['falta'], 100)
+
+    def test_fachada_admite_claves_de_cantidad_en_texto(self):
+        """Un objeto JSON siempre llega con las claves como cadenas."""
+        self._dar_stock(900)
+        filas = self._consultar(cantidades={str(self.producto.id): 1000})
+        self.assertEqual(filas[0]['falta'], 100)
+
+    def test_fachada_descarta_los_productos_no_almacenables(self):
+        """El motor nativo solo tiene sentido sobre almacenables (`_compute_qty_at_date`)."""
+        servicio = self.env['product.product'].create({
+            'name': 'Montaje (test)', 'type': 'service', 'company_id': False,
+        })
+        self._dar_stock(900)
+        filas = self.motor.consultar(
+            (self.producto | servicio).ids,
+            self.almacen.id,
+            fields.Datetime.to_string(self.desde),
+            fields.Datetime.to_string(self.hasta),
+        )
+        self.assertEqual([f['product_id'] for f in filas], [self.producto.id])
+
+    def test_fachada_avisa_si_el_almacen_no_existe(self):
+        with self.assertRaises(UserError):
+            self.motor.consultar(
+                self.productos.ids, 0,
+                fields.Datetime.to_string(self.desde),
+                fields.Datetime.to_string(self.hasta),
+            )
+
+    def test_fachada_avisa_si_las_fechas_estan_del_reves(self):
+        with self.assertRaises(UserError):
+            self.motor.consultar(
+                self.productos.ids, self.almacen.id,
+                fields.Datetime.to_string(self.hasta),
+                fields.Datetime.to_string(self.desde),
+            )
 
     # ------------------------------------------------------------------
     # Integridad del modelo

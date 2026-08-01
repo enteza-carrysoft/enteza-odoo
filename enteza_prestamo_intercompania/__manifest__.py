@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Préstamo de material entre compañías',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.1.0',
     'category': 'Inventory/Inventory',
     'summary': 'Préstamo de material de alquiler entre las compañías del grupo',
     'description': """

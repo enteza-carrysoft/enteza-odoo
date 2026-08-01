@@ -39,12 +39,16 @@ aceptada a cambio de coherencia con el nativo. Si hiciera falta, la vía es aña
 implementación agrupada DETRÁS de estos mismos métodos, sin tocar a quien los llama.
 """
 
+import logging
 from collections import defaultdict
 
-from odoo import fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import float_compare
 
 from .enteza_stock_loan import ESTADOS_COMPROMETEN
+
+_logger = logging.getLogger(__name__)
 
 
 class EntezaDisponibilidad(models.AbstractModel):
@@ -52,7 +56,93 @@ class EntezaDisponibilidad(models.AbstractModel):
     _description = 'Motor de cálculo de disponibilidad de alquiler'
 
     # ------------------------------------------------------------------
-    # API pública
+    # Fachada: la única entrada llamable desde fuera del servidor
+    # ------------------------------------------------------------------
+
+    @api.model
+    def consultar(self, producto_ids, almacen_id, desde, hasta,
+                  cantidades=None, ignorar_linea_id=False, ignorar_prestamo_ids=None):
+        """Consulta de disponibilidad con argumentos que viajan por RPC.
+
+        El resto de la API de este modelo trabaja con **recordsets y `datetime`**, que es lo
+        cómodo desde dentro del servidor pero **no atraviesa una llamada RPC**: por ahí solo
+        llegan ids y cadenas. Sin esta fachada el motor no se puede ejercitar de ninguna
+        forma —no hay interfaz, no hay `--test-enable` en este hosting y los métodos internos
+        no son llamables—, que es exactamente donde se quedó la fase 1.
+
+        También es la entrada que necesitará la interfaz de la fase 2 (el widget de
+        disponibilidad y el aviso al confirmar un pedido llaman desde el cliente web, con
+        ids). Por eso vive aquí y no en un script suelto.
+
+        :param producto_ids: lista de ids de `product.product`
+        :param almacen_id: id del `stock.warehouse` desde el que se serviría
+        :param desde, hasta: fecha y hora, en texto (`'2026-08-15 08:00:00'`) o `datetime`
+        :param cantidades: opcional, `{product_id: cantidad}` necesaria. Si se pasa, cada
+            línea incluye además `falta`
+        :param ignorar_linea_id: id de `sale.order.line` a excluir (pedido que se modifica)
+        :param ignorar_prestamo_ids: ids de `enteza.stock.loan` a excluir
+        :return: lista de diccionarios, uno por producto, con `product_id`, `producto`,
+            `disponible`, `prestable` y, si procede, `falta`. Se devuelve **lista y no
+            diccionario** porque las claves numéricas de un dict se convierten en cadenas al
+            serializar a JSON, y eso obliga a quien llama a deshacer la conversión.
+        """
+        almacen = self.env['stock.warehouse'].browse(almacen_id).exists()
+        if not almacen:
+            raise UserError(_('No existe el almacén con id %s.', almacen_id))
+
+        desde = fields.Datetime.to_datetime(desde)
+        hasta = fields.Datetime.to_datetime(hasta)
+        if not desde or not hasta:
+            raise UserError(_('Hay que indicar la fecha de inicio y la de fin.'))
+        if hasta < desde:
+            raise UserError(_('La fecha de fin es anterior a la de inicio.'))
+
+        productos = self.env['product.product'].browse(producto_ids).exists()
+        # El cálculo nativo solo tiene sentido sobre productos almacenables: es lo que filtra
+        # `_compute_qty_at_date` antes de llamar al motor. Los demás se descartan aquí en vez
+        # de dejar que fallen dentro, y se avisa de cuáles para que quien pregunte no crea
+        # que se le ha respondido por todos.
+        almacenables = productos.filtered('is_storable')
+        descartados = productos - almacenables
+        if descartados:
+            _logger.info(
+                'Disponibilidad: se ignoran %s productos no almacenables (%s)',
+                len(descartados), descartados.ids,
+            )
+        if not almacenables:
+            return []
+
+        prestamos = self.env['enteza.stock.loan'].browse(ignorar_prestamo_ids or [])
+        linea = self.env['sale.order.line'].browse(ignorar_linea_id) if ignorar_linea_id \
+            else None
+
+        opciones = {'ignorar_linea': linea, 'ignorar_prestamos': prestamos}
+        disponible = self.disponible(almacenables, almacen, desde, hasta, **opciones)
+        prestable = self.prestable(almacenables, almacen, desde, hasta, **opciones)
+        faltas = {}
+        if cantidades:
+            # Las claves llegan como cadenas si el que llama las envió en un objeto JSON.
+            cantidades = {int(pid): qty for pid, qty in cantidades.items()}
+            faltas = self.deficit(
+                almacenables, almacen, desde, hasta, cantidades, **opciones,
+            )
+
+        resultado = []
+        for producto in almacenables:
+            fila = {
+                'product_id': producto.id,
+                'producto': producto.display_name,
+                'disponible': disponible[producto.id],
+                'prestable': prestable[producto.id],
+            }
+            if cantidades:
+                fila['necesita'] = cantidades.get(producto.id, 0.0)
+                fila['falta'] = faltas.get(producto.id, 0.0)
+            resultado.append(fila)
+        return resultado
+
+    # ------------------------------------------------------------------
+    # API interna — recordsets y datetime
     # ------------------------------------------------------------------
 
     def disponible(self, productos, almacen, desde, hasta,

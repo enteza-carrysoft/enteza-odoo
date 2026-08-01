@@ -63,6 +63,28 @@ tampoco se pueden llamar por RPC. La fuente es el repositorio del cliente
 Sigue siendo **la 18**: si la 19 cambió algo ahí, no hay forma de saberlo desde aquí. Es la
 deuda de la que avisa el apartado siguiente.
 
+## Cómo se le pregunta desde fuera (`19.0.1.1.0`)
+
+El resto de la API trabaja con recordsets y `datetime`. Eso **no atraviesa una llamada RPC**,
+y como aquí no hay interfaz ni `--test-enable`, la fase 1 se quedó con un motor que **no se
+podía ejercitar de ninguna forma**. `consultar()` es la entrada que lo arregla, y es también
+la que necesitará el cliente web en la fase 2:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/odoo19.py exec enteza.disponibilidad consultar \
+    '[[1637], 1, "2026-08-15 08:00:00", "2026-08-17 20:00:00"]' --execute
+```
+
+```json
+[{"product_id": 1637, "producto": "...", "disponible": 900.0, "prestable": 900.0}]
+```
+
+Acepta además `cantidades` (`{product_id: necesaria}`, y entonces cada fila trae `necesita` y
+`falta`), `ignorar_linea_id` e `ignorar_prestamo_ids`. Devuelve **lista y no diccionario**
+porque al serializar a JSON las claves numéricas se vuelven cadenas y quien llama tendría que
+deshacer la conversión. Descarta los productos no almacenables, que es lo que hace el nativo
+en `_compute_qty_at_date`, y lo registra en el log.
+
 ## Cómo calcula la disponibilidad
 
 ```
