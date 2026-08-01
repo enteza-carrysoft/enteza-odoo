@@ -27,8 +27,12 @@ Estos son los que solapan con desarrollos nuevos. Aquí es donde se duplica trab
 | `sale_rental_income_account` | **installed** | Cuenta de ingresos específica para alquiler |
 | `bi_warehouse_product_availability_in_so` | uninstalled | Disponibilidad por almacén en el pedido de venta |
 | `eg_warehouse_restriction` | uninstalled | Restricción de almacenes por usuario |
-| `enteza_calendario_eventos` | nuevo | Calendario de alquiler pivotado en `event_date` |
-| `enteza_prestamo_intercompania` | nuevo | Préstamo de material entre Vimaple y Stileum (fase 1: motor de cálculo) |
+| `enteza_calendario_eventos` | **installed** (`19.0.1.2.0`) | Vista calendario nativa pivotada en `event_date`, con el nombre del cliente como etiqueta |
+| `enteza_panel_eventos` | **installed** (`19.0.1.0.0`) | Panel OWL de tres bloques: calendario del mes, material del día y pedidos del día |
+| `enteza_prestamo_intercompania` | uninstalled | Préstamo de material entre Vimaple y Stileum (fase 1: motor de cálculo). **No instalado** |
+
+Los dos primeros **conviven sin problema**: uno es una vista calendario nativa y el otro una
+pantalla propia. No comparten código.
 
 ### Muertos, pero engañan por el nombre
 

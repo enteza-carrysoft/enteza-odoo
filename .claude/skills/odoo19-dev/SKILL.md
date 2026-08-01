@@ -113,6 +113,16 @@ instalación antes de darla por buena. Ver `references/instancia-y-conexion.md`.
 - **Albaranes de alquiler activos**: el grupo `sale_stock_renting.group_rental_stock_picking`
   está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
   alquileres generan albaranes reales por la ruta `route_rental`.
+- **Módulos propios de Enteza instalados** (2026-08-01): `enteza_calendario_eventos`
+  (`19.0.1.2.0`, vista calendario nativa pivotada en `event_date`) y `enteza_panel_eventos`
+  (`19.0.1.0.0`, panel OWL de tres bloques). Conviven sin pisarse.
+  `enteza_prestamo_intercompania` sigue **sin instalar**.
+- **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
+  `sale_renting.rental_order_view_calendar` es una herencia `primary` de
+  `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,
+  heredar `primary` del de alquiler sale más barato. La etiqueta de cada evento se cambia con
+  `create_name_field`, que **necesita un campo de texto**: un many2one llega al cliente web
+  como `[id, nombre]` y se vería el array entero.
 - **Existencias a cero**: `stock.quant` = 0. Hasta que se carguen, cualquier cálculo de
   disponibilidad dirá "no hay stock", y no es un fallo del código.
 - **Un solo almacén**: solo existe `Vimaple` (`WH`, compañía 1). Stileum no tiene almacén y
@@ -136,6 +146,9 @@ instalación antes de darla por buena. Ver `references/instancia-y-conexion.md`.
   almacenados, y qué NO reimplementar.
 - `references/catalogo-modulos.md` — los 33 módulos del repositorio con su estado real de
   instalación, y cuáles solapan entre sí.
+- `references/owl-acciones-cliente.md` — cuándo hace falta un componente OWL propio en vez de
+  una vista nativa, el esqueleto que funciona en la 19 y las trampas medidas (`toISOString`,
+  caché de assets, pantalla en blanco sin log).
 - `references/codigo-fuente-odoo.md` — dónde está el código de Odoo Enterprise y cómo
   consultarlo sin descargarse el repo entero.
 
