@@ -2,8 +2,30 @@
 
 Implementa el PRP `.claude/PRPs/prp-modulo-prestamo-intercompania.md`.
 
-**Estado: fase 1 (motor de cálculo).** Modelos, seguridad y motor de disponibilidad. Sin
-interfaz, sin flujo de documentos y sin enganche en la confirmación de pedidos todavía.
+**Estado: fase 2, primera entrega.** El motor de disponibilidad (fase 1) y el documento de
+préstamo con su ciclo de vida: numeración, estados, reserva en firme, aprobación, menú y
+vistas.
+
+Todavía **no** engancha en la confirmación de pedidos ni genera albaranes. Van en las dos
+entregas siguientes de esta misma fase, en este orden:
+
+1. ✅ **Documento vivo** — lo que hay ahora: se puede crear un préstamo a mano, reservarlo
+   (y entonces resta de verdad en la disponibilidad de la prestamista), aprobarlo, cancelarlo.
+2. ⬜ **Enganche en `action_confirm`** — el camino principal (D5): al confirmar un pedido de
+   alquiler, detectar el déficit, buscar en la otra compañía y reservar en firme, con el
+   bloqueo de concurrencia del §5.6.
+3. ⬜ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
+
+## Decisiones tomadas el 2026-08-01, que corrigen el PRP
+
+Las cuatro que el §16 dejaba abiertas para la fase 2:
+
+| | Decisión | Efecto |
+|---|---|---|
+| `[PENDIENTE-1]` Almacenes | **Habrá más** de uno por compañía | Origen y destino son **seleccionables**, no deducidos de la compañía |
+| `[PENDIENTE-3]` Antelación | **Fija y configurable**, 3 días para todas las rutas | Un solo parámetro. `_fecha_traslado()` es el único sitio que la calcula |
+| `[PENDIENTE-8]` Confirmar sin stock | **Puede cualquiera**, con aviso | 🔴 **Diverge del PRP §7.0.1**, que lo reservaba al responsable. Como cualquiera puede confirmar, la **marca de déficit no cubierto** en el pedido pasa a ser lo único que evita perder de vista un pedido imposible |
+| `[PENDIENTE-9]` Prioridad | **Quien reserva primero** (`date_reserved`) | Por eso `date_reserved` no se toca al modificar un préstamo: perderlo es perder el criterio |
 
 ## Correcciones al PRP aplicadas en esta fase
 

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_enteza_stock_loan_list" model="ir.ui.view">
+        <field name="name">enteza.stock.loan.list</field>
+        <field name="model">enteza.stock.loan</field>
+        <field name="arch" type="xml">
+            <!--
+                `decoration-danger` sobre `traslado_retrasado`: un préstamo reservado cuya
+                fecha de traslado ya pasó es la alerta operativa del §6.4 —el evento se
+                acerca y el material sigue sin moverse—. Es lo que el responsable tiene que
+                ver de un vistazo al abrir la lista.
+            -->
+            <list decoration-danger="traslado_retrasado"
+                  decoration-muted="state in ('cancelled', 'returned')">
+                <field name="name"/>
+                <field name="company_id" string="Presta"/>
+                <field name="company_dest_id" string="Recibe"/>
+                <field name="warehouse_src_id" optional="show"/>
+                <field name="warehouse_dest_id" optional="show"/>
+                <field name="date_transfer"/>
+                <field name="date_expected_return" optional="hide"/>
+                <field name="qty_total" sum="Unidades"/>
+                <field name="origin" optional="hide"/>
+                <field name="date_reserved" optional="hide"/>
+                <field name="traslado_retrasado" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'reserved'"
+                       decoration-warning="state == 'approved'"
+                       decoration-success="state in ('lent', 'returned')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_enteza_stock_loan_form" model="ir.ui.view">
+        <field name="name">enteza.stock.loan.form</field>
+        <field name="model">enteza.stock.loan</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_reservar" type="object" string="Reservar"
+                            class="btn-primary" invisible="state != 'draft'"
+                            help="Compromete el material en la compañía prestamista. No mueve nada."/>
+                    <button name="action_aprobar" type="object" string="Aprobar traslado"
+                            class="btn-primary" invisible="state != 'reserved'"
+                            groups="enteza_prestamo_intercompania.group_prestamo_responsable"
+                            help="Autoriza la salida física del material."/>
+                    <button name="action_volver_borrador" type="object" string="Volver a borrador"
+                            invisible="state not in ('reserved', 'cancelled')"
+                            groups="enteza_prestamo_intercompania.group_prestamo_responsable"/>
+                    <button name="action_cancelar" type="object" string="Cancelar"
+                            invisible="state in ('cancelled', 'returned')"
+                            groups="enteza_prestamo_intercompania.group_prestamo_responsable"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,reserved,approved,in_transit,lent,returned"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="not traslado_retrasado">
+                        La fecha de traslado ya ha pasado y el préstamo sigue sin aprobarse.
+                        El material no se ha movido.
+                    </div>
+                    <group>
+                        <group string="Quién presta a quién">
+                            <field name="company_id" readonly="state != 'draft'"/>
+                            <field name="warehouse_src_id" readonly="state != 'draft'"/>
+                            <field name="company_dest_id" readonly="state != 'draft'"/>
+                            <field name="warehouse_dest_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Fechas">
+                            <field name="date_transfer" readonly="state not in ('draft', 'reserved')"/>
+                            <field name="date_expected_return"/>
+                            <field name="date_reserved"/>
+                            <field name="origin"/>
+                            <field name="traslado_retrasado" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Material" name="lineas">
+                            <field name="line_ids" readonly="state not in ('draft', 'reserved')">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="product_uom_id" optional="show"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="qty_proposed"/>
+                                    <field name="qty_reserved"/>
+                                    <field name="qty_approved"
+                                           column_invisible="parent.state in ('draft', 'reserved')"/>
+                                    <field name="qty_sent"
+                                           column_invisible="parent.state in ('draft', 'reserved', 'approved')"/>
+                                    <field name="qty_returned"
+                                           column_invisible="parent.state in ('draft', 'reserved', 'approved')"/>
+                                    <field name="qty_pending"
+                                           column_invisible="parent.state in ('draft', 'reserved', 'approved')"/>
+                                    <field name="sale_line_id" optional="hide"/>
+                                    <field name="deficit_date" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Origen y albaranes" name="trazabilidad">
+                            <group>
+                                <field name="origin_order_ids" widget="many2many_tags"/>
+                                <field name="picking_out_id"/>
+                                <field name="picking_in_id"/>
+                            </group>
+                        </page>
+                        <page string="Notas" name="notas">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_enteza_stock_loan_search" model="ir.ui.view">
+        <field name="name">enteza.stock.loan.search</field>
+        <field name="model">enteza.stock.loan</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="company_dest_id"/>
+                <field name="warehouse_src_id"/>
+                <field name="line_ids" string="Producto" filter_domain="[('line_ids.product_id', 'ilike', self)]"/>
+                <filter name="f_activos" string="Vivos"
+                        domain="[('state', 'not in', ('cancelled', 'returned'))]"/>
+                <filter name="f_reservados" string="Reservados sin aprobar"
+                        domain="[('state', '=', 'reserved')]"/>
+                <!--
+                    El dominio replica `_compute_traslado_retrasado`. El campo no está
+                    almacenado —depende de la fecha de hoy— y por eso no se puede filtrar
+                    por él directamente.
+                -->
+                <filter name="f_retrasados" string="Traslado retrasado"
+                        domain="[('state', '=', 'reserved'), ('date_transfer', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="f_presto" string="Presto yo"
+                        domain="[('company_id', 'in', allowed_company_ids)]"/>
+                <filter name="f_recibo" string="Me lo prestan"
+                        domain="[('company_dest_id', 'in', allowed_company_ids)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="g_estado" string="Estado" context="{'group_by': 'state'}"/>
+                    <filter name="g_presta" string="Compañía prestamista" context="{'group_by': 'company_id'}"/>
+                    <filter name="g_recibe" string="Compañía receptora" context="{'group_by': 'company_dest_id'}"/>
+                    <filter name="g_traslado" string="Fecha de traslado" context="{'group_by': 'date_transfer'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_enteza_stock_loan" model="ir.actions.act_window">
+        <field name="name">Préstamos entre compañías</field>
+        <field name="res_model">enteza.stock.loan</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_f_activos': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay ningún préstamo</p>
+            <p>
+                Aquí se registra el material que una compañía del grupo presta a la otra
+                para cubrir un pedido que no puede servir con lo suyo.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_enteza_prestamo_root"
+              name="Préstamos entre compañías"
+              parent="stock.menu_stock_root"
+              sequence="80"
+              groups="enteza_prestamo_intercompania.group_prestamo_usuario"/>
+
+    <menuitem id="menu_enteza_stock_loan"
+              name="Préstamos"
+              parent="menu_enteza_prestamo_root"
+              action="action_enteza_stock_loan"
+              sequence="10"/>
+
+</odoo>

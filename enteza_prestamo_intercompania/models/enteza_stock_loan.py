@@ -1,4 +1,8 @@
-from odoo import api, fields, models
+from collections import defaultdict
+from datetime import timedelta
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 # Estados en los que el préstamo COMPROMETE material en la compañía prestamista, es decir,
 # los que alimentan `prestado_a_terceros` en el cálculo de disponibilidad.
@@ -43,8 +47,18 @@ class EntezaStockLoan(models.Model):
     company_dest_id = fields.Many2one(
         'res.company', string='Compañía receptora', required=True, index=True,
     )
-    warehouse_src_id = fields.Many2one('stock.warehouse', string='Almacén de origen')
-    warehouse_dest_id = fields.Many2one('stock.warehouse', string='Almacén de destino')
+    # Origen y destino son seleccionables, no deducidos de la compañía. Hoy hay un almacén
+    # por sociedad (Sevilla / Jerez) y se podrían deducir, pero el cliente ha confirmado
+    # (2026-08-01, `[PENDIENTE-1]`) que habrá más: modelarlo ahora evita rehacer el flujo
+    # entero cuando lleguen. El dominio los ata a su compañía para que no se crucen.
+    warehouse_src_id = fields.Many2one(
+        'stock.warehouse', string='Almacén de origen', index=True,
+        domain="[('company_id', '=', company_id)]",
+    )
+    warehouse_dest_id = fields.Many2one(
+        'stock.warehouse', string='Almacén de destino',
+        domain="[('company_id', '=', company_dest_id)]",
+    )
 
     date_transfer = fields.Date(string='Fecha de traslado')
     date_expected_return = fields.Date(string='Fecha prevista de devolución')
@@ -101,12 +115,258 @@ class EntezaStockLoan(models.Model):
         'Un préstamo tiene que ser entre dos compañías distintas.',
     )
 
+    qty_total = fields.Float(
+        string='Unidades comprometidas', compute='_compute_qty_total',
+        digits='Product Unit of Measure',
+        help='Suma de lo que este préstamo compromete hoy en la compañía prestamista.',
+    )
+    traslado_retrasado = fields.Boolean(
+        string='Traslado retrasado', compute='_compute_traslado_retrasado',
+        help='Reservado, con la fecha de traslado ya pasada y sin aprobar: el evento se '
+             'acerca y el material no se ha movido.',
+    )
+
     @api.depends('line_ids')
     def _compute_amount_total(self):
         # El préstamo no se valora en la versión base (D4). Se calcula a 0 y se deja el
         # campo definido para que activar la valoración más adelante no exija migrar datos.
         for prestamo in self:
             prestamo.amount_total = 0.0
+
+    @api.depends('line_ids.qty_reserved', 'line_ids.qty_approved', 'state')
+    def _compute_qty_total(self):
+        for prestamo in self:
+            prestamo.qty_total = sum(
+                linea._qty_comprometida() for linea in prestamo.line_ids
+            )
+
+    @api.depends('state', 'date_transfer')
+    def _compute_traslado_retrasado(self):
+        # No almacenado: depende de la fecha de hoy, y un campo almacenado que envejece
+        # solo sería mentira hasta que algo lo recalculara. La vista de control lo filtra
+        # por dominio (§7.6), que no necesita que esté en la tabla.
+        hoy = fields.Date.context_today(self)
+        for prestamo in self:
+            prestamo.traslado_retrasado = bool(
+                prestamo.state == 'reserved'
+                and prestamo.date_transfer
+                and prestamo.date_transfer < hoy
+            )
+
+    # ------------------------------------------------------------------
+    # Parámetros (PRP §8)
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _parametro(self, clave, defecto):
+        """Lee un parámetro de `ir.config_parameter` con valor por defecto.
+
+        Se lee siempre así y nunca se cachea en el código: los valores de `data/` existen
+        para que el cliente pueda cambiarlos, y borrar el registro no debe romper nada.
+        """
+        valor = self.env['ir.config_parameter'].sudo().get_param(
+            'enteza_prestamo.%s' % clave,
+        )
+        try:
+            return int(valor)
+        except (TypeError, ValueError):
+            return defecto
+
+    # ------------------------------------------------------------------
+    # Numeración
+    # ------------------------------------------------------------------
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', 'Nuevo') == 'Nuevo':
+                # `sudo()`: la secuencia no tiene compañía y un usuario de la receptora
+                # tiene que poder numerar un préstamo cuya compañía dueña es la otra.
+                vals['name'] = self.env['ir.sequence'].sudo().next_by_code(
+                    'enteza.stock.loan',
+                ) or 'Nuevo'
+        return super().create(vals_list)
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida (PRP §6.4)
+    # ------------------------------------------------------------------
+
+    def action_reservar(self):
+        """`draft` → `reserved`: compromete el material en la prestamista.
+
+        A partir de aquí el préstamo pesa en la disponibilidad de la compañía que presta
+        (`_prestado_a_terceros`), aunque no se haya movido nada físicamente.
+        """
+        for prestamo in self:
+            prestamo._comprobar_estado('draft')
+            prestamo._comprobar_completo()
+            prestamo._revalidar_disponibilidad()
+            for linea in prestamo.line_ids:
+                if not linea.qty_reserved:
+                    linea.qty_reserved = linea.qty_proposed
+            prestamo.write({
+                'state': 'reserved',
+                # 🔴 Marca de tiempo de la reserva. Es lo que decide quién comprometió el
+                # material primero cuando las dos compañías lo necesitan a la vez
+                # (`[PENDIENTE-9]`, resuelto el 2026-08-01: vence quien reserva antes).
+                # Por eso NO se toca al modificar el préstamo después: perder este dato es
+                # perder el criterio de prioridad.
+                'date_reserved': fields.Datetime.now(),
+                'date_transfer': prestamo.date_transfer or prestamo._fecha_traslado(),
+            })
+        return True
+
+    def action_aprobar(self):
+        """`reserved` → `approved`: un responsable autoriza el traslado físico (D2)."""
+        for prestamo in self:
+            prestamo._comprobar_estado('reserved')
+            prestamo._comprobar_responsable()
+            # Se revalida aunque venga de `reserved` y el material «ya estuviera
+            # comprometido»: si aquí falta stock, no es un contratiempo sino un fallo del
+            # cálculo de reservas, y el PRP §7.3 pide que se vea, no que se tape.
+            prestamo._revalidar_disponibilidad()
+            for linea in prestamo.line_ids:
+                if not linea.qty_approved:
+                    linea.qty_approved = linea.qty_reserved
+            prestamo.state = 'approved'
+        return True
+
+    def action_cancelar(self):
+        """Libera la reserva. No se puede cancelar lo que ya está cerrado."""
+        for prestamo in self:
+            prestamo._comprobar_responsable()
+            if prestamo.state == 'returned':
+                raise UserError(_(
+                    'El préstamo %s ya está devuelto y cerrado: no se puede cancelar.',
+                    prestamo.name,
+                ))
+            if prestamo.state in ('in_transit', 'lent', 'partially_returned'):
+                # El material ya salió del almacén. Cancelar aquí dejaría existencias
+                # descuadradas en las dos compañías: la salida hay que deshacerla con un
+                # movimiento en sentido contrario, por el circuito de devolución (§12.11).
+                raise UserError(_(
+                    'El préstamo %s ya se ha trasladado físicamente. Hay que devolver el '
+                    'material por el circuito de devolución, no cancelar el documento.',
+                    prestamo.name,
+                ))
+            prestamo.state = 'cancelled'
+        return True
+
+    def action_volver_borrador(self):
+        """Vuelve a `draft` liberando la reserva.
+
+        Solo desde `reserved` o `cancelled`: en cuanto hay albaranes (`approved`) volver
+        atrás dejaría documentos huérfanos.
+        """
+        for prestamo in self:
+            prestamo._comprobar_responsable()
+            prestamo._comprobar_estado('reserved', 'cancelled')
+            prestamo.write({'state': 'draft', 'date_reserved': False})
+        return True
+
+    # ------------------------------------------------------------------
+    # Comprobaciones
+    # ------------------------------------------------------------------
+
+    def _comprobar_estado(self, *estados):
+        self.ensure_one()
+        if self.state not in estados:
+            raise UserError(_(
+                'El préstamo %(nombre)s está en estado «%(estado)s» y esta acción no '
+                'se puede hacer desde ahí.',
+                nombre=self.name,
+                estado=dict(ESTADOS).get(self.state, self.state),
+            ))
+
+    def _comprobar_responsable(self):
+        self.ensure_one()
+        if not self.env.user.has_group(
+            'enteza_prestamo_intercompania.group_prestamo_responsable'
+        ):
+            raise UserError(_(
+                'Solo un responsable de préstamos puede hacer esto. Nada sale de un '
+                'almacén sin que lo autorice una persona.'
+            ))
+
+    def _comprobar_completo(self):
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_('El préstamo %s no tiene ninguna línea.', self.name))
+        if not self.warehouse_src_id or not self.warehouse_dest_id:
+            raise UserError(_(
+                'Hay que indicar el almacén de origen y el de destino antes de reservar.'
+            ))
+        if self.warehouse_src_id.company_id != self.company_id \
+                or self.warehouse_dest_id.company_id != self.company_dest_id:
+            raise UserError(_(
+                'Cada almacén tiene que ser de su compañía: el de origen de la '
+                'prestamista y el de destino de la receptora.'
+            ))
+
+    def _revalidar_disponibilidad(self):
+        """Comprueba que la prestamista puede realmente prestar lo que dice este préstamo.
+
+        Se excluye a sí mismo del cálculo (`ignorar_prestamos`): si no, un préstamo ya
+        reservado competiría contra su propia reserva y nunca se podría aprobar.
+        """
+        self.ensure_one()
+        motor = self.env['enteza.disponibilidad']
+
+        # Se agrupa por intervalo porque la disponibilidad es una pregunta temporal: dos
+        # líneas del mismo producto para fechas distintas no compiten entre sí, y sumarlas
+        # daría un déficit inventado.
+        por_intervalo = defaultdict(lambda: defaultdict(float))
+        for linea in self.line_ids:
+            por_intervalo[(linea.date_from, linea.date_to)][linea.product_id] += \
+                linea._qty_comprometida() or linea.qty_proposed
+
+        faltas = []
+        for (desde, hasta), necesidades in por_intervalo.items():
+            productos = self.env['product.product'].browse(
+                [p.id for p in necesidades]
+            )
+            cantidades = {p.id: qty for p, qty in necesidades.items()}
+            # Se delega en `deficit()` en vez de comparar aquí: es quien fija con qué
+            # precisión se comparan las cantidades. Repetir la comparación con otro
+            # criterio haría que el módulo pudiera decir «no falta nada» en un sitio y
+            # «falta» en el otro para el mismo caso.
+            deficits = motor.deficit(
+                productos, self.warehouse_src_id, desde, hasta, cantidades,
+                ignorar_prestamos=self,
+            )
+            for producto in productos:
+                falta = deficits.get(producto.id)
+                if not falta:
+                    continue
+                necesaria = cantidades[producto.id]
+                faltas.append(_(
+                    '· %(producto)s: se piden %(pide)s y solo hay %(hay)s libres '
+                    'entre el %(desde)s y el %(hasta)s',
+                    producto=producto.display_name,
+                    pide=necesaria, hay=necesaria - falta, desde=desde, hasta=hasta,
+                ))
+
+        if faltas:
+            raise UserError(_(
+                'El almacén %(almacen)s no tiene libre todo lo que este préstamo '
+                'compromete:\n\n%(detalle)s',
+                almacen=self.warehouse_src_id.display_name,
+                detalle='\n'.join(faltas),
+            ))
+
+    def _fecha_traslado(self):
+        """Fecha del traslado de ida = inicio del préstamo − días de antelación.
+
+        Los días son un parámetro único para todas las rutas (`[PENDIENTE-3]`, decidido el
+        2026-08-01). Si algún día dependen del par de almacenes, este es el sitio donde
+        cambiarlo: nadie más calcula esta fecha.
+        """
+        self.ensure_one()
+        if not self.line_ids:
+            return False
+        inicio = min(self.line_ids.mapped('date_from'))
+        dias = self._parametro('dias_antelacion_traslado', 3)
+        return fields.Date.to_date(inicio) - timedelta(days=dias)
 
     # ------------------------------------------------------------------
     # Puntos de enganche para la facturación (PRP §9)

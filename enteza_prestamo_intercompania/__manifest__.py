@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Préstamo de material entre compañías',
-    'version': '19.0.1.1.0',
+    'version': '19.0.2.0.0',
     'category': 'Inventory/Inventory',
     'summary': 'Préstamo de material de alquiler entre las compañías del grupo',
     'description': """
@@ -10,8 +10,11 @@ Préstamo de material entre compañías del grupo
 Detecta déficits de material de alquiler en una compañía, comprueba si la otra tiene
 unidades libres en esas fechas y gestiona el traslado de ida y vuelta.
 
-**Fase 1 (actual): motor de cálculo.** Disponibilidad, demanda comprometida y cantidad
-prestable. Sin interfaz ni flujo de documentos todavía.
+**Fase 2 en curso.** El motor de cálculo (fase 1) y el documento de préstamo con su ciclo
+de vida: numeración, estados, reserva en firme, aprobación e interfaz.
+
+Todavía **no** engancha en la confirmación de pedidos ni genera albaranes: eso llega en las
+dos entregas siguientes de esta misma fase.
 
 No factura ni genera asientos contables (ver README, «Punto de enganche para facturación»).
 """,
@@ -30,6 +33,8 @@ No factura ni genera asientos contables (ver README, «Punto de enganche para fa
     'data': [
         'security/prestamo_security.xml',
         'security/ir.model.access.csv',
+        'data/prestamo_data.xml',
+        'views/enteza_stock_loan_views.xml',
     ],
     'installable': True,
     'application': False,

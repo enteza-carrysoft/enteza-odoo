@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            Secuencia sin compañía (`company_id` vacío) a propósito.
+
+            Un préstamo lo ve y lo trabaja gente de las DOS sociedades, y una numeración por
+            compañía haría que el mismo documento se llamara distinto según quién lo mire, o
+            que hubiera dos PRE/2026/00001. Con una sola serie compartida la referencia es
+            única y sirve para hablar por teléfono entre los dos almacenes, que es para lo
+            que se usa de verdad.
+        -->
+        <record id="seq_enteza_stock_loan" model="ir.sequence">
+            <field name="name">Préstamo entre compañías</field>
+            <field name="code">enteza.stock.loan</field>
+            <field name="prefix">PRE/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!--
+            Parámetros de configuración (PRP §8).
+
+            Van en `ir.config_parameter` y no en `res.config.settings`: son tres valores que
+            hoy nadie va a tocar a diario, y una página de ajustes propia obligaría a
+            depender de `base_setup` y a mantener una vista más. Se leen con
+            `_parametro()`, que aplica el valor por defecto si el registro no existe, así
+            que borrarlos no rompe nada.
+
+            `noupdate="1"`: si el cliente los cambia, una actualización del módulo no debe
+            devolverlos a su valor de fábrica.
+        -->
+        <record id="param_dias_antelacion" model="ir.config_parameter">
+            <field name="key">enteza_prestamo.dias_antelacion_traslado</field>
+            <field name="value">3</field>
+        </record>
+
+        <record id="param_horizonte_analisis" model="ir.config_parameter">
+            <field name="key">enteza_prestamo.horizonte_analisis</field>
+            <field name="value">30</field>
+        </record>
+
+        <record id="param_ventana_retencion" model="ir.config_parameter">
+            <field name="key">enteza_prestamo.ventana_retencion</field>
+            <field name="value">7</field>
+        </record>
+
+    </data>
+</odoo>
