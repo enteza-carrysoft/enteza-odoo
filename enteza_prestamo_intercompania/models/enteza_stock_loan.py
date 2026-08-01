@@ -91,13 +91,15 @@ class EntezaStockLoan(models.Model):
     )
     currency_id = fields.Many2one(related='company_id.currency_id', readonly=True)
 
-    _sql_constraints = [
-        (
-            'companias_distintas',
-            'CHECK (company_id != company_dest_id)',
-            'Un préstamo tiene que ser entre dos compañías distintas.',
-        ),
-    ]
+    # ⚠️ `_sql_constraints` **ya no se soporta en Odoo 19**: `add_to_registry()` avisa por log
+    # («Model attribute '_sql_constraints' is no longer supported») y **no crea la
+    # restricción**. El fallo es silencioso: el módulo instala igual y la comprobación
+    # simplemente no existe. La forma de la 19 es `models.Constraint`, como en
+    # `sale.order._date_order_conditional_required`.
+    _companias_distintas = models.Constraint(
+        'CHECK (company_id != company_dest_id)',
+        'Un préstamo tiene que ser entre dos compañías distintas.',
+    )
 
     @api.depends('line_ids')
     def _compute_amount_total(self):

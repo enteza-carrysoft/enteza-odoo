@@ -1,4 +1,4 @@
-from odoo import api, fields, models, tools
+from odoo import api, fields, models
 
 
 class EntezaStockLoanLine(models.Model):
@@ -58,6 +58,19 @@ class EntezaStockLoanLine(models.Model):
     )
     deficit_date = fields.Date(string='Fecha del déficit')
 
+    # Índice compuesto para el cálculo de `prestado_a_terceros`, que se ejecuta en cada
+    # confirmación de pedido y tiene que resolverse rápido (PRP §6.3). Los índices por campo
+    # suelto no sirven aquí: el dominio filtra siempre por los cuatro a la vez.
+    #
+    # Declarativo con `models.Index`, que es la forma de la 19 (ver
+    # `stock.move.line._free_reservation_index`). Sustituye al `_auto_init` con
+    # `tools.create_index` de la versión anterior: el ORM se encarga de crearlo y de
+    # retirarlo si el modelo cambia, y no depende de que `create_index` siga expuesto en el
+    # espacio de nombres `odoo.tools`, que en la 19 se ha reorganizado.
+    _producto_intervalo_idx = models.Index(
+        '(product_id, warehouse_src_id, date_from, date_to)',
+    )
+
     @api.depends('qty_sent', 'qty_returned')
     def _compute_qty_pending(self):
         for linea in self:
@@ -73,16 +86,3 @@ class EntezaStockLoanLine(models.Model):
         if self.loan_id.state == 'approved' and self.qty_approved:
             return self.qty_approved
         return self.qty_reserved
-
-    def _auto_init(self):
-        # Índice compuesto para el cálculo de `prestado_a_terceros`, que se ejecuta en cada
-        # confirmación de pedido y tiene que resolverse rápido (PRP §6.3). Los índices por
-        # campo suelto no sirven aquí: el dominio filtra siempre por los cuatro a la vez.
-        resultado = super()._auto_init()
-        tools.create_index(
-            self._cr,
-            'enteza_stock_loan_line_producto_intervalo_idx',
-            self._table,
-            ['product_id', 'warehouse_src_id', 'date_from', 'date_to'],
-        )
-        return resultado

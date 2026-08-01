@@ -4,17 +4,32 @@ Ante cualquier duda sobre cómo se comporta el nativo, **leer el código gana a 
 pasado varias veces en este proyecto que la intuición y la documentación decían una cosa y el
 código otra.
 
-## Odoo Enterprise 18
+## Odoo Enterprise 18 — la fuente para TODO lo de alquiler
 
-Repositorio privado del cliente con el código de Enterprise:
+Repositorio del cliente con el código de Enterprise. **Es aquí donde hay que investigar
+`sale_renting` y `sale_stock_renting`**, y en general cualquier módulo Enterprise:
 
 ```
-https://github.com/enteza-carrysoft/odoo_enterprise_18   (rama 18.0)
+https://github.com/enteza-carrysoft/odoo_enterprise_18            (rama 18.0)
+https://github.com/enteza-carrysoft/odoo_enterprise_18/tree/18.0/sale_renting
 ```
+
+🔴 **En `odoo/odoo` (Community) no está el código de alquiler.** Buscarlo ahí lleva a la
+conclusión falsa de que "Odoo no trae cálculo de disponibilidad", que es el error nº 1 de este
+proyecto. Y los métodos del motor son **privados** (`_get_unavailable_qty`,
+`_get_virtual_unavailable_qty_in_rent`), así que **tampoco se pueden llamar por RPC**: este
+repositorio es la única forma de leerlos.
 
 Es la **18**, no la 19, pero para los módulos de alquiler la diferencia es mínima y sirve para
 entender la mecánica. Lo que se lea ahí **hay que confirmarlo contra `enteza26`** con
-`odoo19.py fields ...` antes de darlo por bueno en la 19.
+`odoo19.py fields ...` antes de darlo por bueno en la 19 — y donde no se pueda confirmar
+(métodos privados), **decirlo al entregar** en vez de presentarlo como verificado.
+
+⚠️ **Es privado, así que hay que clonarlo** (ver abajo). Comprobado el 2026-08-01:
+`raw.githubusercontent.com` devuelve **404** y `gh` **no está instalado** en esta máquina. Lo
+que sí funciona es `git`, que tiene las credenciales configuradas —
+`git ls-remote https://github.com/enteza-carrysoft/odoo_enterprise_18 18.0` responde—, de modo
+que el clonado disperso de la sección siguiente es la vía buena.
 
 ### Cómo consultarlo sin bajarse el repo entero
 

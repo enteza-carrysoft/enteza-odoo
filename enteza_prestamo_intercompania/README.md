@@ -20,6 +20,49 @@ El PRP se redactó sin detectar que **`sale_stock_renting` está instalado** en 
 | §13: dependencias `stock`, `sale_renting`, `sale_stock` | Falta **`sale_stock_renting`**, sin el cual el módulo no instala |
 | Todo el cálculo por compañía | El nativo se scopea **por almacén** (`warehouse_id`). Este módulo hace lo mismo |
 
+## Correcciones de la 19 aplicadas en `19.0.1.0.1`
+
+La primera instalación en `enteza26` (2026-08-01) falló. Al revisar por qué, aparecieron tres
+usos de API de la 18 que en la 19 ya no valen, **dos de ellos con fallo silencioso**, y un
+error de cálculo propio.
+
+| Qué | Síntoma | Cómo se comporta la 19 |
+|---|---|---|
+| `res.groups.category_id` | 🔴 **Rompe la instalación.** `ValueError: Invalid field 'category_id' in 'res.groups'` al cargar `security/prestamo_security.xml` | Se ha intercalado `res.groups.privilege`: el grupo tiene `privilege_id` y es el privilegio el que apunta a la `ir.module.category` |
+| `_sql_constraints` | **Silencioso.** El módulo instala, se registra un aviso en el log y **la restricción no se crea**: se podían grabar préstamos de una compañía consigo misma | `models.Constraint('CHECK (...)', 'mensaje')` como atributo de clase (ver `sale.order._date_order_conditional_required`) |
+| `_auto_init` + `tools.create_index` | Funcionaba, pero `odoo.tools` se ha reorganizado en la 19 y no está claro que `create_index` siga expuesto ahí | `models.Index('(campo1, campo2)')` declarativo (ver `stock.move.line._free_reservation_index`) |
+| `<field name="global" eval="True"/>` en `ir.rule` | Redundante | `global` es calculado y almacenado (`_compute_global` = `not groups`). Una regla sin grupos ya es global |
+
+### Y un error del barrido de `prestado_a_terceros` 🔴
+
+El máximo se medía solo en los **eventos interiores** del intervalo consultado. Un préstamo
+que empieza antes de `desde` y acaba después de `hasta` no aporta ningún evento dentro, así
+que **contaba como cero**: la prestamista habría vuelto a vender material ya comprometido,
+que es exactamente lo que ese método existe para impedir.
+
+Se da en cuanto se presta para un fin de semana largo y luego se consulta un día suelto de
+dentro — es decir, en el uso normal. Ahora el barrido arrastra primero el nivel ya vigente en
+`desde` y solo después mide los cambios interiores. Cubierto por
+`test_prestamo_que_envuelve_el_intervalo_resta`.
+
+### Alcance de lo verificado
+
+Lo de la tabla está comprobado **contra el código de Odoo 19 Community** (`odoo/orm`,
+`ir.rule`, `stock`, `sale`) y **por RPC contra `enteza26`**, que es donde vive.
+
+**El motor de alquiler, solo contra la 18.** `sale_renting` y `sale_stock_renting` son
+**Enterprise**: su código de la 19 no es accesible y sus métodos son privados, así que
+tampoco se pueden llamar por RPC. La fuente es el repositorio del cliente
+`enteza-carrysoft/odoo_enterprise_18` (rama `18.0`), y contra él se ha cotejado línea a línea:
+
+- `_get_unavailable_qty(from_date, to_date=None, **kwargs)` con `ignored_soline_id` y
+  `warehouse_id` — coincide con cómo lo llama el módulo.
+- `_compute_qty_at_date` — `_rentable()` sigue siendo una réplica fiel, incluida la renuncia
+  deliberada al mínimo del periodo.
+
+Sigue siendo **la 18**: si la 19 cambió algo ahí, no hay forma de saberlo desde aquí. Es la
+deuda de la que avisa el apartado siguiente.
+
 ## Cómo calcula la disponibilidad
 
 ```

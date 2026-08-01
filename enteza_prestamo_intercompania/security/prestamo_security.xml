@@ -2,21 +2,39 @@
 <odoo>
     <data noupdate="0">
 
-        <record id="module_category_prestamo" model="ir.module.category">
+        <!--
+            🔴 Los grupos de la 19 NO llevan `category_id`.
+
+            El intento de instalación del 2026-08-01 falló aquí con
+            «ValueError: Invalid field 'category_id' in 'res.groups'». En la 19 se ha
+            intercalado el modelo `res.groups.privilege`: el grupo apunta a un privilegio
+            (`privilege_id`) y es el privilegio el que apunta a la `ir.module.category`.
+            Verificado por RPC contra `enteza26`: `res.groups` tiene `privilege_id` y no
+            tiene `category_id`.
+
+            El privilegio cuelga de `base.module_category_supply_chain`, que es la misma
+            categoría que usa el privilegio «Inventory» nativo (comprobado: privilegio 7 →
+            categoría 3). Así el selector de préstamos aparece junto al de Inventario en la
+            ficha del usuario, en vez de en un bloque propio suelto.
+        -->
+        <record id="privilege_prestamo" model="res.groups.privilege">
             <field name="name">Préstamos entre compañías</field>
+            <field name="category_id" ref="base.module_category_supply_chain"/>
             <field name="description">Gestión del préstamo de material de alquiler entre las compañías del grupo.</field>
             <field name="sequence">20</field>
         </record>
 
         <record id="group_prestamo_usuario" model="res.groups">
             <field name="name">Usuario</field>
-            <field name="category_id" ref="module_category_prestamo"/>
+            <field name="privilege_id" ref="privilege_prestamo"/>
+            <field name="sequence">10</field>
             <field name="comment">Consulta los préstamos y propone nuevos. No puede aprobar traslados.</field>
         </record>
 
         <record id="group_prestamo_responsable" model="res.groups">
             <field name="name">Responsable</field>
-            <field name="category_id" ref="module_category_prestamo"/>
+            <field name="privilege_id" ref="privilege_prestamo"/>
+            <field name="sequence">20</field>
             <field name="implied_ids" eval="[(4, ref('group_prestamo_usuario'))]"/>
             <field name="comment">Aprueba traslados, cancela préstamos y ajusta cantidades.</field>
         </record>
@@ -28,11 +46,15 @@
             ('company_id', 'in', company_ids) no vale: dejaría el documento invisible para
             la compañía receptora, que es justamente la que lo necesita para servir su
             pedido. Hay que contemplar también `company_dest_id`.
+
+            No se escribe `global`: en la 19 es un campo CALCULADO y almacenado
+            (`ir.rule._compute_global`, que vale `not groups`). Una regla sin grupos ya es
+            global; fijarlo a mano es, en el mejor de los casos, redundante, y el valor lo
+            reescribiría el recálculo de todos modos.
         -->
         <record id="rule_loan_multicompania" model="ir.rule">
             <field name="name">Préstamo: visible para prestamista y receptora</field>
             <field name="model_id" ref="model_enteza_stock_loan"/>
-            <field name="global" eval="True"/>
             <field name="domain_force">
                 ['|', ('company_id', 'in', company_ids), ('company_dest_id', 'in', company_ids)]
             </field>
@@ -41,9 +63,8 @@
         <record id="rule_loan_line_multicompania" model="ir.rule">
             <field name="name">Línea de préstamo: visible para prestamista y receptora</field>
             <field name="model_id" ref="model_enteza_stock_loan_line"/>
-            <field name="global" eval="True"/>
             <field name="domain_force">
-                ['|', ('loan_id.company_id', 'in', company_ids), ('loan_id.company_dest_id', 'in', company_ids)]
+                ['|', ('company_id', 'in', company_ids), ('loan_id.company_dest_id', 'in', company_ids)]
             </field>
         </record>
 

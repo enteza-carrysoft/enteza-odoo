@@ -188,19 +188,44 @@ class EntezaDisponibilidad(models.AbstractModel):
         if not lineas:
             return 0.0
 
-        # Mismo barrido que `_get_unavailable_qty`: se acumula desde el primer evento y
-        # solo se mide el máximo dentro del intervalo consultado.
+        # Mismo barrido que `_get_unavailable_qty`: se acumula el saldo por eventos y se
+        # mide el pico dentro del intervalo consultado.
         movimientos = defaultdict(float)
         for linea in lineas:
             cantidad = linea._qty_comprometida()
             movimientos[linea.date_from] += cantidad
             movimientos[linea.date_to] -= cantidad
 
-        acumulado = maximo = 0.0
-        for fecha in sorted(movimientos):
-            if fecha > hasta:
-                break
-            acumulado += movimientos[fecha]
-            if fecha >= desde:
-                maximo = max(acumulado, maximo)
+        fechas = sorted(movimientos)
+        acumulado = 0.0
+        indice = 0
+
+        # 🔴 Primero hay que llegar al nivel que YA está vigente cuando empieza el intervalo.
+        # Un préstamo que arranca antes de `desde` y acaba después de `hasta` no tiene ningún
+        # evento dentro del intervalo: si solo se midiera en los eventos interiores, contaría
+        # como cero y la prestamista volvería a vender material ya comprometido, que es
+        # exactamente lo que este método existe para impedir.
+        #
+        # El nativo resuelve esto mismo por otra vía, y es el detalle que se perdió al
+        # replicar su barrido: `_get_rented_quantities(mandatory_dates)` mete `from_date` y
+        # `to_date` en la lista de fechas de interés
+        # (`sorted(set(rented_quantities) | set(mandatory_dates))`), así que en su bucle
+        # SIEMPRE hay un evento en `from_date` donde medir el nivel arrastrado. Aquí se hace
+        # explícito con este primer recorrido; el resultado es el mismo.
+        #
+        # Los eventos que caen justo en `desde` entran aquí: los intervalos se tratan como
+        # semiabiertos `[date_from, date_to)`, así que un préstamo que termina en `desde`
+        # libera el material y otro que empieza en `desde` ya lo compromete.
+        while indice < len(fechas) and fechas[indice] <= desde:
+            acumulado += movimientos[fechas[indice]]
+            indice += 1
+
+        maximo = acumulado
+
+        # A partir de ahí, cada cambio dentro del intervalo puede elevar el pico.
+        while indice < len(fechas) and fechas[indice] <= hasta:
+            acumulado += movimientos[fechas[indice]]
+            maximo = max(maximo, acumulado)
+            indice += 1
+
         return maximo

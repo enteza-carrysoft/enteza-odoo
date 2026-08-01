@@ -13,9 +13,12 @@ propio `_get_unavailable_qty` ya la prueba Odoo.
 
 from datetime import timedelta
 
+from psycopg2 import IntegrityError
+
 from odoo import Command
 from odoo.fields import Datetime
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -196,6 +199,37 @@ class TestDisponibilidad(TransactionCase):
         self._crear_prestamo(100, almacen=self.almacen_receptora)
         self.assertEqual(self._disponible(), 900)
 
+    def test_prestamo_que_envuelve_el_intervalo_resta(self):
+        """🔴 El préstamo empieza antes y acaba después: no tiene ningún evento dentro.
+
+        Es el caso que se escapaba midiendo el pico solo en los eventos interiores del
+        barrido: el préstamo no aportaba ninguna fecha entre `desde` y `hasta`, el máximo
+        se quedaba en cero y la prestamista habría vuelto a vender material ya
+        comprometido. Se da siempre que se presta para un fin de semana largo y luego se
+        consulta un día suelto de dentro.
+        """
+        self._dar_stock(900)
+        self._crear_prestamo(
+            100,
+            desde=self.desde - timedelta(days=5),
+            hasta=self.hasta + timedelta(days=5),
+        )
+        self.assertEqual(self._disponible(), 800)
+
+    def test_prestamo_que_acaba_al_empezar_el_intervalo_no_resta(self):
+        """Los intervalos se tratan como semiabiertos `[date_from, date_to)`.
+
+        Un préstamo que se devuelve justo cuando empieza el alquiler ya no compromete nada.
+        El dominio lo trae (`date_to >= desde`), así que el barrido tiene que descontarlo.
+        """
+        self._dar_stock(900)
+        self._crear_prestamo(
+            100,
+            desde=self.desde - timedelta(days=5),
+            hasta=self.desde,
+        )
+        self.assertEqual(self._disponible(), 900)
+
     def test_prestamos_solapados_suman_su_pico(self):
         self._dar_stock(900)
         self._crear_prestamo(100)
@@ -253,3 +287,22 @@ class TestDisponibilidad(TransactionCase):
             {self.producto.id: 850},
         )
         self.assertEqual(faltas.get(self.producto.id), 50)
+
+    # ------------------------------------------------------------------
+    # Integridad del modelo
+    # ------------------------------------------------------------------
+
+    def test_no_se_puede_prestar_a_uno_mismo(self):
+        """La restricción tiene que existir DE VERDAD en la base de datos.
+
+        Se comprueba provocando la violación en PostgreSQL, no leyendo la definición del
+        modelo: con `_sql_constraints` (la forma anterior, ya no soportada en la 19) el
+        modelo parecía correcto y la restricción no llegaba a crearse.
+        """
+        with self.assertRaises(IntegrityError), mute_logger('odoo.sql_db'):
+            self.env['enteza.stock.loan'].create({
+                'name': 'PRE/TEST/MISMA',
+                'company_id': self.prestamista.id,
+                'company_dest_id': self.prestamista.id,
+            })
+            self.env.flush_all()

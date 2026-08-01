@@ -74,6 +74,59 @@ Las vistas `tree` se llaman `list`.
 | `uom.uom.factor` | **`relative_factor`** (existe `rounding`) |
 | `rental` (en producto) | `rent_ok` |
 | `ir.ui.menu.groups_id` | **`group_ids`** (verificado por RPC el 2026-08-01) |
+| `res.groups.category_id` | **eliminado** → `privilege_id` (ver abajo) |
+| `_sql_constraints = [...]` | **`models.Constraint('CHECK (...)', 'mensaje')`** |
+| `_auto_init` + `tools.create_index` | **`models.Index('(campo1, campo2)')`** |
+
+### Restricciones e índices: `_sql_constraints` ya no existe
+
+🔴 **Fallo silencioso.** En la 19, `add_to_registry()` detecta `_sql_constraints`, escribe en
+el log «Model attribute '_sql_constraints' is no longer supported» y **no crea la
+restricción**. El módulo instala con normalidad y la comprobación simplemente no está. Se
+descubrió así en `enteza_prestamo_intercompania` (v19.0.1.0.0).
+
+```python
+# MAL: no falla, pero la restricción no llega a la base de datos
+_sql_constraints = [('companias_distintas', 'CHECK (a != b)', 'Mensaje')]
+
+# BIEN (idioma de la 19; el nombre del atributo empieza por `_`)
+_companias_distintas = models.Constraint('CHECK (a != b)', 'Mensaje')
+_producto_intervalo_idx = models.Index('(product_id, date_from, date_to)')
+```
+
+Ejemplos nativos: `sale.order._date_order_conditional_required`,
+`stock.move.line._free_reservation_index`, `ir.rule._no_access_rights`.
+
+### Grupos: `res.groups` ya no tiene `category_id`
+
+🔴 **Esto sí rompe la instalación**, con `ValueError: Invalid field 'category_id' in
+'res.groups'` al cargar el XML de seguridad. La 19 intercala el modelo
+**`res.groups.privilege`**: el grupo apunta a un privilegio y el privilegio a la
+`ir.module.category`.
+
+```xml
+<record id="privilege_x" model="res.groups.privilege">
+    <field name="name">Lo que agrupa</field>
+    <field name="category_id" ref="base.module_category_supply_chain"/>
+    <field name="sequence">20</field>
+</record>
+
+<record id="group_x_usuario" model="res.groups">
+    <field name="name">Usuario</field>
+    <field name="privilege_id" ref="privilege_x"/>   <!-- NO category_id -->
+    <field name="sequence">10</field>
+</record>
+```
+
+Los grupos de un mismo privilegio salen como **selector** en la ficha del usuario, así que la
+pareja Usuario/Responsable encadenada con `implied_ids` es el patrón que espera la interfaz.
+Categorías útiles: `base.module_category_supply_chain` (es la del privilegio *Inventory*
+nativo, privilegio 7 → categoría 3, verificado por RPC).
+
+### `ir.rule`: no escribir `global`
+
+Es un campo **calculado y almacenado** (`_compute_global` = `not groups`). Una regla sin
+grupos ya es global; fijarlo en el XML es redundante.
 
 En `res.groups` conviven cuatro campos y es fácil coger el que no es: `implied_ids` (los que
 implica, almacenado), `implied_by_ids` (los que le implican, almacenado) y las versiones

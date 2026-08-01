@@ -89,6 +89,29 @@ dos con fallo **silencioso**:
 Consecuencia práctica: **entregar módulos pequeños y con pocas vistas**, y probar la
 instalación antes de darla por buena. Ver `references/instancia-y-conexion.md`.
 
+## Dónde investigar cada cosa 🔴
+
+Elegir mal la fuente hace perder el tiempo y, peor, da respuestas falsas con apariencia de
+verificadas. Son tres fuentes y no son intercambiables:
+
+| Qué se quiere saber | Dónde mirar |
+|---|---|
+| **Alquiler** (`sale_renting`, `sale_stock_renting`) y cualquier otro módulo **Enterprise** | **`https://github.com/enteza-carrysoft/odoo_enterprise_18`** (rama `18.0`) — repositorio del cliente. Entrada directa: `https://github.com/enteza-carrysoft/odoo_enterprise_18/tree/18.0/sale_renting` |
+| ORM, `base`, `stock`, `sale`, `account`, `uom`, vistas, seguridad | `https://github.com/odoo/odoo`, rama **`19.0`** (Community) |
+| Si un campo/modelo existe **de verdad en esta instancia** | RPC con `odoo19.py fields ...` — manda sobre las dos anteriores |
+
+⚠️ **En `odoo/odoo` no está el código de alquiler.** Es Enterprise: buscarlo ahí solo lleva a
+concluir que "Odoo no trae esto", que es el error clásico documentado más abajo.
+
+⚠️ **El repositorio del cliente es la 18, no la 19.** Para los módulos de alquiler la
+diferencia es mínima y sirve para entender la mecánica, pero **lo que se lea ahí hay que
+confirmarlo contra `enteza26`** antes de darlo por bueno. Los métodos privados (`_get_...`) no
+se pueden llamar por RPC, así que de esos la 18 es la única referencia disponible: cuando un
+desarrollo dependa de uno, **decirlo al entregar**.
+
+Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los que más se miran:
+`references/codigo-fuente-odoo.md`.
+
 ## Conocimiento crítico (detalle en references/)
 
 - **Instancia**: `enteza26`, Odoo 19 EE, hosting Xtendoo. Dos compañías **sin jerarquía**:

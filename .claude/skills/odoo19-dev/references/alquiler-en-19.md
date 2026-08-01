@@ -97,6 +97,33 @@ Incluye cosas que es fácil no ver:
   se recogió antes de tiempo o volvió antes, lo corrige desde la fecha actual. Reimplementar
   el motor sin esto da cifras distintas a las que ve el comercial en pantalla.
 
+### 🔴 El detalle del barrido que se escapa al replicarlo
+
+El bucle de `_get_unavailable_qty` mide el pico así:
+
+```python
+for key_date in key_dates:
+    if key_date > to_date: break
+    unavailable_quantity += rented_quantities[key_date]
+    if key_date >= from_date:
+        max_unavailable_qty = max(unavailable_quantity, max_unavailable_qty)
+```
+
+Visto suelto **parece que ignora el nivel arrastrado**: un alquiler que empieza antes de
+`from_date` y acaba después de `to_date` no aporta ninguna fecha dentro del intervalo. Lo que
+lo salva está en el método de al lado:
+
+```python
+key_dates = sorted(set(rented_quantities.keys()) | set(mandatory_dates))   # mandatory = [from, to]
+```
+
+`_get_rented_quantities` **inyecta `from_date` y `to_date` como fechas obligatorias**, así que
+siempre hay un evento justo en `from_date` donde medir lo que venía acumulado.
+
+**Quien copie el bucle sin copiar esa inyección obtiene ceros** en el caso más normal del
+negocio: material comprometido para un fin de semana largo, consultado por un día suelto de
+dentro. Pasó en `enteza_prestamo_intercompania` v19.0.1.0.0 y se corrigió en la `.1`.
+
 ### La fórmula completa de disponibilidad
 
 Está en `RentalOrderLine._compute_qty_at_date` (`sale_stock_renting/models/sale_order_line.py`):
