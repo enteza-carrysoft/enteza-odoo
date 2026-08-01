@@ -175,9 +175,15 @@ internos: los alquileres **sí** generan albaranes, por la ruta `route_rental`
 
 ## Estado de la instancia que condiciona cualquier prueba
 
-- `stock.quant` = **0**. No hay existencias cargadas.
-- Un solo almacén: `Vimaple` (`WH`, compañía 1). Stileum **no tiene almacén**.
-- "Manage Multiple Warehouses" **sin activar**.
+⚠️ Esto cambia rápido: la carga de inventario está en curso. **Comprobarlo por RPC** en vez
+de fiarse de esta lista. Última verificación, **2026-08-01**:
+
+- `stock.quant` con cantidad: **4**. Ya no es cero, pero es casi nada: la mayoría de los
+  cálculos seguirán diciendo "no hay stock" y no es un fallo del código.
+- **Dos almacenes**: `Sevilla` (`SEV`, compañía 1) y `Jerez` (`JER`, compañía 2). Corrige el
+  estado anterior, en el que Stileum no tenía almacén. **Y habrá más**, confirmado por el
+  cliente: nada debe asumir uno por compañía.
+- 3 pedidos de alquiler confirmados con fecha futura, aparte de los migrados.
 - 1.153 pedidos de alquiler migrados de la 15, todos con `rental_status='returned'` y fechas
   de 2026 ya pasadas. **Filtrarlos siempre** en cualquier análisis de demanda, o generan
   déficits fantasma masivos.

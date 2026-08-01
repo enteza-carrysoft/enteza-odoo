@@ -32,8 +32,10 @@ que ser reversible y trazable. Eso pesa más que la automatización.
    trampas con fallo silencioso — están documentadas en el skill.
 3. **No se pueden ejecutar pruebas automatizadas.** Se escriben igualmente, pero al entregar
    hay que decir siempre que están validadas por sintaxis y **no ejecutadas**.
-4. **Las existencias están a cero** (`stock.quant` = 0). Cualquier cálculo de disponibilidad
-   dirá "no hay stock" hasta que se carguen. No es un fallo del código.
+4. **Apenas hay existencias.** La carga de inventario empezó a primeros de agosto de 2026: el
+   2026-08-01 había 4 `stock.quant` con cantidad. Cualquier cálculo de disponibilidad dirá
+   "no hay stock" de casi todo, y **no es un fallo del código**. Comprobarlo por RPC antes de
+   dar por rota una cifra.
 
 ## Antes de crear un módulo
 

@@ -137,19 +137,24 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
   está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
   alquileres generan albaranes reales por la ruta `route_rental`.
 - **Módulos propios de Enteza instalados** (2026-08-01): `enteza_calendario_eventos`
-  (`19.0.1.2.0`, vista calendario nativa pivotada en `event_date`) y `enteza_panel_eventos`
-  (`19.0.1.0.0`, panel OWL de tres bloques). Conviven sin pisarse.
-  `enteza_prestamo_intercompania` sigue **sin instalar**.
+  (`19.0.1.2.0`, vista calendario nativa pivotada en `event_date`), `enteza_panel_eventos`
+  (`19.0.1.0.0`, panel OWL de tres bloques) y **`enteza_prestamo_intercompania`**
+  (`19.0.1.0.1` en la instancia; el repositorio va por `19.0.2.0.0`, pendiente de `git pull`
+  y *Actualizar*). Conviven sin pisarse.
 - **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
   `sale_renting.rental_order_view_calendar` es una herencia `primary` de
   `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,
   heredar `primary` del de alquiler sale más barato. La etiqueta de cada evento se cambia con
   `create_name_field`, que **necesita un campo de texto**: un many2one llega al cliente web
   como `[id, nombre]` y se vería el array entero.
-- **Existencias a cero**: `stock.quant` = 0. Hasta que se carguen, cualquier cálculo de
-  disponibilidad dirá "no hay stock", y no es un fallo del código.
-- **Un solo almacén**: solo existe `Vimaple` (`WH`, compañía 1). Stileum no tiene almacén y
-  el grupo "Manage Multiple Warehouses" no está activado.
+- **Existencias: ya no están a cero.** El 2026-08-01 había **4 `stock.quant` con cantidad**
+  (antes 0). La carga de inventario ha empezado. Aun así siguen siendo casi nada: un cálculo
+  de disponibilidad dirá "no hay stock" de casi todo, y **no es un fallo del código**.
+- **Dos almacenes** (verificado el 2026-08-01, corrige el estado anterior): `Sevilla` (`SEV`,
+  compañía 1 Vimaple) y `Jerez` (`JER`, compañía 2 Stileum). Stileum **ya tiene almacén**. El
+  cliente ha confirmado que **habrá más**, así que nada debe asumir uno por compañía.
+- **Hay demanda futura real**: 3 pedidos de alquiler confirmados con `rental_start_date`
+  posterior al 2026-08-01 (aparte de los 1.153 migrados, todos ya pasados y `returned`).
 - **Direcciones de cliente**: el grupo es `account.group_delivery_invoice_address` — en la 19
   vive en `account`, **no** en `sale`. Referenciarlo con el prefijo antiguo rompe la
   instalación. Está activado desde el 2026-08-01.
