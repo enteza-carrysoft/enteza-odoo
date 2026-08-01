@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_enteza_stock_loan_usuario,enteza.stock.loan usuario,model_enteza_stock_loan,group_prestamo_usuario,1,1,1,0
+access_enteza_stock_loan_responsable,enteza.stock.loan responsable,model_enteza_stock_loan,group_prestamo_responsable,1,1,1,1
+access_enteza_stock_loan_line_usuario,enteza.stock.loan.line usuario,model_enteza_stock_loan_line,group_prestamo_usuario,1,1,1,0
+access_enteza_stock_loan_line_responsable,enteza.stock.loan.line responsable,model_enteza_stock_loan_line,group_prestamo_responsable,1,1,1,1

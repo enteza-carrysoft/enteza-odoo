@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_category_prestamo" model="ir.module.category">
+            <field name="name">Préstamos entre compañías</field>
+            <field name="description">Gestión del préstamo de material de alquiler entre las compañías del grupo.</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="group_prestamo_usuario" model="res.groups">
+            <field name="name">Usuario</field>
+            <field name="category_id" ref="module_category_prestamo"/>
+            <field name="comment">Consulta los préstamos y propone nuevos. No puede aprobar traslados.</field>
+        </record>
+
+        <record id="group_prestamo_responsable" model="res.groups">
+            <field name="name">Responsable</field>
+            <field name="category_id" ref="module_category_prestamo"/>
+            <field name="implied_ids" eval="[(4, ref('group_prestamo_usuario'))]"/>
+            <field name="comment">Aprueba traslados, cancela préstamos y ajusta cantidades.</field>
+        </record>
+
+        <!--
+            🔴 Regla multi-compañía.
+
+            Un préstamo implica por definición DOS compañías, así que el clásico
+            ('company_id', 'in', company_ids) no vale: dejaría el documento invisible para
+            la compañía receptora, que es justamente la que lo necesita para servir su
+            pedido. Hay que contemplar también `company_dest_id`.
+        -->
+        <record id="rule_loan_multicompania" model="ir.rule">
+            <field name="name">Préstamo: visible para prestamista y receptora</field>
+            <field name="model_id" ref="model_enteza_stock_loan"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">
+                ['|', ('company_id', 'in', company_ids), ('company_dest_id', 'in', company_ids)]
+            </field>
+        </record>
+
+        <record id="rule_loan_line_multicompania" model="ir.rule">
+            <field name="name">Línea de préstamo: visible para prestamista y receptora</field>
+            <field name="model_id" ref="model_enteza_stock_loan_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">
+                ['|', ('loan_id.company_id', 'in', company_ids), ('loan_id.company_dest_id', 'in', company_ids)]
+            </field>
+        </record>
+
+    </data>
+</odoo>
