@@ -38,6 +38,32 @@ calendario de ventas y quedar desacoplado a cambio de más XML duplicado.
 En la ventana flotante se muestra el **lugar de entrega** (`partner_shipping_id`) justo debajo
 del cliente.
 
+## Etiqueta de cada evento
+
+Cada evento se rotula con el **nombre del cliente** y, si es distinto, el lugar de entrega
+separado por `·`. El calendario nativo usa el `display_name` del registro, que en `sale.order`
+es el número de pedido; el negocio quiere reconocer el evento por el cliente.
+
+Lo aporta `event_calendar_label`, un `Char` calculado **no almacenado** en `sale.order`, al que
+apunta el atributo `create_name_field` de la vista.
+
+Dos detalles que conviene no perder:
+
+- **No se puede apuntar `create_name_field` a `partner_id` directamente.** El título se usa tal
+  cual, sin procesar (`web/static/src/views/calendar/calendar_model.js`, `normalizeRecord`), y
+  un many2one llega al cliente web como `[id, nombre]`: se vería el array entero. De ahí el
+  campo `Char`.
+- **Basta con el atributo**, no hace falta declarar además un `<field>`: el parser añade el
+  campo a los que se leen del servidor (`calendar_arch_parser.js`, `FIELD_ATTRIBUTE_NAMES`).
+
+El título es también la **cabecera de la ventana flotante**, así que ahí ya no se ve el número
+de pedido. Sigue estando a un clic, en «Ver».
+
+> **Hoy se verá solo el nombre del cliente.** Medido por RPC el 2026-08-01: en los 1.153 pedidos
+> de alquiler de `enteza26` el lugar de entrega es **siempre el mismo contacto que el cliente**,
+> así que la condición anti-duplicado deja fuera la segunda parte. Aparecerá sola en cuanto se
+> empiecen a informar direcciones de entrega propias, sin tocar el módulo.
+
 ## Dependencias
 
 | Módulo | Por qué |

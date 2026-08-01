@@ -29,6 +29,12 @@
                 <attribute name="date_start">event_date</attribute>
                 <attribute name="date_stop"/>
                 <attribute name="mode">month</attribute>
+                <!-- Etiqueta del evento. Sin esto el calendario usa `display_name`, que en
+                     sale.order es el número de pedido. Basta el atributo: el parser mete el
+                     campo en la lista de los que se leen del servidor
+                     (calendar_arch_parser.js, FIELD_ATTRIBUTE_NAMES), así que no hay que
+                     declararlo además como <field>. -->
+                <attribute name="create_name_field">event_calendar_label</attribute>
             </calendar>
 
             <!-- Lugar de entrega justo debajo del cliente: es lo que pidió el cliente.
