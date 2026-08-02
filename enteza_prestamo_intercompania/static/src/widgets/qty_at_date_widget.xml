@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<template id="template" xml:space="preserve">
+
+    <!--
+        Aviso de préstamo en la ventana flotante de disponibilidad (PRP §10.3).
+
+        🔴 El `xpath` apunta al bloque que añade `sale_stock_renting`, no al nativo. La
+        plantilla base `sale_stock.QtyAtDatePopover` es un único `<div class="p-2">`;
+        `sale_stock_renting` le pone un `t-if` y añade un segundo div hermano con `t-else`,
+        que es el que se pinta en las líneas de alquiler. Verificado contra la 19 leyendo el
+        bundle de assets de la propia `enteza26` (el código de Enterprise no es público, y en
+        la 18 el mismo bloque usa `product_uom` en vez de `product_uom_id`).
+
+        Se inserta DENTRO de ese div y no como hermano a propósito: una plantilla de componente
+        OWL tiene que tener raíz única, y los dos divs de arriba solo valen porque son
+        `t-if`/`t-else`. Un tercer div hermano rompería el componente. Por lo mismo, no meter
+        nada ENTRE esos dos: `t-else` exige ser el hermano inmediato del `t-if`.
+
+        Si el backend se queda en blanco tras instalar esto, empezar por aquí: cuando un
+        `t-inherit` no encuentra su `xpath`, se cae el bundle entero y no queda nada en el log
+        del servidor.
+    -->
+    <t t-name="enteza_prestamo_intercompania.QtyAtDatePopover"
+       t-inherit="sale_stock.QtyAtDatePopover" t-inherit-mode="extension">
+        <xpath expr="//div[@t-else]/table" position="after">
+            <div class="mt-2" t-if="props.record.data.enteza_falta &gt; 0">
+                <strong class="text-danger">
+                    <i class="fa fa-exclamation-triangle me-1" role="img" aria-label="Aviso"/>
+                    Faltan <t t-out="props.record.data.enteza_falta"/>
+                    <t t-out="props.record.data.product_uom_id[1]"/>
+                </strong>
+
+                <!-- Cubierto del todo: es el caso que el comercial necesita ver para
+                     atreverse a confirmar. -->
+                <div class="small mt-1"
+                     t-if="props.record.data.enteza_prestable_otra >= props.record.data.enteza_falta">
+                    <t t-out="props.record.data.enteza_origen_prestamo"/> las presta.<br/>
+                    Se reservan al confirmar el pedido.
+                </div>
+
+                <!-- Cubierto a medias. Nunca dar a entender que está resuelto cuando no lo
+                     está: se dice lo que se cubre y lo que queda suelto. -->
+                <div class="small mt-1"
+                     t-elif="props.record.data.enteza_prestable_otra > 0">
+                    <t t-out="props.record.data.enteza_origen_prestamo"/> solo puede prestar
+                    <t t-out="props.record.data.enteza_prestable_otra"/>.<br/>
+                    <span class="text-danger">
+                        Quedarían
+                        <t t-out="props.record.data.enteza_falta - props.record.data.enteza_prestable_otra"/>
+                        sin cubrir.
+                    </span>
+                </div>
+
+                <div class="small mt-1 text-danger" t-else="">
+                    Ninguna otra compañía del grupo tiene unidades libres en estas fechas.
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</template>

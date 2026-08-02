@@ -96,9 +96,10 @@ verificadas. Son tres fuentes y no son intercambiables:
 
 | Qué se quiere saber | Dónde mirar |
 |---|---|
-| **Alquiler** (`sale_renting`, `sale_stock_renting`) y cualquier otro módulo **Enterprise** | **`https://github.com/enteza-carrysoft/odoo_enterprise_18`** (rama `18.0`) — repositorio del cliente. Entrada directa: `https://github.com/enteza-carrysoft/odoo_enterprise_18/tree/18.0/sale_renting` |
+| **Python** de **Enterprise** (`sale_renting`, `sale_stock_renting`…) | **`https://github.com/enteza-carrysoft/odoo_enterprise_18`** (rama `18.0`) — repositorio del cliente. Entrada directa: `https://github.com/enteza-carrysoft/odoo_enterprise_18/tree/18.0/sale_renting` |
+| **JS y plantillas OWL** de Enterprise, **de la 19** | El **bundle de assets de la propia instancia**: `scripts/simular_herencia_owl.py --del-bundle nombre.Plantilla`. No hace falta conformarse con la 18 para nada del cliente web |
 | ORM, `base`, `stock`, `sale`, `account`, `uom`, vistas, seguridad | `https://github.com/odoo/odoo`, rama **`19.0`** (Community) |
-| Si un campo/modelo existe **de verdad en esta instancia** | RPC con `odoo19.py fields ...` — manda sobre las dos anteriores |
+| Si un campo/modelo existe **de verdad en esta instancia** | RPC con `odoo19.py fields ...` — manda sobre las anteriores |
 
 ⚠️ **En `odoo/odoo` no está el código de alquiler.** Es Enterprise: buscarlo ahí solo lleva a
 concluir que "Odoo no trae esto", que es el error clásico documentado más abajo.
@@ -139,10 +140,11 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **Módulos propios de Enteza instalados** (2026-08-02): `enteza_calendario_eventos`
   (`19.0.1.2.0`, vista calendario nativa pivotada en `event_date`), `enteza_panel_eventos`
   (`19.0.1.0.0`, panel OWL de tres bloques) y **`enteza_prestamo_intercompania`**
-  (`19.0.1.1.0` en la instancia; el repositorio va por `19.0.2.0.1`, pendiente de `git pull`
-  y *Actualizar*). Conviven sin pisarse. El intento de subir la `19.0.2.0.0` falló por un
-  `<group expand=…>` en la vista de búsqueda: ver `convenciones-modulo.md` y validar siempre
-  con `scripts/validar_vistas.py` antes de desplegar.
+  (`19.0.2.0.1` instalada; el repositorio va por `19.0.2.1.0`, que añade el aviso de préstamo
+  al widget de disponibilidad y está pendiente de `git pull` y *Actualizar*). Conviven sin
+  pisarse. El intento de subir la `19.0.2.0.0` falló por un `<group expand=…>` en la vista de
+  búsqueda: ver `convenciones-modulo.md` y validar siempre con `scripts/validar_vistas.py`
+  antes de desplegar.
 - **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
   `sale_renting.rental_order_view_calendar` es una herencia `primary` de
   `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,

@@ -79,6 +79,35 @@ Los tests son especialmente útiles: dan los idiomas exactos para construir esce
 (`with_context(in_rental_app=True)`, `stock.quant` + `action_apply_inventory()`,
 `line.update({'is_rental': True})`) en vez de pelearse con los campos calculados.
 
+## Enterprise **19** — el JavaScript y las plantillas OWL SÍ se pueden leer 🔴
+
+**Hallazgo del 2026-08-02, y corrige lo dicho arriba en un punto importante.** Del Enterprise
+de la 19 no hay repositorio, pero **la instancia sirve todo su código de cliente**: los bundles
+de assets llevan dentro el JS y las plantillas OWL, con el `t-name` y el cuerpo enteros.
+
+Así que ya no hay que dar por buena la 18 para nada del cliente web:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/simular_herencia_owl.py \
+    --base sale_stock.QtyAtDatePopover \
+    --del-bundle sale_stock_renting.QtyAtDatePopover \
+    mi_modulo/static/src/widgets/mi_widget.xml
+```
+
+Ese script las saca por nombre y además simula la herencia. Para leer una sin más, el bundle
+es `web.assets_web.min.js` y se busca `<t t-name="modulo.Plantilla"`.
+
+Dos detalles del bundle: la **URL lleva un hash de versión** que cambia con cada regeneración
+de assets —hay que preguntarla por RPC a `ir.attachment`—, y hace falta la cabecera
+**`X-Odoo-Database`** o el servidor responde 404 «No database is selected».
+
+⚠️ **Solo llega al cliente.** El Python de Enterprise (`_get_unavailable_qty`,
+`_compute_qty_at_date`, los modelos) **no** está en los assets: para eso sigue mandando la 18,
+con el aviso de siempre.
+
+Comprobado así que la plantilla `sale_stock_renting.QtyAtDatePopover` es idéntica en la 18 y en
+la 19 salvo `product_uom` → **`product_uom_id`**.
+
 ## Odoo Community
 
 El código de Community (`odoo/odoo`) es público en GitHub, rama `19.0`. Sirve para `stock`,

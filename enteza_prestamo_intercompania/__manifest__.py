@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Préstamo de material entre compañías',
-    'version': '19.0.2.0.1',
+    'version': '19.0.2.1.0',
     'category': 'Inventory/Inventory',
     'summary': 'Préstamo de material de alquiler entre las compañías del grupo',
     'description': """
@@ -36,6 +36,15 @@ No factura ni genera asientos contables (ver README, «Punto de enganche para fa
         'data/prestamo_data.xml',
         'views/enteza_stock_loan_views.xml',
     ],
+    # Extiende el widget nativo de disponibilidad de la línea de pedido (§10.3). Va al mismo
+    # bundle que `sale_stock_renting`, y el orden de carga lo da la dependencia: estos
+    # ficheros se cargan después de los suyos, que es lo que permite arrastrar sus
+    # `fieldDependencies` y encontrar su bloque en la plantilla.
+    'assets': {
+        'web.assets_backend': [
+            'enteza_prestamo_intercompania/static/src/**/*',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

@@ -7,6 +7,9 @@ la pantalla.
 Verificado escribiendo `enteza_panel_eventos`, que funcionó a la primera en `enteza26`
 (Odoo 19.0.1.3) el 2026-08-01. Ese módulo es la referencia viva: copiar de ahí.
 
+> Para **extender un widget que ya existe** en vez de crear una pantalla nueva, ir al final:
+> [Extender un widget nativo](#extender-un-widget-nativo-el-caso-de-qty_at_date).
+
 ## Cuándo hace falta y cuándo no
 
 Antes de escribir JavaScript, descartar lo nativo: es más barato de mantener y no se rompe al
@@ -151,3 +154,76 @@ bajo `addons/web/static/src/`. Los dos que más se consultan al hacer esto:
 | `webclient/actions/action_service.js` | `standardActionServiceProps` |
 | `views/calendar/calendar_arch_parser.js` | Atributos que admite `<calendar>` |
 | `views/calendar/calendar_model.js` | Cómo se construye el título de un evento |
+
+---
+
+## Extender un widget nativo (el caso de `qty_at_date`)
+
+Verificado escribiendo el aviso de préstamo del widget de disponibilidad en
+`enteza_prestamo_intercompania` (2026-08-02).
+
+**Casi siempre sale más barato extender que crear.** El widget nativo ya trae la posición en
+la vista, el icono, el popover y las traducciones; añadirle un bloque son tres ficheros
+pequeños y se rompe mucho menos al actualizar Odoo.
+
+### El patrón, en tres piezas
+
+1. **Campos calculados no almacenados** en el modelo, con prefijo propio.
+2. **`fieldDependencies`** en el descriptor del widget. Sin esto el cliente web **no se trae
+   los campos** y la plantilla los ve vacíos, sin ningún error que lo explique.
+3. **`t-inherit` de la plantilla** con un `xpath`.
+
+```js
+import { patch } from "@web/core/utils/patch";
+import { qtyAtDateWidget } from "@sale_stock/widgets/qty_at_date_widget";
+
+patch(qtyAtDateWidget, {
+    fieldDependencies: [
+        ...qtyAtDateWidget.fieldDependencies,   // 🔴 arrastrar las que ya había
+        { name: "mi_campo", type: "float" },
+    ],
+});
+```
+
+🔴 **`patch` sustituye la propiedad entera.** Escribir la lista a pelo borra las
+dependencias que puso el módulo anterior y rompe su widget sin tocar una línea suya —
+`sale_stock_renting`, por ejemplo, mete ahí `start_date` y `return_date`, de los que dependen
+las fechas que muestra su propio popover. El `spread` funciona porque el fichero propio carga
+**después**, que lo garantiza la dependencia del manifiesto.
+
+### 🔴 OWL exige raíz única
+
+Una plantilla de componente tiene que tener **un solo elemento raíz**. Si la plantilla base ya
+tiene dos hermanos es porque son `t-if`/`t-else` y solo se pinta uno: **añadir un tercer
+hermano rompe el componente**, y meter algo *entre* los dos también, porque `t-else` tiene que
+ser el hermano inmediato del `t-if`. Lo que hay que hacer es insertar **dentro** de la rama que
+interesa.
+
+### Cómo leer una plantilla de Enterprise de la 19 🔴
+
+`sale_renting`, `sale_stock_renting`, `web_gantt`… son Enterprise y su código de la 19 no es
+público. **Pero la instancia lo sirve**: los bundles de assets llevan las plantillas dentro.
+Es la única forma verificada de leer código Enterprise de la 19, y evita tener que dar por
+buena la 18.
+
+```bash
+python .claude/skills/odoo19-dev/scripts/simular_herencia_owl.py \
+    --base sale_stock.QtyAtDatePopover \
+    --del-bundle sale_stock_renting.QtyAtDatePopover \
+    mi_modulo/static/src/widgets/mi_widget.xml
+```
+
+Ese script baja el bundle, saca las plantillas por su `t-name`, **aplica la cadena de
+herencia** y dice si el `xpath` encuentra su nodo y si el componente queda con raíz única.
+Merece la pena por lo que cuesta equivocarse: **un `t-inherit` que no encuentra su `xpath`
+tumba el bundle entero**, y el síntoma es una pantalla en blanco sin nada en el log.
+
+Dos detalles del bundle que cuestan un rato averiguar:
+
+- La URL lleva un **hash de versión que cambia** cada vez que Odoo regenera los assets: hay
+  que preguntarla por RPC (`ir.attachment`, campo `url`), no fijarla.
+- Hay que mandar la cabecera **`X-Odoo-Database`**. Sin ella el servidor responde 404
+  «No database is selected», que parece que la URL está mal.
+
+Diferencia real encontrada entre la 18 y la 19 en esa plantilla: `product_uom` pasó a
+**`product_uom_id`**. Poco, pero suficiente para pintar `undefined` en pantalla.

@@ -11,9 +11,9 @@ entregas siguientes de esta misma fase, en este orden:
 
 1. ✅ **Documento vivo** — lo que hay ahora: se puede crear un préstamo a mano, reservarlo
    (y entonces resta de verdad en la disponibilidad de la prestamista), aprobarlo, cancelarlo.
-2. ⬜ **Widget de disponibilidad + enganche en `action_confirm`** — el camino principal
-   (D5/D5.1). El widget primero: al montar el presupuesto, la ventana flotante de la línea
-   dice cuánto falta y qué compañía puede prestarlo. Después el enganche: al confirmar, un
+2. 🔶 **Widget de disponibilidad + enganche en `action_confirm`** — el camino principal
+   (D5/D5.1). ✅ El widget ya está: al montar el presupuesto, la ventana flotante de la línea
+   dice cuánto falta y qué compañía puede prestarlo. ⬜ Falta el enganche: al confirmar, un
    diálogo propone el préstamo y **solo si el comercial acepta** se reserva en firme, con el
    recálculo y el bloqueo de concurrencia del §5.6.
 3. ⬜ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
@@ -21,6 +21,78 @@ entregas siguientes de esta misma fase, en este orden:
 El widget va antes que el diálogo a propósito: los dos necesitan el mismo cálculo, y sacarlo
 primero a pantalla es la única forma de comprobarlo sin poder ejecutar pruebas. Si el diálogo
 se retrasara, lo entregado ya sirve por sí solo.
+
+## El aviso de préstamo en el widget de disponibilidad (`19.0.2.1.0`)
+
+Primera mitad de la entrega 2. Cuando el almacén propio no llega, la ventana flotante de la
+línea de pedido dice cuánto falta y qué compañía puede prestarlo:
+
+```
+Disponible para alquilar     80 Uds
+14/08/2026 a 16/08/2026
+
+⚠ Faltan 15 Uds
+Stileum · Jerez las presta.
+Se reservan al confirmar el pedido.
+```
+
+Con material de sobra no aparece nada: el widget se comporta como el nativo. Si la otra
+compañía solo cubre una parte, se dice lo que cubre **y lo que queda suelto**.
+
+### Por qué hacía falta
+
+El widget nativo **oculta justo eso**. El campo que enseña está acotado a cero en el propio
+Odoo (`sale_stock_renting`, `_compute_qty_at_date`):
+
+```python
+virtual_available_at_date = max(rentable_qty - rented_qty_during_period, 0)
+```
+
+Quien pide 95 teniendo 80 lee «Disponible para alquilar: 80» y se queda igual.
+
+### Cómo está hecho
+
+Se **extiende** el widget nativo, no se escribe uno nuevo: tres campos calculados no
+almacenados en `sale.order.line`, declarados en `fieldDependencies`, y un `t-inherit` sobre
+`sale_stock.QtyAtDatePopover`. Tres decisiones que conviene no deshacer:
+
+- **La cifra sale del mismo motor que decide la reserva** (`enteza.disponibilidad`). Si el
+  widget y la confirmación dieran números distintos, el comercial dejaría de fiarse de los dos.
+- **No se usa `virtual_available_at_date` como atajo** para saber si hay déficit, aunque sería
+  gratis: el nativo no descuenta los préstamos ya comprometidos, así que diría que hay 80
+  libres cuando 30 están reservadas para la otra compañía. Un prefiltro optimista esconde
+  déficits reales. Lo cubre `test_un_prestamo_comprometido_genera_deficit_que_el_nativo_no_ve`.
+- **La consulta a la otra compañía solo se hace si la propia se queda corta**, que es lo que
+  mantiene el coste a raya: el motor hace una búsqueda por producto.
+
+`sudo()` acotado a esa lectura, porque un comercial de Vimaple no tiene acceso a los quants de
+Stileum. Se expone la cifra agregada, nunca los registros. **Implica que los comerciales de
+cada sociedad ven el nivel de existencias de la otra**, que es deliberado.
+
+### Lo que sí está verificado de esta parte
+
+La herencia de la plantilla, **ejecutada**: se resuelve el `xpath`, cae donde debe y el
+componente conserva la raíz única que exige OWL. Reproducible:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/simular_herencia_owl.py \
+    --base sale_stock.QtyAtDatePopover \
+    --del-bundle sale_stock_renting.QtyAtDatePopover \
+    enteza_prestamo_intercompania/static/src/widgets/qty_at_date_widget.xml
+```
+
+La plantilla de la 19 EE se lee del bundle de assets de la propia `enteza26` — el código de
+Enterprise no es público, pero la instancia lo sirve. Frente a la 18 solo cambia
+`product_uom` → `product_uom_id`.
+
+Los campos usados (`start_date`, `return_date`, `is_rental`, `product_uom_qty`,
+`order_id.warehouse_id`, `uom.uom.rounding`) están comprobados por RPC contra `enteza26`.
+**El cálculo en sí no está ejecutado**: las pruebas de `test_widget_prestamo.py` están
+escritas y validadas por sintaxis, no corridas.
+
+🔴 **Si el backend se queda en blanco tras actualizar**, empezar por el `t-inherit`: cuando no
+encuentra su `xpath` se cae el bundle entero y no queda nada en el log del servidor. Y probar
+antes con `Ctrl+F5`, que el navegador cachea el bundle anterior.
 
 ## Decisiones tomadas el 2026-08-01, que corrigen el PRP
 
