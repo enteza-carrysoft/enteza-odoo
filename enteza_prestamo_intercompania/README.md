@@ -124,6 +124,20 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+### Dos fallos que costó una prueba real (`19.0.3.0.1`)
+
+Al probar el diálogo **no apareció nada**. Las dos causas eran independientes y ninguna daba
+un error:
+
+| Qué | Por qué no se veía |
+|---|---|
+| **`models/sale_order.py` no estaba importado** en `models/__init__.py` | Se borró el fichero del aviso de cabecera junto con su import, y al crear otro con el mismo nombre para el diálogo no se volvió a añadir. **El módulo instala igual y el `action_confirm` nunca se registra.** Ahora lo caza `scripts/validar_modulo.py` antes de desplegar |
+| **`_rentable` restaba dos veces la línea confirmada** | Ignoraba la propia línea en `_get_virtual_unavailable_qty_in_rent` siempre, y el nativo solo lo hace si el pedido está en **borrador**. Confirmado el pedido, el movimiento de stock existe y `virtual_available` ya lo descontó: ese método está para volver a sumarlo. Un pedido de 95 sobre 80 en almacén daba un déficit de **110 en vez de 15** |
+
+El segundo es el peligroso: **antes de confirmar el número era correcto**, así que el widget
+se veía bien y el fallo solo aparecía después, que es cuando ya nadie está mirando. Cubierto
+por `test_la_propia_linea_confirmada_no_se_resta_dos_veces`.
+
 ### Limitación heredada del nativo
 
 **Dos líneas del mismo presupuesto no compiten entre sí.** Solo cuenta como demanda lo

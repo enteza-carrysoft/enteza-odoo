@@ -120,6 +120,22 @@ class TestDisponibilidad(TransactionCase):
         self._crear_pedido(300)
         self.assertEqual(self._disponible(), 600)
 
+    def test_la_propia_linea_confirmada_no_se_resta_dos_veces(self):
+        """Regresión del 2026-08-02, y de las caras porque solo aparece tras confirmar.
+
+        Al preguntar ignorando una línea YA CONFIRMADA, sus unidades no pueden restarse. El
+        movimiento de stock existe y `virtual_available` ya lo descontó; `_rentable` vuelve a
+        sumarlo con `_get_virtual_unavailable_qty_in_rent`, y esa devolución solo se salta
+        cuando el pedido está en borrador — que es lo que hace el nativo.
+
+        Con el fallo, un pedido confirmado de 95 unidades sobre 80 en almacén daba un déficit
+        de 110 en vez de 15: el material se contaba dos veces.
+        """
+        self._dar_stock(900)
+        pedido = self._crear_pedido(300)
+
+        self.assertEqual(self._disponible(ignorar_linea=pedido.order_line), 900)
+
     def test_presupuesto_sin_confirmar_no_resta(self):
         """Los presupuestos no reservan material (PRP §5.7, PENDIENTE-2 resuelto).
 

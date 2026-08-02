@@ -231,9 +231,24 @@ class EntezaDisponibilidad(models.AbstractModel):
         rentable = producto.with_context(
             from_date=False, to_date=desde, warehouse_id=almacen.id,
         ).virtual_available
+        # 🔴 La línea solo se ignora aquí si el pedido está en BORRADOR, y esa condición es
+        # del nativo (`ignored_soline_id=line and line.state == 'draft' and line.id`). No es
+        # un matiz: en cuanto el pedido se confirma existe un movimiento de stock real, y ese
+        # movimiento YA está descontado del `virtual_available` de arriba. Este método existe
+        # justamente para volver a sumarlo; ignorar la línea impide esa devolución y el
+        # material se resta DOS veces.
+        #
+        # Se detectó el 2026-08-02 con un pedido confirmado de 95 unidades y 80 en almacén:
+        # el déficit salía de 110 en vez de 15. Antes de confirmar el número era correcto, así
+        # que el fallo solo aparecía después — que es cuando ya no se está mirando.
+        ignorar_en_rent = (
+            ignorar_linea.id
+            if ignorar_linea and ignorar_linea.state == 'draft'
+            else False
+        )
         rentable += producto._get_virtual_unavailable_qty_in_rent(
             pivot_date=desde,
-            ignored_soline_id=ignorar_linea and ignorar_linea.id,
+            ignored_soline_id=ignorar_en_rent,
             warehouse_id=almacen.id,
         )
         return rentable

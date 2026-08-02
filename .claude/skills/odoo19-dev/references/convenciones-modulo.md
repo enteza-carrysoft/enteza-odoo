@@ -189,6 +189,31 @@ usa el propio `sale_renting`. Nunca `> 0` a pelo sobre floats.
 
 `post_init_hook(env)` recibe el entorno directamente (antes eran `cr, registry`).
 
+## Código que Odoo no carga y no lo dice 🔴
+
+**Fallo silencioso, y de los que cuestan un despliegue entero.** Un fichero de `models/` que
+no esté en `models/__init__.py` sencillamente no se carga: el módulo instala con normalidad,
+no hay error en ningún log y todo lo demás funciona. Se descubre cuando alguien prueba la
+funcionalidad y «no pasa nada».
+
+Ocurrió el 2026-08-02 en `enteza_prestamo_intercompania`: se borró un `models/sale_order.py`
+y su import, y al crear otro fichero con el mismo nombre para otra cosa **no se volvió a
+añadir el import**. El `action_confirm` que abría el diálogo nunca llegó a registrarse.
+
+```bash
+python .claude/skills/odoo19-dev/scripts/validar_modulo.py enteza_mi_modulo
+python .claude/skills/odoo19-dev/scripts/validar_modulo.py     # todos los del repositorio
+```
+
+Comprueba los `.py` no importados, los paquetes (`wizard/`, `report/`) que faltan en el
+`__init__.py` de la raíz, y los ficheros de datos declarados que no existen o que existen sin
+declarar. **Pasarlo por el módulo antes de cada `git pull`.**
+
+Al pasarlo por el repositorio entero (2026-08-02) aparecieron seis fallos más, todos en
+módulos de terceros: `app_common`, `app_odoo_customize` (dos modelos sin cargar),
+`om_account_bank_statement_import`, `sale_order_line_product_image` y
+`stock_picking_batch_report`.
+
 ## Dependencias del manifiesto
 
 **El error más caro y el más fácil de cometer.** Si una vista o un modelo referencia algo de
