@@ -180,6 +180,28 @@ Por tanto, **en el momento de confirmar el pedido de alquiler**, de forma síncr
 **A partir de ese momento, la reserva es firme:** ningún otro pedido, de ninguna de las dos
 compañías, puede contar con ese material para esas fechas.
 
+#### D5.2 · Un préstamo es un VIAJE, no un pedido 🔴
+
+**Decisión del cliente, 2026-08-02.** El §7.2 ya pedía agrupar en el análisis por lotes, pero
+el camino de la confirmación (D5) no lo había heredado y creaba un préstamo por confirmación.
+
+Varias necesidades que coincidan en **ruta y fecha de traslado exacta** van al **mismo
+documento**, aunque vengan de pedidos distintos y de productos distintos. Un préstamo es un
+porte: partirlo multiplicaría los albaranes sin ninguna razón física.
+
+Agrupación por fecha de traslado **exacta**: un evento del sábado y otro del domingo dan
+fechas distintas y son dos viajes. Solo se acumula sobre préstamos en `reserved` o `approved`;
+desde `in_transit` el camión salió.
+
+**Convivencia con la aprobación:** no se reabre lo firmado. El material nuevo entra con
+`qty_approved = 0`, el préstamo sigue en `approved` y marca que tiene material pendiente; el
+responsable firma **solo el incremento**. El material queda comprometido desde que se añade
+—`_qty_comprometida()` cae a `qty_reserved` mientras no haya firma—, así que no hay ninguna
+ventana en la que otro comercial pueda vender esas unidades.
+
+> **Consecuencia que hay que resolver en la fase 4:** con varios pedidos en un mismo préstamo,
+> cancelar uno solo tiene que retirar **su parte**, no el documento. Hoy no está hecho.
+
 #### D5.1 · El préstamo automático PREGUNTA antes de reservar 🔴
 
 **Decisión del cliente, 2026-08-02. Corrige la versión anterior de este documento**, que

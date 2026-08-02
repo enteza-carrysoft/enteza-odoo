@@ -45,6 +45,15 @@
                             class="btn-primary" invisible="state != 'reserved'"
                             groups="enteza_prestamo_intercompania.group_prestamo_responsable"
                             help="Autoriza la salida física del material."/>
+                    <!--
+                        Segundo botón para el préstamo YA aprobado al que se le ha acumulado
+                        material de otro pedido. Firma solo el incremento y el préstamo no
+                        sale de `approved`, así el viaje sigue siendo uno solo.
+                    -->
+                    <button name="action_aprobar" type="object" string="Aprobar lo añadido"
+                            class="btn-primary" invisible="not tiene_pendiente_aprobacion"
+                            groups="enteza_prestamo_intercompania.group_prestamo_responsable"
+                            help="Autoriza el material que se ha añadido después de la primera aprobación."/>
                     <button name="action_volver_borrador" type="object" string="Volver a borrador"
                             invisible="state not in ('reserved', 'cancelled')"
                             groups="enteza_prestamo_intercompania.group_prestamo_responsable"/>
@@ -63,6 +72,13 @@
                         La fecha de traslado ya ha pasado y el préstamo sigue sin aprobarse.
                         El material no se ha movido.
                     </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not tiene_pendiente_aprobacion">
+                        Se ha añadido material a este traslado después de aprobarlo, para que
+                        vaya en el mismo porte. Las líneas sin cantidad aprobada
+                        <strong>están reservadas pero todavía no autorizadas</strong>:
+                        revísalas y pulsa «Aprobar lo añadido».
+                    </div>
                     <group>
                         <group string="Quién presta a quién">
                             <field name="company_id" readonly="state != 'draft'"/>
@@ -76,11 +92,20 @@
                             <field name="date_reserved"/>
                             <field name="origin"/>
                             <field name="traslado_retrasado" invisible="1"/>
+                            <field name="tiene_pendiente_aprobacion" invisible="1"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Material" name="lineas">
-                            <field name="line_ids" readonly="state not in ('draft', 'reserved')">
+                            <!--
+                                Editable también en `approved`: es el único momento en que
+                                el responsable puede ajustar `qty_approved` a la baja
+                                (PRP §7.3), y con las líneas bloqueadas esa decisión no se
+                                podía tomar desde ninguna pantalla. A partir de
+                                `in_transit` sí se cierra: el material ya salió.
+                            -->
+                            <field name="line_ids"
+                                   readonly="state not in ('draft', 'reserved', 'approved')">
                                 <list editable="bottom">
                                     <field name="product_id"/>
                                     <field name="product_uom_id" optional="show"/>

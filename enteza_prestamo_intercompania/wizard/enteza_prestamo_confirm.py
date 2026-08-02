@@ -97,21 +97,30 @@ class EntezaPrestamoConfirm(models.TransientModel):
         return avisos
 
     def _enteza_crear_prestamos(self):
-        """Crea los préstamos y los deja reservados en firme.
+        """Deja el material reservado en firme, **acumulando en el préstamo del viaje**.
 
-        Se agrupan por almacén de origen: un préstamo es un traslado entre dos almacenes, y
-        mezclar orígenes en un documento haría imposible el albarán de la fase siguiente.
+        🔴 Un préstamo es **un viaje**, no un pedido. Si ya hay uno abierto para la misma
+        ruta y la misma fecha de traslado, el material nuevo se le añade en vez de crear otro
+        documento: dos eventos del mismo día que necesiten material de la otra compañía
+        tienen que ir en el mismo porte y generar **un solo par de albaranes** (decisión del
+        cliente, 2026-08-02; el §7.2 del PRP ya lo pedía para el análisis por lotes y el
+        camino de la confirmación no lo había heredado).
+
+        Se agrupa por **almacén de origen y fecha de traslado exacta**. Un evento del sábado
+        y otro del domingo dan fechas distintas y son, por tanto, dos viajes.
         """
         self.ensure_one()
         pedido = self.order_id
-        por_almacen = defaultdict(list)
+        Prestamo = self.env['enteza.stock.loan']
+        por_viaje = defaultdict(list)
         for linea in self.line_ids:
             # Las líneas que nadie puede cubrir no generan préstamo. No es un olvido: el
             # pedido se confirma igual (PENDIENTE-8) y el déficit se queda a la vista en el
             # widget de la línea.
             if not linea.warehouse_src_id or linea.qty_prestable <= 0:
                 continue
-            por_almacen[linea.warehouse_src_id].append(linea)
+            fecha = Prestamo._fecha_traslado_de(linea.sale_line_id.start_date)
+            por_viaje[(linea.warehouse_src_id, fecha)].append(linea)
 
         # 🔴 `sudo()` para crear el préstamo. Quien confirma un pedido es un comercial, y no
         # tiene por qué pertenecer a los grupos de préstamos —hoy, de hecho, no los tiene
@@ -124,39 +133,65 @@ class EntezaPrestamoConfirm(models.TransientModel):
         #
         # Efecto secundario a tener presente: el préstamo se crea, pero para VERLO en el menú
         # hace falta el grupo de usuario de préstamos.
-        prestamos = self.env['enteza.stock.loan'].sudo()
-        for almacen_origen, lineas in por_almacen.items():
-            prestamo = self.env['enteza.stock.loan'].sudo().create({
+        prestamos = Prestamo.sudo()
+        for (almacen_origen, fecha), lineas in por_viaje.items():
+            vals_lineas = [self._enteza_vals_linea(linea) for linea in lineas]
+            abierto = self._enteza_prestamo_abierto(almacen_origen, fecha)
+            if abierto:
+                # Ya hay un viaje programado para esa ruta y ese día: se sube al mismo.
+                abierto.incorporar(vals_lineas, pedido=pedido)
+                prestamos |= abierto
+                continue
+
+            prestamo = Prestamo.sudo().create({
                 'company_id': almacen_origen.company_id.id,
                 'company_dest_id': pedido.company_id.id,
                 'warehouse_src_id': almacen_origen.id,
                 'warehouse_dest_id': pedido.warehouse_id.id,
+                'date_transfer': fecha,
                 'origin': 'confirmation',
                 'origin_order_ids': [(4, pedido.id)],
-                'line_ids': [
-                    (0, 0, {
-                        'product_id': linea.product_id.id,
-                        'product_uom_id': linea.sale_line_id.product_uom_id.id,
-                        # Se reserva lo que la otra compañía puede dar AHORA, no lo que decía
-                        # la propuesta: si el déficit ha bajado, se coge menos.
-                        'qty_proposed': min(
-                            linea.sale_line_id.enteza_falta,
-                            linea.sale_line_id.enteza_prestable_otra,
-                        ),
-                        'date_from': linea.sale_line_id.start_date,
-                        'date_to': linea.sale_line_id.return_date,
-                        'sale_line_id': linea.sale_line_id.id,
-                        'deficit_date': linea.sale_line_id.start_date,
-                    })
-                    for linea in lineas
-                ],
+                'line_ids': [(0, 0, vals) for vals in vals_lineas],
             })
             # `action_reservar` es quien pone `date_reserved` —el criterio de prioridad— y
-            # calcula la fecha de traslado. Además revalida la disponibilidad contra el
-            # motor, ya bajo el bloqueo: es la última red antes de comprometer material.
+            # revalida la disponibilidad contra el motor, ya bajo el bloqueo: es la última
+            # red antes de comprometer material.
             prestamo.action_reservar()
             prestamos |= prestamo
         return prestamos
+
+    def _enteza_vals_linea(self, linea):
+        """Valores de una línea de préstamo a partir de una línea de la propuesta."""
+        venta = linea.sale_line_id
+        return {
+            'product_id': linea.product_id.id,
+            'product_uom_id': venta.product_uom_id.id,
+            # Se reserva lo que la otra compañía puede dar AHORA, no lo que decía la
+            # propuesta: si el déficit ha bajado, se coge menos.
+            'qty_proposed': min(venta.enteza_falta, venta.enteza_prestable_otra),
+            'date_from': venta.start_date,
+            'date_to': venta.return_date,
+            'sale_line_id': venta.id,
+            'deficit_date': venta.start_date,
+        }
+
+    def _enteza_prestamo_abierto(self, almacen_origen, fecha):
+        """Préstamo vivo para esa ruta y esa fecha de traslado, si lo hay.
+
+        Se buscan solo los `reserved` y `approved`. Un `draft` es trabajo a medias de otra
+        persona y no se toca; y desde `in_transit` el camión ya salió, así que lo que llegue
+        después necesita un viaje nuevo por fuerza.
+
+        `sudo()` porque el documento pertenece a la compañía prestamista: sin él, un
+        comercial de la receptora no encontraría el préstamo abierto y se crearía un segundo
+        documento para el mismo viaje, que es justo lo que esto evita.
+        """
+        return self.env['enteza.stock.loan'].sudo().search([
+            ('warehouse_src_id', '=', almacen_origen.id),
+            ('warehouse_dest_id', '=', self.order_id.warehouse_id.id),
+            ('date_transfer', '=', fecha),
+            ('state', 'in', ('reserved', 'approved')),
+        ], order='id', limit=1)
 
     def action_cancelar(self):
         """Cerrar sin hacer nada. El pedido se queda sin confirmar."""

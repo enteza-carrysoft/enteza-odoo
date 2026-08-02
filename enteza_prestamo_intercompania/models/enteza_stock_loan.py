@@ -120,6 +120,11 @@ class EntezaStockLoan(models.Model):
         digits='Product Unit of Measure',
         help='Suma de lo que este préstamo compromete hoy en la compañía prestamista.',
     )
+    tiene_pendiente_aprobacion = fields.Boolean(
+        string='Material pendiente de firmar', compute='_compute_pendiente_aprobacion',
+        help='El préstamo ya está aprobado, pero se le ha acumulado material nuevo que '
+             'todavía no ha autorizado nadie.',
+    )
     traslado_retrasado = fields.Boolean(
         string='Traslado retrasado', compute='_compute_traslado_retrasado',
         help='Reservado, con la fecha de traslado ya pasada y sin aprobar: el evento se '
@@ -138,6 +143,14 @@ class EntezaStockLoan(models.Model):
         for prestamo in self:
             prestamo.qty_total = sum(
                 linea._qty_comprometida() for linea in prestamo.line_ids
+            )
+
+    @api.depends('state', 'line_ids.qty_approved', 'line_ids.qty_reserved')
+    def _compute_pendiente_aprobacion(self):
+        for prestamo in self:
+            prestamo.tiene_pendiente_aprobacion = bool(
+                prestamo.state == 'approved'
+                and any(not linea.qty_approved for linea in prestamo.line_ids)
             )
 
     @api.depends('state', 'date_transfer')
@@ -217,19 +230,75 @@ class EntezaStockLoan(models.Model):
         return True
 
     def action_aprobar(self):
-        """`reserved` → `approved`: un responsable autoriza el traslado físico (D2)."""
+        """`reserved` → `approved`: un responsable autoriza el traslado físico (D2).
+
+        También se puede volver a pulsar sobre un préstamo **ya aprobado** al que se le ha
+        acumulado material nuevo: entonces se firma **solo el incremento** y el préstamo no
+        sale de `approved`. Es lo que permite que un viaje siga siendo uno solo cuando
+        aparece otro evento para la misma fecha, sin deshacer lo que el responsable ya
+        autorizó (decisión del cliente, 2026-08-02).
+        """
         for prestamo in self:
-            prestamo._comprobar_estado('reserved')
+            if prestamo.state == 'approved':
+                if not prestamo.tiene_pendiente_aprobacion:
+                    raise UserError(_(
+                        'El préstamo %s ya está aprobado y no se le ha añadido material '
+                        'nuevo desde entonces.', prestamo.name,
+                    ))
+            else:
+                prestamo._comprobar_estado('reserved')
             prestamo._comprobar_responsable()
             # Se revalida aunque venga de `reserved` y el material «ya estuviera
             # comprometido»: si aquí falta stock, no es un contratiempo sino un fallo del
             # cálculo de reservas, y el PRP §7.3 pide que se vea, no que se tape.
             prestamo._revalidar_disponibilidad()
+            # Solo se rellenan las líneas SIN firmar. Es lo que distingue «material nuevo
+            # que nadie ha visto» de «el responsable decidió aprobar menos»: si aquí se
+            # igualara `qty_approved` a `qty_reserved` sin mirar, una segunda aprobación
+            # desharía silenciosamente el recorte que hizo la primera.
             for linea in prestamo.line_ids:
                 if not linea.qty_approved:
                     linea.qty_approved = linea.qty_reserved
             prestamo.state = 'approved'
         return True
+
+    def incorporar(self, vals_lineas, pedido=None):
+        """Acumula material en un préstamo ya abierto, en vez de crear otro (§7.2).
+
+        Varios eventos de la misma fecha que necesiten material de la otra compañía tienen
+        que viajar **en el mismo porte**: un préstamo es un viaje, y partirlo en documentos
+        sueltos multiplicaría los albaranes sin ninguna razón física.
+
+        El material queda comprometido **en el acto**, aunque el préstamo estuviera aprobado
+        y estas líneas todavía no lleven firma: `_qty_comprometida()` devuelve `qty_reserved`
+        mientras `qty_approved` esté a cero. Así no hay ni un instante en el que otro
+        comercial pueda vender esas unidades. La firma del responsable hace falta para
+        **moverlas**, no para reservarlas.
+        """
+        self.ensure_one()
+        if self.state not in ('reserved', 'approved'):
+            raise UserError(_(
+                'Al préstamo %(nombre)s no se le puede añadir material: está en estado '
+                '«%(estado)s». Si ya se ha trasladado, lo que falte tiene que ir en un '
+                'préstamo nuevo.',
+                nombre=self.name,
+                estado=dict(ESTADOS).get(self.state, self.state),
+            ))
+
+        lineas = self.env['enteza.stock.loan.line'].create([
+            dict(vals, loan_id=self.id) for vals in vals_lineas
+        ])
+        for linea in lineas:
+            if not linea.qty_reserved:
+                linea.qty_reserved = linea.qty_proposed
+        if pedido:
+            self.origin_order_ids = [(4, pedido.id)]
+
+        # Se revalida DESPUÉS de fijar las cantidades, para que la comprobación incluya el
+        # material nuevo. Si la prestamista no llega, salta el error y la transacción entera
+        # se deshace: no queda ni el préstamo ampliado ni el pedido confirmado.
+        self._revalidar_disponibilidad()
+        return lineas
 
     def action_cancelar(self):
         """Libera la reserva. No se puede cancelar lo que ya está cerrado."""
@@ -368,19 +437,28 @@ class EntezaStockLoan(models.Model):
                 detalle='\n'.join(faltas),
             ))
 
-    def _fecha_traslado(self):
-        """Fecha del traslado de ida = inicio del préstamo − días de antelación.
+    @api.model
+    def _fecha_traslado_de(self, inicio):
+        """Fecha del traslado de ida = inicio del alquiler − días de antelación.
 
         Los días son un parámetro único para todas las rutas (`[PENDIENTE-3]`, decidido el
         2026-08-01). Si algún día dependen del par de almacenes, este es el sitio donde
-        cambiarlo: nadie más calcula esta fecha.
+        cambiarlo: **nadie más calcula esta fecha**.
+
+        Es `@api.model` porque quien decide si una necesidad nueva cabe en un préstamo ya
+        abierto necesita la fecha ANTES de tener el préstamo (§7.2): la agrupación es por
+        fecha de traslado exacta, así que calcularla en otro sitio con otra fórmula rompería
+        el criterio sin que se note.
         """
+        dias = self._parametro('dias_antelacion_traslado', 3)
+        return fields.Date.to_date(inicio) - timedelta(days=dias)
+
+    def _fecha_traslado(self):
+        """Fecha de traslado de este préstamo, a partir de la primera línea que empieza."""
         self.ensure_one()
         if not self.line_ids:
             return False
-        inicio = min(self.line_ids.mapped('date_from'))
-        dias = self._parametro('dias_antelacion_traslado', 3)
-        return fields.Date.to_date(inicio) - timedelta(days=dias)
+        return self._fecha_traslado_de(min(self.line_ids.mapped('date_from')))
 
     # ------------------------------------------------------------------
     # Puntos de enganche para la facturación (PRP §9)

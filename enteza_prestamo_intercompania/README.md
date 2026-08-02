@@ -124,6 +124,55 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+### Un préstamo es un VIAJE, no un pedido (`19.0.3.1.0`)
+
+**Petición del cliente, 2026-08-02**, y un hueco real: la versión anterior creaba un préstamo
+por cada confirmación. Dos eventos del mismo día que necesitaran material de la otra compañía
+generaban dos documentos y, con la entrega 3, **dos pares de albaranes** para el mismo porte.
+
+Ahora, antes de crear, se busca un préstamo vivo para la misma **ruta** y la misma **fecha de
+traslado exacta**. Si existe, el material se le añade.
+
+- La agrupación es por fecha de traslado exacta, que es lo que dice el §7.2 del PRP. Un evento
+  del sábado y otro del domingo dan fechas distintas: **son dos viajes**, y así se quedan.
+- Solo se reutilizan préstamos en `reserved` o `approved`. Un `draft` es trabajo a medias de
+  otra persona; desde `in_transit` el camión ya salió y lo que llegue después necesita un
+  viaje nuevo por fuerza.
+- `_fecha_traslado_de()` es `@api.model` justamente para esto: quien decide si una necesidad
+  cabe en un préstamo abierto necesita la fecha **antes** de tener el préstamo. Calcularla en
+  otro sitio con otra fórmula rompería el criterio de agrupación sin que se note.
+
+#### Cómo convive con la aprobación
+
+Decisión del cliente: **no se reabre lo ya firmado.**
+
+| Estado | Al llegar material nuevo |
+|---|---|
+| `reserved` | Se añade y ya está. No hay nada que refirmar |
+| `approved` | Se añade con `qty_approved = 0`. El préstamo **sigue aprobado** y avisa de que tiene material pendiente. El responsable pulsa **«Aprobar lo añadido»** y firma solo el incremento |
+| `in_transit` en adelante | No se toca. Viaje nuevo |
+
+🔴 **El material acumulado queda comprometido en el acto**, sin esperar a la firma:
+`_qty_comprometida()` devuelve `qty_reserved` mientras `qty_approved` esté a cero. No hay ni
+un instante en el que otro comercial pueda vender esas unidades. La firma hace falta para
+**mover** el material, no para reservarlo.
+
+`action_aprobar` solo rellena las líneas **sin firmar**. Es lo que distingue «material nuevo
+que nadie ha visto» de «el responsable decidió aprobar menos»: igualar `qty_approved` a
+`qty_reserved` sin mirar desharía en silencio el recorte de la aprobación anterior. Cubierto
+por `test_aprobar_lo_añadido_firma_solo_el_incremento`.
+
+De paso se corrigió que las líneas quedaban **de solo lectura en cuanto el préstamo estaba
+aprobado**, así que el ajuste de `qty_approved` que pide el §7.3 no se podía hacer desde
+ninguna pantalla. Ahora se pueden editar hasta `in_transit`.
+
+#### Lo que esto deja pendiente
+
+Al juntar varios pedidos en un préstamo, **cancelar uno solo tiene que retirar su parte y
+dejar el resto**. Se puede hacer porque cada línea lleva su `sale_line_id`, pero hoy **no está
+implementado**: cancelar un pedido no toca el préstamo. Es trabajo de la fase 4 (§7.1, las
+reservas sobrantes).
+
 ### Dos fallos que costó una prueba real (`19.0.3.0.1`)
 
 Al probar el diálogo **no apareció nada**. Las dos causas eran independientes y ninguna daba

@@ -37,26 +37,35 @@ class TestConfirmacionConPrestamo(TransactionCase):
             'is_storable': True,
             'company_id': False,
         })
+        # Segundo producto para poder montar dos pedidos que NO compitan por el mismo stock:
+        # así las cifras de las pruebas de acumulación se leen sin hacer cuentas.
+        cls.producto_b = cls.env['product.product'].create({
+            'name': 'Mesa plegable (test)',
+            'uom_id': cls.env.ref('uom.product_uom_unit').id,
+            'rent_ok': True,
+            'is_storable': True,
+            'company_id': False,
+        })
         cls.cliente = cls.env['res.partner'].create({'name': 'Cliente Test'})
 
         cls.desde = Datetime.now() + timedelta(days=10)
         cls.hasta = Datetime.now() + timedelta(days=12)
 
-    def _dar_stock(self, cantidad, almacen):
+    def _dar_stock(self, cantidad, almacen, producto=None):
         quant = self.env['stock.quant'].with_company(almacen.company_id).create({
-            'product_id': self.producto.id,
+            'product_id': (producto or self.producto).id,
             'inventory_quantity': cantidad,
             'location_id': almacen.lot_stock_id.id,
         })
         quant.action_apply_inventory()
 
-    def _pedido(self, cantidad):
+    def _pedido(self, cantidad, producto=None, desde=None, hasta=None):
         return self.env['sale.order'].with_context(in_rental_app=True).create({
             'partner_id': self.cliente.id,
-            'rental_start_date': self.desde,
-            'rental_return_date': self.hasta,
+            'rental_start_date': desde or self.desde,
+            'rental_return_date': hasta or self.hasta,
             'order_line': [Command.create({
-                'product_id': self.producto.id,
+                'product_id': (producto or self.producto).id,
                 'product_uom_qty': cantidad,
             })],
         })
@@ -226,6 +235,142 @@ class TestConfirmacionConPrestamo(TransactionCase):
         # El déficit sigue a la vista en la línea: es lo único que impide perderlo de vista.
         pedido.order_line.invalidate_recordset(['enteza_falta'])
         self.assertEqual(pedido.order_line.enteza_falta, 15)
+
+    # ------------------------------------------------------------------
+    # Acumulación: un préstamo es un VIAJE, no un pedido
+    # ------------------------------------------------------------------
+
+    def _confirmar_con_prestamo(self, pedido):
+        self._abrir_dialogo(pedido).action_confirmar()
+
+    def test_dos_pedidos_de_la_misma_fecha_van_en_un_solo_prestamo(self):
+        """Lo que pidió el cliente: un viaje, un documento, un par de albaranes."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        primero = self._pedido(95)
+        self._confirmar_con_prestamo(primero)
+        segundo = self._pedido(10, producto=self.producto_b)
+        self._confirmar_con_prestamo(segundo)
+
+        prestamos = self.env['enteza.stock.loan'].search([])
+        self.assertEqual(len(prestamos), 1, 'Los dos pedidos comparten viaje')
+        self.assertEqual(len(prestamos.line_ids), 2)
+        self.assertEqual(prestamos.origin_order_ids, primero | segundo)
+        self.assertEqual(
+            set(prestamos.line_ids.mapped('product_id')),
+            {self.producto, self.producto_b},
+        )
+
+    def test_fechas_de_traslado_distintas_son_viajes_distintos(self):
+        """Un evento del sábado y otro del domingo no caben en el mismo porte."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        otro_dia = self._pedido(
+            10, producto=self.producto_b,
+            desde=self.desde + timedelta(days=1), hasta=self.hasta + timedelta(days=1),
+        )
+        self._confirmar_con_prestamo(otro_dia)
+
+        prestamos = self.env['enteza.stock.loan'].search([])
+        self.assertEqual(len(prestamos), 2)
+        self.assertEqual(len(set(prestamos.mapped('date_transfer'))), 2)
+
+    def test_se_acumula_sobre_un_prestamo_ya_aprobado_sin_reabrirlo(self):
+        """El responsable no tiene que refirmar lo que ya autorizó."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        prestamo = self.env['enteza.stock.loan'].search([])
+        prestamo.action_aprobar()
+        self.assertEqual(prestamo.state, 'approved')
+        self.assertFalse(prestamo.tiene_pendiente_aprobacion)
+
+        self._confirmar_con_prestamo(self._pedido(10, producto=self.producto_b))
+
+        self.assertEqual(len(self.env['enteza.stock.loan'].search([])), 1)
+        self.assertEqual(prestamo.state, 'approved', 'No se reabre lo ya aprobado')
+        self.assertTrue(prestamo.tiene_pendiente_aprobacion)
+
+        nueva = prestamo.line_ids.filtered(
+            lambda linea: linea.product_id == self.producto_b
+        )
+        self.assertEqual(nueva.qty_reserved, 10)
+        self.assertEqual(nueva.qty_approved, 0, 'Reservada, pero sin firmar')
+
+    def test_el_material_acumulado_queda_comprometido_antes_de_firmarse(self):
+        """🔴 No puede haber una ventana en la que otro comercial venda esas unidades.
+
+        `_qty_comprometida()` devuelve `qty_reserved` mientras `qty_approved` esté a cero,
+        así que la reserva protege desde el instante en que se añade la línea. La firma hace
+        falta para MOVER el material, no para reservarlo.
+        """
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        self.env['enteza.stock.loan'].search([]).action_aprobar()
+        self._confirmar_con_prestamo(self._pedido(10, producto=self.producto_b))
+
+        motor = self.env['enteza.disponibilidad'].sudo()
+        libre = motor.disponible(
+            self.producto_b, self.almacen_otra, self.desde, self.hasta,
+        )[self.producto_b.id]
+
+        self.assertEqual(libre, 40, 'De las 50 de Jerez, 10 ya están comprometidas')
+
+    def test_aprobar_lo_añadido_firma_solo_el_incremento(self):
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        prestamo = self.env['enteza.stock.loan'].search([])
+        prestamo.action_aprobar()
+        # El responsable recorta a mano lo que autoriza de la primera línea.
+        primera = prestamo.line_ids
+        primera.qty_approved = 12
+
+        self._confirmar_con_prestamo(self._pedido(10, producto=self.producto_b))
+        prestamo.action_aprobar()
+
+        self.assertFalse(prestamo.tiene_pendiente_aprobacion)
+        self.assertEqual(primera.qty_approved, 12, 'El recorte del responsable se respeta')
+        nueva = prestamo.line_ids - primera
+        self.assertEqual(nueva.qty_approved, 10)
+
+    def test_aprobar_sin_nada_pendiente_avisa(self):
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._confirmar_con_prestamo(self._pedido(95))
+        prestamo = self.env['enteza.stock.loan'].search([])
+        prestamo.action_aprobar()
+
+        with self.assertRaises(UserError):
+            prestamo.action_aprobar()
+
+    def test_no_se_acumula_sobre_un_prestamo_ya_trasladado(self):
+        """Desde `in_transit` el camión salió: lo que llegue después es otro viaje."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        prestamo = self.env['enteza.stock.loan'].search([])
+        prestamo.action_aprobar()
+        prestamo.state = 'in_transit'
+
+        self._confirmar_con_prestamo(self._pedido(10, producto=self.producto_b))
+
+        prestamos = self.env['enteza.stock.loan'].search([])
+        self.assertEqual(len(prestamos), 2, 'El material nuevo necesita un viaje nuevo')
 
     # ------------------------------------------------------------------
     # Guardas
