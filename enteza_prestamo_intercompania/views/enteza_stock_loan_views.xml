@@ -61,6 +61,12 @@
                             invisible="state not in ('lent', 'partially_returned')"
                             groups="enteza_prestamo_intercompania.group_prestamo_responsable"
                             help="Calcula cuánto conviene devolver y cuánto dejar donde está."/>
+                    <button name="action_cerrar_con_diferencia" type="object"
+                            string="Cerrar con diferencia"
+                            invisible="state not in ('lent', 'partially_returned')"
+                            groups="enteza_prestamo_intercompania.group_prestamo_responsable"
+                            confirm="El material que falte se dará por no devuelto y quedará anotado. ¿Seguro?"
+                            help="Para material roto, perdido o que no va a volver."/>
                     <button name="action_volver_borrador" type="object" string="Volver a borrador"
                             invisible="state not in ('reserved', 'cancelled')"
                             groups="enteza_prestamo_intercompania.group_prestamo_responsable"/>

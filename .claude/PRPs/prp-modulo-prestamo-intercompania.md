@@ -1091,8 +1091,20 @@ mismo resultado y es viable.
 Sigue **pendiente** la detección de reservas huérfanas por otras vías que la cancelación (que
 sí libera desde `19.0.4.1.0`).
 
-**Fase 5 — Pulido.**
-Traducciones, mensajes de error claros, README, casos límite del §12.
+**Fase 5 — Pulido. ✅ HECHA (`19.0.7.0.0`).**
+Casos límite del §12 que seguían abiertos: 2 (cambio de fechas), 3 (material que no vuelve),
+8 (zona horaria en la fecha de traslado) y 12 (reserva huérfana). Mensajes y README al día.
+
+**No se incluye `i18n/es_ES.po`**: los textos fuente ya están en castellano y ese fichero
+sería una traducción de español a español.
+
+Quedan documentados y SIN resolver, por orden de importancia:
+- **Ampliar un pedido confirmado no reserva en el acto.** Lo recoge el análisis nocturno
+  (fase 4), no el diálogo. Es el hueco conocido del módulo.
+- **Unidades de medida distintas de la de referencia** (§12, caso 7): las cantidades no se
+  convierten, igual que hace el nativo con `product_uom_qty`.
+- **Prueba de concurrencia real** (§15, prueba 10): no se puede escribir con `TransactionCase`.
+- `[PENDIENTE-6]` (material perdido) y `[PENDIENTE-7]` (facturación), que son de negocio.
 
 **Fase A — Vista calendario de eventos (§10.1). Independiente del resto.**
 No depende de ninguna otra fase ni del inventario: `event_date` ya está informado en los 1.153

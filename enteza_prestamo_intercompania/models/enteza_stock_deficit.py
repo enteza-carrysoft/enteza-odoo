@@ -133,11 +133,42 @@ class EntezaStockDeficit(models.Model):
             })
 
         creados = self.sudo().create(valores) if valores else self.browse()
+        self._marcar_reservas_huerfanas()
         _logger.info(
             'Análisis de préstamos: %s intervalos revisados, %s déficits',
             len(intervalos), len(creados),
         )
         return creados
+
+    @api.model
+    def _marcar_reservas_huerfanas(self):
+        """Préstamos reservados cuyo pedido de origen ya no existe (§12, caso 12).
+
+        La liberación al cancelar (`19.0.4.1.0`) debería dejar esto a cero, pero es
+        precisamente por eso por lo que hace falta comprobarlo: si algún día falla, el
+        material se queda inmovilizado y **nadie se entera**. Es dinero parado que no aparece
+        en ninguna pantalla.
+
+        No se libera automáticamente: se marca. Deshacer una reserva por si acaso es peor que
+        enseñarla.
+        """
+        vivos = self.env['enteza.stock.loan'].sudo().search([
+            ('state', 'in', ('reserved', 'approved')),
+            ('revision_pendiente', '=', False),
+        ])
+        for prestamo in vivos:
+            ventas = prestamo.line_ids.sale_line_id
+            if not ventas:
+                # Propuesto por lotes o creado a mano: no tiene pedido que vigilar.
+                continue
+            if all(venta.state == 'cancel' for venta in ventas.order_id):
+                prestamo._marcar_para_revision(_(
+                    'Todos los pedidos que justificaban este préstamo están cancelados y el '
+                    'material sigue comprometido.'
+                ))
+                _logger.warning(
+                    'Reserva huérfana detectada en el préstamo %s', prestamo.name,
+                )
 
     @api.model
     def _buscar_quien_presta(self, producto, almacen, desde, hasta, falta):

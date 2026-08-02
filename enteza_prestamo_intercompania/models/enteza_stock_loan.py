@@ -480,7 +480,13 @@ class EntezaStockLoan(models.Model):
         el criterio sin que se note.
         """
         dias = self._parametro('dias_antelacion_traslado', 3)
-        return fields.Date.to_date(inicio) - timedelta(days=dias)
+        # 🔴 A la zona horaria del usuario antes de quedarse con el día (§12, caso 8). Los
+        # `Datetime` de Odoo son UTC, y un alquiler que empieza a las 00:30 del sábado en
+        # España está guardado como las 22:30 del viernes: quedarse con la fecha en crudo
+        # programaría el traslado un día antes de lo que ve el almacén.
+        inicio = fields.Datetime.to_datetime(inicio)
+        local = fields.Datetime.context_timestamp(self, inicio).date()
+        return local - timedelta(days=dias)
 
     def _fecha_traslado(self):
         """Fecha de traslado de este préstamo, a partir de la primera línea que empieza."""
@@ -792,6 +798,40 @@ class EntezaStockLoan(models.Model):
             'view_mode': 'form',
             'target': 'new',
         }
+
+    def action_cerrar_con_diferencia(self):
+        """Cierra un préstamo cuyo material no va a volver (§12, caso 3).
+
+        Roto, perdido o simplemente no aparece. El préstamo no se puede quedar en `lent` para
+        siempre inmovilizando una cifra que ya no significa nada, pero **cerrarlo tiene que
+        dejar rastro**: qué faltaba y quién lo decidió.
+
+        Cómo se salda económicamente es `[PENDIENTE-6]` y está fuera del módulo: aquí solo se
+        cierra el documento y se anota la diferencia.
+        """
+        self.ensure_one()
+        self._comprobar_responsable()
+        if self.state not in ('lent', 'partially_returned'):
+            raise UserError(_(
+                'Solo se puede cerrar con diferencia un préstamo entregado. El %s está en '
+                'estado «%s».', self.name, dict(ESTADOS).get(self.state, self.state),
+            ))
+        faltante = self.qty_pendiente_devolver
+        if not faltante:
+            raise UserError(_(
+                'El préstamo %s no tiene nada pendiente: ciérralo por el circuito normal.',
+                self.name,
+            ))
+        self._anotar(_(
+            'Cerrado con una diferencia de %(cantidad)s unidades sin devolver, por decisión '
+            'de %(usuario)s.',
+            cantidad=faltante, usuario=self.env.user.display_name,
+        ))
+        self._marcar_para_revision(_(
+            'Se cerró con %s unidades sin devolver. Falta decidir cómo se salda.', faltante,
+        ))
+        self.state = 'returned'
+        return True
 
     def _crear_albaranes_devolucion(self, cantidades):
         """Genera el par de albaranes de vuelta: receptora → tránsito → prestamista.

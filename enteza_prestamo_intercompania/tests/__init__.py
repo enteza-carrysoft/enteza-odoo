@@ -6,3 +6,4 @@ from . import test_albaranes
 from . import test_cancelacion
 from . import test_devolucion
 from . import test_analisis
+from . import test_casos_limite

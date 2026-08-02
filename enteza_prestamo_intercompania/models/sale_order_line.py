@@ -120,7 +120,20 @@ class SaleOrderLine(models.Model):
                                  precision_rounding=linea.product_uom_id.rounding) > 0:
                     reducciones.append((linea, quitado))
 
+        # §12, caso 2: cambiar las fechas de un pedido confirmado mueve el intervalo de la
+        # reserva, y en las fechas nuevas puede no haber material aunque lo hubiera en las
+        # viejas. No se supone que si valía antes vale ahora.
+        cambian_fechas = {'start_date', 'return_date'} & set(vals)
+        afectadas = self.env['sale.order.line']
+        if cambian_fechas:
+            afectadas = self.filtered(
+                lambda linea: linea.state == 'sale' and linea.is_rental
+            )
+
         resultado = super().write(vals)
+
+        if afectadas:
+            afectadas._enteza_reajustar_fechas_prestamo()
 
         for linea, quitado in reducciones:
             linea._enteza_liberar_prestamo(cantidad=quitado, motivo=_(
@@ -131,6 +144,38 @@ class SaleOrderLine(models.Model):
                 pedido=linea.order_id.name,
             ))
         return resultado
+
+    def _enteza_reajustar_fechas_prestamo(self):
+        """Las fechas del pedido han cambiado: el préstamo tiene que enterarse (§12, caso 2).
+
+        - Si el préstamo sigue **reservado**, se mueven las fechas de su línea y se revalida
+          contra las nuevas. Si en esas fechas no hay material, salta el error y el cambio de
+          fecha se deshace entero: es preferible a confirmar un pedido que no se puede servir.
+        - Si ya está **aprobado o en marcha**, no se toca: hay un viaje programado y puede que
+          albaranes impresos. Se marca para revisión, que es lo que pide el §12.
+        """
+        for linea in self:
+            lineas_prestamo = self.env['enteza.stock.loan.line'].sudo().search([
+                ('sale_line_id', '=', linea.id),
+            ])
+            for prestamo in lineas_prestamo.loan_id:
+                if prestamo.state in ('cancelled', 'returned'):
+                    continue
+                suyas = lineas_prestamo.filtered(lambda lin: lin.loan_id == prestamo)
+                if prestamo.state != 'reserved':
+                    prestamo._marcar_para_revision(_(
+                        'El pedido %(pedido)s ha cambiado de fechas (%(desde)s a %(hasta)s) '
+                        'y este traslado ya estaba aprobado.',
+                        pedido=linea.order_id.name,
+                        desde=linea.start_date, hasta=linea.return_date,
+                    ))
+                    continue
+                suyas.write({
+                    'date_from': linea.start_date,
+                    'date_to': linea.return_date,
+                })
+                prestamo.date_transfer = prestamo._fecha_traslado()
+                prestamo._revalidar_disponibilidad()
 
     def _enteza_liberar_prestamo(self, cantidad=None, motivo=''):
         """Retira de los préstamos vivos lo que estas líneas tenían comprometido.

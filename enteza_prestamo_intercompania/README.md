@@ -126,6 +126,20 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+## Fase 5 · Casos límite (`19.0.7.0.0`)
+
+Los cuatro del §12 que seguían abiertos de verdad:
+
+| Caso | Qué hace ahora |
+|---|---|
+| **2 · Cambio de fechas de un pedido confirmado** | Si el préstamo está **reservado**, se mueven las fechas de su línea, se recalcula la de traslado y **se revalida contra las nuevas**: si en esas fechas no hay material, salta el error y el cambio se deshace entero. Si ya está **aprobado**, no se toca —hay un viaje programado y quizá albaranes impresos— y se marca para revisión |
+| **3 · Material que no vuelve** | Botón **«Cerrar con diferencia»** para el responsable: cierra el préstamo, anota cuántas unidades faltaron y quién lo decidió, y lo deja marcado. Cómo se salda es `[PENDIENTE-6]` y está fuera del módulo |
+| **8 · Fechas con hora** | La fecha de traslado se calcula **en la zona horaria del usuario**. Un alquiler que empieza a las 00:30 del sábado está guardado como las 22:30 del viernes en UTC: en crudo se programaría el porte un día antes de lo que ve el almacén |
+| **12 · Reserva huérfana** | El análisis nocturno marca los préstamos vivos cuyos pedidos de origen están todos cancelados. **No los libera solo**: deshacer una reserva por si acaso es peor que enseñarla |
+
+Sobre el `i18n/es_ES.po` que pedía el §10: **no se incluye a propósito**. Los textos fuente ya
+están escritos en castellano, así que ese fichero sería una traducción de español a español.
+
 ## Fase 4 · La red de seguridad (`19.0.6.0.0`)
 
 Un cron nocturno recorre la demanda confirmada de los próximos 30 días (parámetro) y anota lo

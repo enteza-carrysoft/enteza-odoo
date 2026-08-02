@@ -1,20 +1,23 @@
 {
     'name': 'Enteza - Préstamo de material entre compañías',
-    'version': '19.0.6.0.0',
+    'version': '19.0.7.0.0',
     'category': 'Inventory/Inventory',
     'summary': 'Préstamo de material de alquiler entre las compañías del grupo',
     'description': """
 Préstamo de material entre compañías del grupo
 ==============================================
 
-Detecta déficits de material de alquiler en una compañía, comprueba si la otra tiene
+Detecta déficits de material de alquiler en una compañía, comprueba si otra del grupo tiene
 unidades libres en esas fechas y gestiona el traslado de ida y vuelta.
 
-**Fase 2 en curso.** El motor de cálculo (fase 1) y el documento de préstamo con su ciclo
-de vida: numeración, estados, reserva en firme, aprobación e interfaz.
-
-Todavía **no** engancha en la confirmación de pedidos ni genera albaranes: eso llega en las
-dos entregas siguientes de esta misma fase.
+- Al montar el presupuesto, el widget de disponibilidad avisa de lo que falta y de quién
+  puede prestarlo.
+- Al confirmar, un diálogo propone el préstamo y solo reserva si el comercial acepta.
+- Un préstamo es un viaje: las necesidades de la misma ruta y fecha se acumulan en un solo
+  documento y un solo par de albaranes.
+- El traslado físico lo autoriza siempre una persona.
+- Al volver el material, calcula cuánto conviene devolver y cuánto dejar donde está.
+- Un cron nocturno recoge lo que se escapa del camino de la confirmación.
 
 No factura ni genera asientos contables (ver README, «Punto de enganche para facturación»).
 """,
