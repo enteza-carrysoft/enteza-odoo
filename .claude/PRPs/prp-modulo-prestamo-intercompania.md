@@ -172,13 +172,32 @@ Por tanto, **en el momento de confirmar el pedido de alquiler**, de forma síncr
 1. Se comprueba la disponibilidad real en la compañía del pedido, para las fechas del pedido.
 2. Si no hay suficiente, se comprueba **inmediatamente** si la otra compañía tiene unidades
    libres en esas fechas.
-3. Si las tiene, **se reservan en firme en la otra compañía** en ese mismo instante, y se crea el
-   préstamo en estado `reserved`, con el **traslado programado** para la fecha que corresponda
-   (§7.2, punto 3).
+3. Si las tiene, **se le enseña al comercial lo que va a pasar y se le pide permiso** (D5.1). Si
+   acepta, **se reservan en firme en la otra compañía** y se crea el préstamo en estado
+   `reserved`, con el **traslado programado** para la fecha que corresponda (§7.2, punto 3).
 4. Si tampoco las tiene, se avisa al comercial del déficit **antes** de dejarle confirmar (§7.0).
 
 **A partir de ese momento, la reserva es firme:** ningún otro pedido, de ninguna de las dos
 compañías, puede contar con ese material para esas fechas.
+
+#### D5.1 · El préstamo automático PREGUNTA antes de reservar 🔴
+
+**Decisión del cliente, 2026-08-02. Corrige la versión anterior de este documento**, que
+reservaba primero y avisaba después.
+
+Cuando el déficit se puede cubrir con la otra compañía, la confirmación **se detiene y abre un
+diálogo** que dice qué falta, quién lo presta, desde qué almacén y qué día habría que
+trasladarlo. El pedido **no se confirma y no se reserva nada** hasta que el comercial acepta.
+
+*Motivo:* comprometer material de la otra sociedad no es un detalle de implementación, es una
+decisión comercial con consecuencias para el almacén de al lado. El equipo está arrancando en
+Odoo 19 y llevando el almacén en paralelo con otra aplicación (§17.2): que el sistema mueva
+reservas entre sociedades sin que nadie lo haya visto es exactamente lo que destruye la
+confianza en el sistema nuevo. Cuando haya rodaje se puede revisar; hoy no.
+
+Lo que **no** cambia: seguir sin poder servir el pedido ni siquiera con préstamo se trata igual
+que antes (§7.0.1), y el traslado físico sigue necesitando la aprobación de un responsable (D2).
+Aquí se añade una decisión humana más, no se sustituye ninguna.
 
 > Esto **no elimina** el análisis por lotes del §7.1: sigue haciendo falta para detectar déficits
 > que aparecen por cambios posteriores (pedidos modificados, devoluciones que no llegan,
@@ -191,7 +210,11 @@ compañías, puede contar con ese material para esas fechas.
 1. Calcular, por producto / compañía / fecha, el **parque disponible** y la **demanda comprometida**
    de alquiler.
 2. **Al confirmar un pedido**, comprobar la disponibilidad, buscar en la otra compañía lo que
-   falte y **reservarlo en firme** en ese instante (D5, §7.0). *Es la función principal.*
+   falte, **proponérselo al comercial** y, si acepta, **reservarlo en firme** en ese instante
+   (D5 y D5.1, §7.0). *Es la función principal.*
+2bis. **Enseñar el déficit y quién puede cubrirlo en el widget de disponibilidad** de la línea de
+   pedido, para que el comercial lo sepa mientras monta el presupuesto y no al confirmarlo
+   (§10.3).
 3. Detectar por lotes los **déficits** que aparezcan después, como red de seguridad.
 4. Generar **propuestas de préstamo**, agrupadas y con fecha de traslado calculada.
 5. Ejecutar el **traslado de ida** al aprobarse (dos albaranes vía tránsito).
@@ -463,32 +486,68 @@ filtrable sin recalcular.
 **Es el flujo que más se va a ejecutar y el que más importa.** Se engancha en
 `sale.order.action_confirm()`, antes de que Odoo confirme.
 
+Desde D5.1 el flujo tiene **dos pasos separados por una decisión humana**, y eso obliga a
+partirlo en dos transacciones. No es un capricho de interfaz: condiciona el bloqueo de
+concurrencia, y hacerlo mal reintroduce justo el problema que el §5.6 existe para evitar.
+
+**Paso 1 — al pulsar «Confirmar» (solo mira, no escribe):**
+
 ```
 Comercial pulsa «Confirmar» en un pedido de alquiler
    │
-   ├─ (bloqueo de concurrencia — §5.6)
+   ├─ ¿viene ya del diálogo (contexto `enteza_prestamo_aceptado`)?
+   │     SÍ → saltar todo esto y confirmar. (Sin esto, bucle infinito.)
    │
    ├─ Para cada línea de alquiler del pedido:
-   │     falta = cantidad - disponible(producto, compañía_pedido, fechas_pedido)
+   │     falta = cantidad - disponible(producto, almacén_pedido, fechas_pedido)
    │
    ├─ ¿falta <= 0 en todas las líneas?
    │     SÍ → confirmar con normalidad. Fin.
    │
-   ├─ Hay faltas: para cada una, mirar la OTRA compañía
-   │     prestable = prestable(producto, otra_compañía, fechas_pedido)
+   ├─ Hay faltas: para cada una, mirar los almacenes de la OTRA compañía
+   │     prestable = prestable(producto, almacén_otra_cia, fechas_pedido)
    │
    ├─ ¿prestable cubre la falta?
-   │     SÍ  → reservar en firme en la otra compañía
-   │           crear enteza.stock.loan en estado `reserved`
-   │           con date_transfer = inicio_alquiler - dias_antelacion
-   │           confirmar el pedido
-   │           avisar al comercial: «cubierto con préstamo de <compañía>,
-   │           traslado programado para el <fecha>»
+   │     SÍ o PARCIAL → NO reservar todavía.
+   │           Devolver la acción que abre el diálogo (D5.1) con la
+   │           propuesta: producto, falta, quién presta, desde qué
+   │           almacén, fecha de traslado y qué queda sin cubrir.
    │
-   │     PARCIAL o NO →  §7.0.1
+   │     NADA en la otra compañía → §7.0.1
+   │
+   └─ (no se ha tomado ningún bloqueo: no se ha escrito nada)
+```
+
+**Paso 2 — el comercial acepta en el diálogo:**
+
+```
+   ├─ (AQUÍ sí: bloqueo de concurrencia — §5.6)
+   │
+   ├─ 🔴 RECALCULAR el déficit y el prestable desde cero
+   │     Los números del diálogo son de hace unos segundos y NO son
+   │     de fiar: otro comercial ha podido reservar entretanto.
+   │
+   ├─ ¿siguen cuadrando?
+   │     SÍ → crear enteza.stock.loan en `reserved`
+   │           date_transfer = inicio_alquiler - dias_antelacion
+   │           confirmar el pedido con `enteza_prestamo_aceptado`
+   │
+   │     NO → NO reservar. Cerrar el diálogo con un mensaje explícito
+   │           («mientras decidías, otro pedido se llevó 8 uds»)
+   │           y devolver al comercial al pedido sin confirmar.
    │
    └─ (liberar bloqueo al cerrar la transacción)
 ```
+
+🔴 **El bloqueo NO puede mantenerse mientras el diálogo está abierto.** Sería una transacción
+abierta durante minutos, bloqueando a todos los demás comerciales sobre ese producto — un
+cuelgue en temporada alta, que es cuando más duele. De ahí que la única verdad sea el recálculo
+del paso 2: **el diálogo es una propuesta, no una reserva**. Decirlo también en el texto del
+diálogo, para que nadie lo interprete como un compromiso.
+
+Consecuencia para las pruebas: la prueba 10 del §15 (concurrencia) tiene que atacar el **paso
+2**, no el 1. Y hace falta una prueba nueva: propuesta que deja de ser válida entre los dos
+pasos, que debe acabar sin préstamo y sin pedido confirmado.
 
 #### 7.0.1 Qué pasa si no hay material ni en la otra compañía
 
@@ -680,6 +739,10 @@ Todos en `res.config.settings` (ámbito compañía) o `ir.config_parameter`, **n
   compañía puede cubrirlo.
 - **Botón inteligente** en el pedido de alquiler: si un pedido está cubierto gracias a un
   préstamo, que se vea desde el pedido.
+- **Widget de disponibilidad ampliado** en la línea de pedido: cuando falta material, decir
+  cuánto falta y qué compañía puede prestarlo (**§10.3**).
+- **Diálogo de confirmación** cuando el préstamo es necesario, antes de reservar nada
+  (**D5.1**, §7.0).
 - **Todo en castellano.** La instancia trabaja en español; las etiquetas, los mensajes de error y
   los nombres de menú van en castellano. Incluye `i18n/es_ES.po`.
 
@@ -765,6 +828,95 @@ prefijo antiguo, la instalación del módulo fallará con un error de referencia
 Es un ajuste de compañía y afecta a todos los usuarios. **El módulo NO debe activarlo ni
 desactivarlo por su cuenta**, pero **sí debe comprobarlo al instalarse y avisar con un mensaje
 claro** si estuviera desactivado, porque sin él la vista calendario sale incompleta.
+
+### 10.3 El widget de disponibilidad tiene que enseñar la otra compañía 🔴
+
+**Petición del cliente, 2026-08-02. No estaba en la versión anterior de este documento.**
+
+Sin esto, D5.1 no se sostiene: si el comercial descubre que hay que pedir material prestado
+solo cuando pulsa «Confirmar» y le salta un diálogo, el diálogo es una sorpresa. Tiene que
+poder verlo **mientras monta el presupuesto**.
+
+#### Por qué hoy no se ve
+
+El widget nativo de la ficha de pedido (icono de gráfico en cada línea) muestra
+`virtual_available_at_date`, y ese campo está **acotado a cero** en el origen
+(`sale_stock_renting/models/sale_order_line.py`, `_compute_qty_at_date`):
+
+```python
+virtual_available_at_date = max(rentable_qty - rented_qty_during_period, 0)
+```
+
+Un comercial que pide 95 unidades teniendo 80 ve «Disponible para alquilar: 80» y nada más.
+**No ve cuánto falta, ni que la otra compañía lo tiene, ni que al confirmar se le va a
+reservar.** Exactamente los tres datos que necesita para decidir.
+
+#### Qué se enseña — decisión del cliente (2026-08-02)
+
+**Solo cuando falta.** Mientras haya material de sobra, el widget se queda como está hoy: la
+inmensa mayoría de las líneas se sirven sin préstamo y no deben ganar ruido. La sección de
+préstamo aparece únicamente si la propia compañía se queda corta:
+
+```
+┌──────────────────────────────────────────┐
+│ Disponibilidad                           │
+│  Disponible para alquilar     80 Uds     │
+│  14/08/2026 a 16/08/2026                 │
+│                                          │
+│  ⚠ Faltan 15 Uds                         │
+│  Stileum las presta desde Jerez          │
+│  Se reservan al confirmar                │
+│                                          │
+│  → Ver alquileres                        │
+└──────────────────────────────────────────┘
+```
+
+Si la otra compañía **tampoco** lo cubre entero, se dice lo que cubre y lo que queda suelto.
+Nunca dar a entender que está resuelto cuando no lo está.
+
+#### Cómo se implementa — extender, no reescribir
+
+**No hace falta un widget nuevo.** El nativo es `qty_at_date` de `sale_stock`, que
+`sale_stock_renting` ya parchea para alquiler
+(`static/src/widgets/qty_at_date_widget.js` y `.xml`). Se hace lo mismo, un escalón más:
+
+1. **Campos calculados no almacenados** en `sale.order.line`, con prefijo `enteza_`: cuánto
+   falta, cuánto puede prestar la otra compañía y una descripción ya formateada del origen
+   (`«Stileum · Jerez»`).
+2. **Declararlos en `fieldDependencies`** al parchear el descriptor del widget. Es el patrón
+   exacto que usa `sale_stock_renting` para meter `start_date` y `return_date`; sin esto el
+   cliente web no se los trae y el popover los ve vacíos.
+3. **Extender la plantilla** `sale_stock_renting.QtyAtDatePopover` con un bloque bajo
+   `t-if` sobre el campo de déficit.
+
+Tres condiciones que **no** son negociables:
+
+- 🔴 **La cifra del widget y la que decide la reserva salen del mismo método**
+  (`enteza.disponibilidad`). Si el widget dice «Stileum presta 15» y al confirmar se reserva
+  otra cosa, el comercial deja de fiarse de los dos números y del módulo entero. Es la misma
+  razón por la que el motor delega en el nativo en vez de reimplementarlo (§5).
+- **Calcular la parte de la otra compañía solo si la propia se queda corta.** El motor hace una
+  búsqueda por producto (`ensure_one()`); calcularlo siempre dobla el coste de leer cada línea
+  del pedido para no enseñar nada en el 95 % de los casos.
+- **`sudo()` acotado a esa lectura**, porque un comercial de Vimaple no puede leer los quants de
+  Stileum. Se expone **la cifra agregada, nunca los registros**. Mismo criterio que
+  `_prestado_a_terceros` (§5.1). Implica, y conviene tenerlo presente, que los comerciales de
+  cada sociedad pasan a ver el nivel de existencias de la otra.
+
+#### Riesgos concretos de esta parte
+
+- **Lo anterior está leído sobre el código de la 18 EE**, que es la única fuente accesible
+  (`enteza-carrysoft/odoo_enterprise_18`). Los nombres de plantilla y los `xpath` **hay que
+  confirmarlos contra la 19** antes de escribir el parche: si la plantilla cambió de nombre, el
+  `t-inherit` falla y **el bundle entero de assets se cae**, que se manifiesta como pantalla en
+  blanco sin error en el log. Ver `references/owl-acciones-cliente.md`.
+- Añadir assets obliga a la sección `'assets': {'web.assets_backend': [...]}` en el manifiesto,
+  que este módulo todavía no tiene.
+- ⚠️ **`rental_custom` ya añade `total_available` a `sale.order.line`** con un tercer cálculo
+  propio: suma los quants de **todas** las ubicaciones internas de las dos compañías, sin
+  filtrar por almacén ni por compañía y sin conocer el padding ni los préstamos. Hoy no aparece
+  en ninguna vista (comprobado por RPC el 2026-08-02), así que no estorba. **No sacarlo a
+  pantalla ni apoyarse en él**: daría un número distinto del nuestro para la misma pregunta.
 
 ---
 
@@ -871,6 +1023,17 @@ automatización opcional. Después, aprobación y generación de los dos albaran
 terminar, el caso canónico del §1 debe funcionar de punta a punta hasta `lent`, y las pruebas 9 a
 14 del §15 deben pasar.
 
+Se entrega en tres partes, en este orden:
+
+1. ✅ **Documento vivo** (`19.0.2.0.1`): numeración, estados, reserva, aprobación, menú y vistas.
+2. ⬜ **Widget (§10.3) + enganche en `action_confirm` con el diálogo (§7.0, D5.1).** El widget
+   va **antes** que el diálogo, no después: los dos necesitan exactamente el mismo cálculo
+   —cuánto falta y cuánto puede prestar la otra compañía— y hacerlo primero para el widget deja
+   ese método escrito y visible en pantalla, que es la única forma de comprobarlo sin poder
+   ejecutar pruebas. Además, si el widget funciona y el diálogo se retrasa, lo entregado ya
+   sirve: el comercial ve el déficit aunque tenga que resolverlo a mano.
+3. ⬜ **Albaranes**: ubicación de tránsito sin compañía, tipos de operación y doble albarán.
+
 **Fase 3 — Devolución inteligente.**
 Cálculo de retención (§7.5), devoluciones parciales, cierre. Al terminar, el ejemplo de las 100
 prestadas / 30 retenidas / 70 devueltas debe salir solo.
@@ -913,11 +1076,24 @@ El módulo se da por bueno cuando pasan estas pruebas, automatizadas con `Transa
    segundos**.
 8. **Idempotencia del cron.** Ejecutarlo dos veces seguidas no duplica déficits ni propuestas.
 9. **Reserva al confirmar (D5).** Vimaple con 900 unidades confirma un pedido de 1.000 para el
-   15/08 → el pedido queda confirmado, se crea un préstamo en `reserved` por 100 con
-   `date_transfer = 12/08`, y **la disponibilidad de Stileum para esas fechas baja en 100**.
+   15/08 → **se abre el diálogo** (D5.1) proponiendo 100 de Stileum. Al aceptar: el pedido
+   queda confirmado, se crea un préstamo en `reserved` por 100 con `date_transfer = 12/08`, y
+   **la disponibilidad de Stileum para esas fechas baja en 100**.
+9bis. **El diálogo no reserva por sí solo.** Abrir el diálogo y **cancelarlo** debe dejar el
+    pedido **sin confirmar** y **sin ningún préstamo creado**, ni siquiera en `draft`.
+9ter. **La propuesta caduca (§7.0, paso 2).** Entre que se abre el diálogo y se acepta, otro
+    pedido se lleva parte del material: al aceptar **no se reserva nada**, el pedido queda sin
+    confirmar y el comercial recibe un mensaje que dice qué ha cambiado. Es la prueba que
+    justifica que el recálculo del paso 2 exista.
 10. **Concurrencia (§5.6).** Dos confirmaciones simultáneas del mismo artículo y fecha, con stock
     para solo una: **una debe cubrirse y la otra recibir el aviso de déficit**. Nunca las dos.
-    Prueba con transacciones concurrentes reales, no secuenciales.
+    Prueba con transacciones concurrentes reales, no secuenciales. **Atacar el paso 2** del
+    §7.0 (la aceptación del diálogo), que es donde está el bloqueo; atacar el paso 1 no prueba
+    nada porque ahí no se escribe.
+10bis. **El widget avisa antes de confirmar (§10.3).** Línea de 95 unidades con 80 en el almacén
+    propio y 20 en el de la otra compañía → los campos del popover dicen que faltan 15 y que la
+    otra compañía las cubre. Con 95 disponibles en casa, esos campos van vacíos y el widget se
+    comporta como el nativo.
 11. **Doble venta del material prestado.** Tras reservar 100 de Stileum para Vimaple, un pedido
     de Stileum para esas mismas fechas **no puede** contar con esas 100 unidades.
 12. **Liberación al cancelar.** Cancelar el pedido de origen de un préstamo en `reserved` devuelve
@@ -943,9 +1119,14 @@ El módulo se da por bueno cuando pasan estas pruebas, automatizadas con `Transa
 Ninguna bloquea las fases 1 y 2. **Consúltalas antes de la fase que las necesita** en vez de
 elegir por tu cuenta.
 
-- **`[PENDIENTE-1]` Almacenes reales.** Cuántos almacenes tendrá cada compañía y en qué
-  ubicaciones. Hoy solo existe uno. El diseño soporta N, pero hay que saber si el préstamo es
-  siempre entre almacenes concretos o hay que elegir origen. *Necesario para fase 2.*
+- **`[PENDIENTE-1]` Almacenes reales.** *Parcialmente resuelto.* El 2026-08-01 el cliente
+  confirmó que **habrá más de uno por compañía**, así que origen y destino son seleccionables y
+  no se deducen. Hoy hay dos: `Sevilla` (Vimaple) y `Jerez` (Stileum).
+  **Queda por decidir a qué almacén se le pide** cuando la otra compañía tenga varios. Regla por
+  defecto mientras no se diga otra cosa, elegida para no bloquear la fase 2: en el widget
+  (§10.3) se enseña el prestable **agregado** de la otra compañía; al reservar se elige el
+  almacén con **más prestable** y, a igualdad, el de **menor id**. Se puede cambiar después sin
+  tocar la interfaz, porque la elección vive en un solo método.
 - ~~`[PENDIENTE-2]` ¿Los presupuestos cuentan como demanda?~~ **RESUELTO el 2026-08-01:** no
   reservan. El riesgo de que dos comerciales vendan lo mismo se resuelve comprobando y reservando
   **al confirmar** (D5, §7.0), no contando presupuestos.

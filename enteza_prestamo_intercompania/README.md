@@ -11,10 +11,16 @@ entregas siguientes de esta misma fase, en este orden:
 
 1. ✅ **Documento vivo** — lo que hay ahora: se puede crear un préstamo a mano, reservarlo
    (y entonces resta de verdad en la disponibilidad de la prestamista), aprobarlo, cancelarlo.
-2. ⬜ **Enganche en `action_confirm`** — el camino principal (D5): al confirmar un pedido de
-   alquiler, detectar el déficit, buscar en la otra compañía y reservar en firme, con el
-   bloqueo de concurrencia del §5.6.
+2. ⬜ **Widget de disponibilidad + enganche en `action_confirm`** — el camino principal
+   (D5/D5.1). El widget primero: al montar el presupuesto, la ventana flotante de la línea
+   dice cuánto falta y qué compañía puede prestarlo. Después el enganche: al confirmar, un
+   diálogo propone el préstamo y **solo si el comercial acepta** se reserva en firme, con el
+   recálculo y el bloqueo de concurrencia del §5.6.
 3. ⬜ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
+
+El widget va antes que el diálogo a propósito: los dos necesitan el mismo cálculo, y sacarlo
+primero a pantalla es la única forma de comprobarlo sin poder ejecutar pruebas. Si el diálogo
+se retrasara, lo entregado ya sirve por sí solo.
 
 ## Decisiones tomadas el 2026-08-01, que corrigen el PRP
 
@@ -220,11 +226,23 @@ aritmética de `_get_unavailable_qty` ya la prueba Odoo y no se duplica.
 ⚠️ **Sin ejecutar.** No hay instancia de pruebas ni acceso a `odoo-bin --test-enable`. Están
 validadas por sintaxis, no por ejecución.
 
-## Pendiente antes de la fase 2
+## Decisiones del 2026-08-02, para la entrega 2
 
-Del §16 del PRP, necesarios para el flujo de documentos:
+Las dos que faltaban para poder escribir el camino de la confirmación:
 
-- `[PENDIENTE-1]` almacenes reales por compañía
-- `[PENDIENTE-3]` si los 3 días de antelación dependen del par de almacenes
-- `[PENDIENTE-8]` si se puede confirmar un pedido que no se puede servir
-- `[PENDIENTE-9]` quién manda si las dos compañías necesitan el material a la vez
+| | Decisión | Efecto |
+|---|---|---|
+| Préstamo automático | **Pregunta antes de reservar** (PRP D5.1) | `action_confirm` abre un diálogo con la propuesta y **no escribe nada** hasta que el comercial acepta. Corrige el §7.0 anterior, que reservaba y avisaba después |
+| Widget | **Solo avisa cuando falta** (PRP §10.3) | Con material de sobra se comporta como el nativo. La sección de préstamo aparece únicamente si la compañía propia se queda corta |
+
+Consecuencia técnica de la primera, y es el punto delicado de la entrega: **el bloqueo de
+concurrencia no puede mantenerse mientras el diálogo está abierto** —sería una transacción
+abierta durante minutos bloqueando a los demás comerciales—, así que el diálogo es una
+**propuesta** y la verdad se **recalcula al aceptar**. Si entretanto otro pedido se llevó el
+material, no se reserva nada y se dice qué ha cambiado.
+
+Sigue pendiente del §16 del PRP, y no bloquea:
+
+- `[PENDIENTE-1]` a qué almacén se le pide cuando la otra compañía tenga varios. Por defecto,
+  el de más prestable; a igualdad, el de menor id.
+- `[PENDIENTE-5]`, `[PENDIENTE-6]`, `[PENDIENTE-7]`, para fases posteriores.
