@@ -5,3 +5,4 @@ from . import test_confirmacion
 from . import test_albaranes
 from . import test_cancelacion
 from . import test_devolucion
+from . import test_analisis

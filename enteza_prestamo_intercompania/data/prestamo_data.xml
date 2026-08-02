@@ -66,5 +66,22 @@
             <field name="value">7</field>
         </record>
 
+        <!--
+            Cron del análisis por lotes (§7.1). De madrugada porque recorre toda la demanda
+            confirmada del horizonte y no tiene ninguna prisa: su valor está en que la lista
+            esté al día cuando el responsable la mire por la mañana.
+
+            🔴 NO crea préstamos ni mueve nada. Solo analiza.
+        -->
+        <record id="cron_analisis_deficit" model="ir.cron">
+            <field name="name">Préstamos: analizar el material que faltará</field>
+            <field name="model_id" ref="model_enteza_stock_deficit"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_analizar()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>

@@ -126,6 +126,36 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+## Fase 4 · La red de seguridad (`19.0.6.0.0`)
+
+Un cron nocturno recorre la demanda confirmada de los próximos 30 días (parámetro) y anota lo
+que no se va a poder servir, en **Inventario → Préstamos entre compañías → Material que
+faltará**. Con el análisis hecho, «Proponer préstamos» crea los documentos en **borrador**.
+
+🔴 **El cron no crea préstamos ni mueve nada. Solo analiza.** Y las propuestas nacen en
+borrador porque esto lo dispara alguien mirando una lista, no el comercial que está cerrando
+una venta: quien lo revise decidirá si lo reserva.
+
+### Por qué sigue haciendo falta con D5
+
+Porque hay un camino que la confirmación no cubre: **ampliar un pedido ya confirmado**. Subir
+una línea de 70 a 120 no vuelve a pasar por el diálogo, así que nadie reserva las 50 nuevas.
+El análisis lo recoge esa misma noche. Cubierto por
+`test_recoge_la_ampliacion_de_un_pedido_confirmado`.
+
+También recoge material que no vuelve a tiempo, cambios de fecha y cancelaciones.
+
+### Rendimiento: se mira solo donde puede haber algo
+
+El §15 pedía 1.000 productos en menos de 30 segundos y el motor no da para eso —hace una
+búsqueda por producto—. La salida **no** es optimizar el motor, que rompería la coherencia con
+las cifras del nativo, sino recorrer únicamente los productos con **demanda de alquiler
+confirmada dentro del horizonte**. En temporada normal eso es una fracción del catálogo, y el
+resto no puede tener déficit por definición.
+
+El análisis es **idempotente**: cada pasada borra la anterior y reescribe. Un déficit es la
+foto de un momento; acumularlos solo conseguiría que nadie se fiara de la lista.
+
 ## Fase 3 · La devolución inteligente (`19.0.5.0.0`)
 
 El punto que el cliente pidió por su nombre. Cuando el material vuelve del evento, el

@@ -1079,9 +1079,17 @@ Cálculo de retención (§7.5), devoluciones parciales, cierre. El ejemplo de la
 prestamista recorta la retención y las dos cifras se enseñan en la propuesta. La vista de
 control del §7.6 va en la misma entrega.
 
-**Fase 4 — Red de seguridad y control.**
-Cron de análisis por lotes, detección de reservas huérfanas y sobrantes, vista de control,
-parámetros de configuración, permisos y reglas multi-compañía.
+**Fase 4 — Red de seguridad y control. ✅ HECHA (`19.0.6.0.0`).**
+Cron nocturno de análisis por lotes con su vista y su acción «Proponer préstamos», vista de
+control (§7.6, entregada con la fase 3), parámetros, permisos y reglas multi-compañía.
+
+El cron recorre **solo los productos con demanda confirmada en el horizonte**, no el catálogo:
+la prueba 7 del §15 (1.000 productos en 30 s) no se cumple con el motor actual y optimizarlo
+rompería la coherencia con las cifras del nativo. Recorrer solo donde puede haber algo da el
+mismo resultado y es viable.
+
+Sigue **pendiente** la detección de reservas huérfanas por otras vías que la cancelación (que
+sí libera desde `19.0.4.1.0`).
 
 **Fase 5 — Pulido.**
 Traducciones, mensajes de error claros, README, casos límite del §12.
