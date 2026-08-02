@@ -136,11 +136,13 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **Albaranes de alquiler activos**: el grupo `sale_stock_renting.group_rental_stock_picking`
   está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
   alquileres generan albaranes reales por la ruta `route_rental`.
-- **Módulos propios de Enteza instalados** (2026-08-01): `enteza_calendario_eventos`
+- **Módulos propios de Enteza instalados** (2026-08-02): `enteza_calendario_eventos`
   (`19.0.1.2.0`, vista calendario nativa pivotada en `event_date`), `enteza_panel_eventos`
   (`19.0.1.0.0`, panel OWL de tres bloques) y **`enteza_prestamo_intercompania`**
-  (`19.0.1.0.1` en la instancia; el repositorio va por `19.0.2.0.0`, pendiente de `git pull`
-  y *Actualizar*). Conviven sin pisarse.
+  (`19.0.1.1.0` en la instancia; el repositorio va por `19.0.2.0.1`, pendiente de `git pull`
+  y *Actualizar*). Conviven sin pisarse. El intento de subir la `19.0.2.0.0` falló por un
+  `<group expand=…>` en la vista de búsqueda: ver `convenciones-modulo.md` y validar siempre
+  con `scripts/validar_vistas.py` antes de desplegar.
 - **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
   `sale_renting.rental_order_view_calendar` es una herencia `primary` de
   `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,

@@ -67,6 +67,40 @@ dentro — es decir, en el uso normal. Ahora el barrido arrastra primero el nive
 `desde` y solo después mide los cambios interiores. Cubierto por
 `test_prestamo_que_envuelve_el_intervalo_resta`.
 
+## Corrección de la 19 aplicada en `19.0.2.0.1`
+
+La actualización a `19.0.2.0.0` **falló al cargar la vista de búsqueda**, con el mismo patrón
+que la vez anterior: un idioma de vistas que era correcto hasta la 18 y que en la 19 ya no se
+admite.
+
+| Qué | Síntoma | Cómo se comporta la 19 |
+|---|---|---|
+| `<group expand="0" string="Agrupar por">` en la vista de búsqueda | 🔴 **Rompe la actualización.** `ParseError: Vista no disponible enteza.stock.loan.search definición en …`, **sin decir qué atributo sobra**: el detalle solo va al log del servidor | `<group>` a secas. El cliente web rotula el bloque por su cuenta, igual que en la vista de búsqueda nativa de `stock.picking` |
+
+Lo que despista es que **la vista formulario de este mismo fichero lleva
+`<group string="Quién presta a quién">` y es correcta**. No es incoherencia: Odoo valida
+contra un esquema RELAX NG solo algunos tipos de vista —`view_validation.schema_valid` lleva
+`@validate('calendar', 'graph', 'pivot', 'search', 'list', 'activity')`— y **los formularios
+no están en la lista**. La definición de `<group>` de `base/rng/common.rng` no admite ni
+`expand` ni `string`.
+
+Se descartaron por el camino los tres candidatos que más lo parecían, todos válidos:
+`context_today().strftime(...)` y `allowed_company_ids` en dominios de filtro (están en la
+lista blanca `IGNORED_IN_EXPRESSION` de `view_validation.py`, y 6 y 5 vistas del núcleo de
+`enteza26` los usan respectivamente), y `filter_domain` sobre un one2many (mismo patrón que
+`stock.picking` con `move_line_ids`).
+
+**Esta clase de fallo ya no debería repetirse**: se ha añadido
+`.claude/skills/odoo19-dev/scripts/validar_vistas.py`, que reproduce en local esa misma
+validación por esquema y señala el atributo y la línea. Es lo único de la instalación que se
+puede comprobar aquí sin gastar un ciclo de `git pull` + Actualizar.
+
+```bash
+python .claude/skills/odoo19-dev/scripts/validar_vistas.py enteza_prestamo_intercompania
+```
+
+Las vistas de este módulo pasan esa validación (comprobado el 2026-08-02, ejecutándolo).
+
 ### Alcance de lo verificado
 
 Lo de la tabla está comprobado **contra el código de Odoo 19 Community** (`odoo/orm`,

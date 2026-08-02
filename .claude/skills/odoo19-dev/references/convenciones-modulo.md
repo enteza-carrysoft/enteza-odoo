@@ -62,6 +62,54 @@ convención existente, pero las etiquetas y los mensajes de error van en castell
 
 Las vistas `tree` se llaman `list`.
 
+#### `<group>` en una vista de búsqueda: ni `expand` ni `string`
+
+🔴 **Rompe la instalación**, y el error no dice cuál es el atributo culpable: solo
+*«Vista no disponible <nombre> definición en <fichero>»* (que es
+`ValidationError('Invalid view %(name)s definition in %(file)s')` de `ir_ui_view.py:507`
+traducido). El detalle va al log del servidor, al que aquí no se llega.
+
+```xml
+<!-- MAL, no instala: el bloque de agrupaciones de la 15 y la 18 -->
+<group expand="0" string="Agrupar por">
+    <filter name="g_estado" string="Estado" context="{'group_by': 'state'}"/>
+</group>
+
+<!-- BIEN: el cliente web ya rotula el bloque por su cuenta -->
+<group>
+    <filter name="g_estado" string="Estado" context="{'group_by': 'state'}"/>
+</group>
+```
+
+La causa es que **las vistas se validan contra un esquema RELAX NG, pero solo algunos
+tipos**: `view_validation.schema_valid` lleva
+`@validate('calendar', 'graph', 'pivot', 'search', 'list', 'activity')`. **Los formularios
+no están en esa lista**, así que el mismo `<group string="...">` es correcto en un form y
+mortal en un search — que es justo lo que despista al diagnosticar. La definición que manda
+está en `base/rng/common.rng` y solo acepta `position`, `groups`, `colspan`, `rowspan`,
+`fill`, `height`, `width`, `name`, `color`, `invisible` y `col`.
+
+Comprobado el 2026-08-02 validando en local contra el esquema real (`expand` y `string`
+rechazados los dos, `name` aceptado) y contra `enteza26`: de todas las vistas de búsqueda de
+la instancia, **ninguna** usa `expand` en un `<group>`.
+
+Lo que sí sigue siendo válido dentro de un dominio de filtro, y parece sospechoso pero no lo
+es: `context_today()`, `allowed_company_ids`, `current_date`, `uid`, `time`, `datetime`.
+Están en la lista blanca `IGNORED_IN_EXPRESSION` de `view_validation.py`.
+
+#### Validar las vistas antes de desplegar
+
+Esa comprobación por esquema **se puede reproducir en local**, que es lo único de la
+instalación que no exige un ciclo de `git pull` + Actualizar:
+
+```bash
+python .claude/skills/odoo19-dev/scripts/validar_vistas.py enteza_mi_modulo
+```
+
+Descarga los `.rng` de Odoo Community 19.0, los cachea y dice el atributo y la línea exactos.
+Necesita `lxml` (`python -m pip install lxml`). **Pasarlo no garantiza que el módulo instale**
+—no comprueba campos, dominios ni referencias externas—, pero fallarlo garantiza que no.
+
 ### Modelos y campos
 
 | Antes | Ahora |
