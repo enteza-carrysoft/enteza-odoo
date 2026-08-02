@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_enteza_prestamo_confirm_form" model="ir.ui.view">
+        <field name="name">enteza.prestamo.confirm.form</field>
+        <field name="model">enteza.prestamo.confirm</field>
+        <field name="arch" type="xml">
+            <form string="Falta material para este pedido">
+                <div class="alert alert-warning mb-3" role="alert"
+                     invisible="nada_cubierto">
+                    <strong>Este pedido no se puede servir con el material propio.</strong><br/>
+                    Se puede cubrir con material de otra compañía del grupo. Si aceptas, ese
+                    material queda <strong>reservado en firme</strong> y nadie más podrá
+                    contar con él para estas fechas. El traslado físico lo tendrá que
+                    aprobar después un responsable.
+                </div>
+                <div class="alert alert-danger mb-3" role="alert"
+                     invisible="not nada_cubierto">
+                    <strong>Este pedido no se puede servir.</strong><br/>
+                    Ninguna otra compañía del grupo tiene unidades libres en estas fechas.
+                    Puedes confirmarlo igualmente para cerrar la venta, pero el material
+                    habrá que buscarlo por otra vía.
+                </div>
+
+                <field name="order_id" invisible="1"/>
+                <field name="todo_cubierto" invisible="1"/>
+                <field name="nada_cubierto" invisible="1"/>
+
+                <field name="line_ids" readonly="1">
+                    <list create="false" delete="false"
+                          decoration-danger="qty_sin_cubrir &gt; 0">
+                        <field name="product_id"/>
+                        <field name="qty_pedida"/>
+                        <field name="qty_falta"/>
+                        <field name="warehouse_src_id" string="Se presta desde"/>
+                        <field name="qty_prestable"/>
+                        <field name="qty_sin_cubrir"/>
+                    </list>
+                </field>
+
+                <div class="text-muted mt-2">
+                    <small>
+                        Las cantidades se comprueban otra vez al aceptar. Si mientras tanto
+                        otro pedido se lleva el material, no se reservará nada y se te
+                        avisará.
+                    </small>
+                </div>
+
+                <footer>
+                    <button name="action_confirmar" type="object" class="btn-primary"
+                            string="Confirmar y reservar" invisible="nada_cubierto"/>
+                    <button name="action_confirmar" type="object" class="btn-primary"
+                            string="Confirmar de todos modos" invisible="not nada_cubierto"/>
+                    <button name="action_cancelar" type="object" class="btn-secondary"
+                            string="Cancelar"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

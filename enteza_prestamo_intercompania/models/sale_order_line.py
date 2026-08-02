@@ -50,6 +50,13 @@ class SaleOrderLine(models.Model):
         string='Quién lo presta', compute='_compute_enteza_prestamo',
         help='Compañía y almacén desde los que se propondrá el préstamo al confirmar.',
     )
+    # El almacén, y no solo su nombre, porque el diálogo de confirmación necesita el registro
+    # para crear el préstamo. Sale del MISMO cálculo que la cifra que ve el comercial: es lo
+    # que garantiza que se reserve exactamente de donde el widget dijo que se reservaría.
+    enteza_almacen_prestamista_id = fields.Many2one(
+        'stock.warehouse', string='Almacén prestamista propuesto',
+        compute='_compute_enteza_prestamo',
+    )
 
     @api.depends(
         'product_id', 'product_uom_qty', 'is_rental', 'start_date', 'return_date',
@@ -61,6 +68,7 @@ class SaleOrderLine(models.Model):
             linea.enteza_falta = 0.0
             linea.enteza_prestable_otra = 0.0
             linea.enteza_origen_prestamo = False
+            linea.enteza_almacen_prestamista_id = False
 
             almacen = linea.order_id.warehouse_id
             if not (linea.is_rental and linea.product_id.is_storable and almacen
@@ -82,9 +90,14 @@ class SaleOrderLine(models.Model):
                 continue
 
             linea.enteza_falta = falta
-            prestable, origen = linea._enteza_buscar_prestamista(falta)
+            prestable, almacen_origen = linea._enteza_buscar_prestamista(falta)
             linea.enteza_prestable_otra = prestable
-            linea.enteza_origen_prestamo = origen
+            linea.enteza_almacen_prestamista_id = almacen_origen
+            linea.enteza_origen_prestamo = almacen_origen and _(
+                '%(compania)s · %(almacen)s',
+                compania=almacen_origen.company_id.display_name,
+                almacen=almacen_origen.display_name,
+            )
 
     def _enteza_cubierto_por_prestamo(self):
         """Unidades que un préstamo ya comprometido aporta para esta línea.
@@ -113,7 +126,7 @@ class SaleOrderLine(models.Model):
     def _enteza_buscar_prestamista(self, falta):
         """Busca en las compañías del grupo quién puede cubrir `falta`.
 
-        Devuelve `(prestable, descripción)`. `prestable` se acota a lo que falta: al comercial
+        Devuelve `(prestable, almacén)`. `prestable` se acota a lo que falta: al comercial
         no le sirve saber que la otra compañía tiene 500 libres, le sirve saber que sus 15
         están cubiertas.
 
@@ -127,11 +140,12 @@ class SaleOrderLine(models.Model):
         # Todos los almacenes que NO son de la compañía del pedido. No se asume «la otra
         # compañía» en singular ni un almacén por sociedad: el cliente ha confirmado que
         # habrá más almacenes (`[PENDIENTE-1]`).
+        vacio = self.env['stock.warehouse']
         almacenes = self.env['stock.warehouse'].sudo().search([
             ('company_id', '!=', self.order_id.company_id.id),
         ])
         if not almacenes:
-            return 0.0, False
+            return 0.0, vacio
 
         motor = self.env['enteza.disponibilidad'].sudo()
         mejor_qty = 0.0
@@ -155,10 +169,9 @@ class SaleOrderLine(models.Model):
         if not mejor_almacen or float_is_zero(
             mejor_qty, precision_rounding=self.product_uom_id.rounding
         ):
-            return 0.0, False
+            return 0.0, vacio
 
-        return min(mejor_qty, falta), _(
-            '%(compania)s · %(almacen)s',
-            compania=mejor_almacen.company_id.display_name,
-            almacen=mejor_almacen.display_name,
-        )
+        # El almacén se devuelve SIN `sudo()`: quien lo reciba decide con qué permisos lo usa.
+        # Dejar un registro con superusuario paseándose por el resto del código es la forma
+        # habitual de que un `sudo()` acotado deje de estarlo.
+        return min(mejor_qty, falta), mejor_almacen.sudo(False)

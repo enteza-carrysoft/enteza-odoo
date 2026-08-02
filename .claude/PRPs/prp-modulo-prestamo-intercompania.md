@@ -1026,13 +1026,15 @@ terminar, el caso canónico del §1 debe funcionar de punta a punta hasta `lent`
 Se entrega en tres partes, en este orden:
 
 1. ✅ **Documento vivo** (`19.0.2.0.1`): numeración, estados, reserva, aprobación, menú y vistas.
-2. ⬜ **Widget (§10.3) + enganche en `action_confirm` con el diálogo (§7.0, D5.1).** El widget
-   va **antes** que el diálogo, no después: los dos necesitan exactamente el mismo cálculo
-   —cuánto falta y cuánto puede prestar la otra compañía— y hacerlo primero para el widget deja
-   ese método escrito y visible en pantalla, que es la única forma de comprobarlo sin poder
-   ejecutar pruebas. Además, si el widget funciona y el diálogo se retrasa, lo entregado ya
-   sirve: el comercial ve el déficit aunque tenga que resolverlo a mano.
+2. ✅ **Widget (§10.3) + enganche en `action_confirm` con el diálogo (§7.0, D5.1)** (`19.0.3.0.0`).
+   El aviso de cabecera que se probó en `19.0.2.2.0` **se retiró**: en pedidos de muchas
+   líneas era ruido. El icono rojo de la línea es la única señal en pantalla.
 3. ⬜ **Albaranes**: ubicación de tránsito sin compañía, tipos de operación y doble albarán.
+
+Hacer el widget **antes** que el diálogo salió bien y conviene recordar por qué: los dos usan
+exactamente el mismo cálculo, y sacarlo primero a pantalla fue la única forma de comprobarlo
+sin poder ejecutar pruebas. El diálogo se escribió después ya sobre un cálculo que el cliente
+había visto funcionar.
 
 **Fase 3 — Devolución inteligente.**
 Cálculo de retención (§7.5), devoluciones parciales, cierre. Al terminar, el ejemplo de las 100

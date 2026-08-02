@@ -11,16 +11,11 @@ entregas siguientes de esta misma fase, en este orden:
 
 1. ✅ **Documento vivo** — lo que hay ahora: se puede crear un préstamo a mano, reservarlo
    (y entonces resta de verdad en la disponibilidad de la prestamista), aprobarlo, cancelarlo.
-2. 🔶 **Widget de disponibilidad + enganche en `action_confirm`** — el camino principal
-   (D5/D5.1). ✅ El widget ya está: al montar el presupuesto, la ventana flotante de la línea
-   dice cuánto falta y qué compañía puede prestarlo. ⬜ Falta el enganche: al confirmar, un
-   diálogo propone el préstamo y **solo si el comercial acepta** se reserva en firme, con el
-   recálculo y el bloqueo de concurrencia del §5.6.
+2. ✅ **Widget de disponibilidad + enganche en `action_confirm`** — el camino principal
+   (D5/D5.1). Al montar el presupuesto, el icono de la línea se pone rojo y dice cuánto falta
+   y quién puede prestarlo. Al confirmar, un diálogo propone el préstamo y **solo si el
+   comercial acepta** se reserva en firme, con el recálculo y el bloqueo del §5.6.
 3. ⬜ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
-
-El widget va antes que el diálogo a propósito: los dos necesitan el mismo cálculo, y sacarlo
-primero a pantalla es la única forma de comprobarlo sin poder ejecutar pruebas. Si el diálogo
-se retrasara, lo entregado ya sirve por sí solo.
 
 ## El aviso de préstamo (`19.0.2.3.0`)
 
@@ -56,6 +51,78 @@ cuando hay mensaje que leer.
 > de muchas líneas se convertía en ruido. El icono rojo es ahora **la única señal en
 > pantalla**: si algún día deja de pintarse, el déficit se vuelve invisible hasta la
 > confirmación. Está en el historial de git por si se quiere recuperar.
+
+## El diálogo de confirmación (`19.0.3.0.0`)
+
+Segunda mitad de la entrega 2, y el camino principal del módulo. Al confirmar un pedido que
+el almacén propio no puede servir, **se para la confirmación** y se enseña la propuesta:
+
+```
+┌ Falta material para este pedido ───────────────────────────────────┐
+│ Este pedido no se puede servir con el material propio.             │
+│ Se puede cubrir con material de otra compañía del grupo. Si        │
+│ aceptas, ese material queda reservado en firme.                    │
+│                                                                    │
+│ Producto      Pedidas  Faltan  Se presta desde  Se prestan  Sin    │
+│ VASO MACETA        95      15  Jerez                    15    0    │
+│                                                                    │
+│      [ Confirmar y reservar ]  [ Cancelar ]                        │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+Cancelar deja el pedido **sin confirmar y sin ningún préstamo**. Aceptar crea el préstamo en
+`reserved`, lo enlaza con la línea de pedido y confirma. El traslado físico sigue exigiendo
+que un responsable pulse **Aprobar**: lo que se automatiza es la reserva, no el movimiento.
+
+Si **nadie** puede prestar, el diálogo lo dice y deja confirmar igualmente (`[PENDIENTE-8]`):
+el comercial tiene que poder cerrar la venta y buscar la solución por otra vía. El déficit se
+queda a la vista en el icono rojo de la línea, que es lo único que impide perderlo de vista.
+
+### 🔴 Por qué son dos transacciones
+
+El bloqueo de concurrencia **no puede sostenerse mientras el diálogo está abierto**: sería una
+transacción abierta durante minutos bloqueando a todos los demás comerciales sobre esos
+productos — un cuelgue justo en temporada alta, que es cuando hay cola. Así que:
+
+| Paso | Qué hace | Bloqueo |
+|---|---|---|
+| 1 · `action_confirm` | Calcula, propone y abre el diálogo. **No escribe nada** | No |
+| 2 · `action_confirmar` del asistente | Bloquea, **recalcula desde cero** y reserva | Sí |
+
+**El diálogo es una propuesta, no una reserva.** Si mientras el comercial decide otro pedido
+se lleva el material, al aceptar no se reserva nada, el pedido se queda sin confirmar y se le
+dice qué ha cambiado. Cubierto por `test_si_desaparece_el_material_no_se_reserva_nada`.
+
+El criterio de «ha empeorado» es **lo que queda sin cubrir**, no lo que se presta: si el
+déficit baja porque se canceló otro pedido, la propuesta sigue valiendo y se reserva menos.
+
+El bloqueo es un *advisory lock* de PostgreSQL acotado a la transacción, no un
+`SELECT ... FOR UPDATE` sobre el producto: se libera solo, no deja filas bloqueadas para
+escrituras que no tienen nada que ver, y no depende de qué tablas toque el cálculo. Los
+productos se bloquean **ordenados por id**, o dos confirmaciones que compartan varios
+artículos se abrazan.
+
+### Detalles que costará recordar
+
+- **Flag de contexto `enteza_prestamo_aceptado`.** Sin él, el asistente vuelve a abrir el
+  diálogo al reconfirmar: bucle infinito. Es también la vía de escape para cualquier
+  integración que necesite confirmar sin pasar por el diálogo.
+- **`action_confirm` devuelve una acción** en vez de `True` cuando abre el diálogo. Es el
+  idioma de Odoo para los botones que preguntan algo —`stock.picking.button_validate` hace lo
+  mismo—, pero ⚠️ **un llamador que espere un booleano no confirmará el pedido**. Si algún día
+  se activa el pago por portal o una confirmación automática, hay que pasarles el flag de
+  contexto de arriba.
+- **Confirmar varios pedidos a la vez se para** con un aviso que los lista. No se puede
+  preguntar por uno dejando los demás a medias, y confirmarlos en silencio se saltaría el
+  permiso que D5.1 existe para pedir.
+- **El préstamo se crea con `sudo()`.** Quien confirma es un comercial y no tiene por qué
+  estar en los grupos de préstamos —hoy solo `admin` lo está—. No es un agujero: el usuario ya
+  ha dado el permiso en el diálogo y lo único que se crea es un documento en `reserved`, que
+  no mueve material. Pero ojo: **para ver el préstamo en el menú sí hace falta el grupo**.
+- **`_revalidar_disponibilidad` calcula con `sudo()` y `with_company()` de la prestamista.**
+  Quien reserva es de la compañía receptora y no tiene acceso a los quants de la otra: sin
+  esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
+  diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
 ### Limitación heredada del nativo
 

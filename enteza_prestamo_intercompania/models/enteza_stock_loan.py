@@ -310,7 +310,17 @@ class EntezaStockLoan(models.Model):
         reservado competiría contra su propia reserva y nunca se podría aprobar.
         """
         self.ensure_one()
-        motor = self.env['enteza.disponibilidad']
+        # 🔴 `sudo()` y `with_company()` de la PRESTAMISTA, no de quien ejecuta.
+        #
+        # Quien reserva un préstamo suele ser alguien de la compañía RECEPTORA —es su pedido
+        # el que no se puede servir— y esa persona no tiene acceso a los quants de la otra
+        # sociedad. Sin esto el cálculo le daría cero disponible y la reserva fallaría
+        # siempre con un «no hay libre» falso, que además es de los que se tarda en
+        # diagnosticar porque el mismo préstamo sí se reserva bien desde la otra compañía.
+        #
+        # `with_company` importa además porque `preparation_time` es company_dependent: el
+        # padding que vale es el de quien presta.
+        motor = self.env['enteza.disponibilidad'].sudo().with_company(self.company_id)
 
         # Se agrupa por intervalo porque la disponibilidad es una pregunta temporal: dos
         # líneas del mismo producto para fechas distintas no compiten entre sí, y sumarlas
@@ -322,16 +332,20 @@ class EntezaStockLoan(models.Model):
 
         faltas = []
         for (desde, hasta), necesidades in por_intervalo.items():
-            productos = self.env['product.product'].browse(
+            # Los registros van con el mismo entorno que el motor: si se le pasan recordsets
+            # del usuario, el `sudo()` de arriba no sirve de nada porque cada `producto` se
+            # lee con el suyo.
+            productos = motor.env['product.product'].browse(
                 [p.id for p in necesidades]
             )
+            almacen_origen = motor.env['stock.warehouse'].browse(self.warehouse_src_id.id)
             cantidades = {p.id: qty for p, qty in necesidades.items()}
             # Se delega en `deficit()` en vez de comparar aquí: es quien fija con qué
             # precisión se comparan las cantidades. Repetir la comparación con otro
             # criterio haría que el módulo pudiera decir «no falta nada» en un sitio y
             # «falta» en el otro para el mismo caso.
             deficits = motor.deficit(
-                productos, self.warehouse_src_id, desde, hasta, cantidades,
+                productos, almacen_origen, desde, hasta, cantidades,
                 ignorar_prestamos=self,
             )
             for producto in productos:
