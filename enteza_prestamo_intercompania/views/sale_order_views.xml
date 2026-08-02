@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Aviso de material en la cabecera del pedido (PRP §10.3).
+
+        Va ENTRE la barra de botones y la hoja, que es donde Odoo pone sus propios avisos de
+        pedido. Es el sitio donde el comercial ya está mirando y no tapa nada.
+
+        El detalle de cada línea sigue en el widget de disponibilidad: aquí está el resumen
+        para no tener que ir pinchando iconos uno a uno en un pedido de treinta líneas.
+    -->
+    <record id="view_order_form_enteza_prestamo" model="ir.ui.view">
+        <field name="name">sale.order.form.enteza.prestamo</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="not enteza_aviso_deficit">
+                    <field name="enteza_aviso_deficit" nolabel="1" readonly="1"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

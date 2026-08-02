@@ -22,22 +22,43 @@ El widget va antes que el diálogo a propósito: los dos necesitan el mismo cál
 primero a pantalla es la única forma de comprobarlo sin poder ejecutar pruebas. Si el diálogo
 se retrasara, lo entregado ya sirve por sí solo.
 
-## El aviso de préstamo en el widget de disponibilidad (`19.0.2.1.0`)
+## El aviso de préstamo (`19.0.2.1.0` y `19.0.2.2.0`)
 
-Primera mitad de la entrega 2. Cuando el almacén propio no llega, la ventana flotante de la
-línea de pedido dice cuánto falta y qué compañía puede prestarlo:
+Primera mitad de la entrega 2. Cuando el almacén propio no llega, el comercial se entera por
+**tres sitios a la vez**, de más visible a más detallado:
+
+1. **Aviso en la cabecera del pedido**, siempre a la vista y sin tener que pinchar nada. Es
+   lo que se lee en un pedido de treinta líneas.
+2. **El icono de disponibilidad de la línea en rojo**, para localizar cuál es.
+3. **La ventana flotante del icono**, con el detalle.
 
 ```
-Disponible para alquilar     80 Uds
-14/08/2026 a 16/08/2026
-
-⚠ Faltan 15 Uds
-Stileum · Jerez las presta.
-Se reservan al confirmar el pedido.
+┌─ Pedido de alquiler S00042 ────────────────────────────┐
+│ ⚠ Falta material para servir este pedido               │
+│   · VASO MACETA MAXI 50CL — faltan 15 Uds.             │
+│     Stileum · Jerez puede prestarlas: se reservarán    │
+│     al confirmar.                                      │
+│                                                        │
+│ Producto                  Cantidad   Disp.             │
+│ VASO MACETA MAXI 50CL        95       📉 ← en rojo      │
+└────────────────────────────────────────────────────────┘
 ```
 
-Con material de sobra no aparece nada: el widget se comporta como el nativo. Si la otra
-compañía solo cubre una parte, se dice lo que cubre **y lo que queda suelto**.
+Con material de sobra no aparece nada de esto: el widget se comporta como el nativo. Si la
+otra compañía solo cubre una parte, se dice lo que cubre **y lo que queda suelto**.
+
+El rojo del icono cuelga de **nuestro** campo y no del `forecasted_issue` nativo: ese depende
+de `qty_to_deliver`, y en alquiler `sale_stock_renting` pone el método de entrega en manual,
+así que no es de fiar aquí. Colgándolo de `enteza_falta`, el icono se pone rojo exactamente
+cuando hay mensaje que leer.
+
+### Un préstamo ya reservado deja de contar como déficit
+
+`_enteza_cubierto_por_prestamo` resta lo que un préstamo vivo aporta a esa línea de pedido.
+Hoy no hay ninguno —los crea el enganche de `action_confirm`, que aún no está—, pero sin esa
+resta el aviso **seguiría diciendo que faltan 15 cuando ya estuvieran resueltas**: el material
+lo pone la otra compañía, así que la disponibilidad del almacén propio no se entera. Se cuenta
+desde `reserved`; un préstamo en borrador es una propuesta y no tapa nada.
 
 ### Por qué hacía falta
 
@@ -71,14 +92,19 @@ cada sociedad ven el nivel de existencias de la otra**, que es deliberado.
 
 ### Lo que sí está verificado de esta parte
 
-La herencia de la plantilla, **ejecutada**: se resuelve el `xpath`, cae donde debe y el
+Las **dos** herencias de plantilla, ejecutadas: resuelven su `xpath`, caen donde deben y el
 componente conserva la raíz única que exige OWL. Reproducible:
 
 ```bash
+W=enteza_prestamo_intercompania/static/src/widgets/qty_at_date_widget.xml
+
 python .claude/skills/odoo19-dev/scripts/simular_herencia_owl.py \
-    --base sale_stock.QtyAtDatePopover \
-    --del-bundle sale_stock_renting.QtyAtDatePopover \
-    enteza_prestamo_intercompania/static/src/widgets/qty_at_date_widget.xml
+    --base sale_stock.QtyAtDatePopover --del-bundle sale_stock_renting.QtyAtDatePopover \
+    "$W#enteza_prestamo_intercompania.QtyAtDatePopover"
+
+python .claude/skills/odoo19-dev/scripts/simular_herencia_owl.py \
+    --base sale_stock.QtyAtDate --del-bundle sale_stock_renting.QtyAtDate \
+    "$W#enteza_prestamo_intercompania.QtyAtDate"
 ```
 
 La plantilla de la 19 EE se lee del bundle de assets de la propia `enteza26` — el código de

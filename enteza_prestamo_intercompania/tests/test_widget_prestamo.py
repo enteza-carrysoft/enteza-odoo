@@ -136,6 +136,135 @@ class TestWidgetPrestamo(TransactionCase):
         self.assertFalse(linea.enteza_origen_prestamo)
 
     # ------------------------------------------------------------------
+    # Aviso de la cabecera del pedido
+    # ------------------------------------------------------------------
+
+    def test_sin_deficit_no_hay_aviso_en_cabecera(self):
+        self._dar_stock(80, self.almacen)
+        linea = self._linea(50)
+
+        self.assertFalse(linea.order_id.enteza_aviso_deficit)
+
+    def test_el_aviso_nombra_producto_cantidad_y_prestamista(self):
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(20, self.almacen_otra)
+        linea = self._linea(95)
+
+        aviso = linea.order_id.enteza_aviso_deficit
+        self.assertTrue(aviso)
+        self.assertIn(self.producto.name, aviso)
+        self.assertIn('15', aviso)
+        self.assertIn(self.otra.name, aviso)
+
+    def test_el_aviso_recoge_todas_las_lineas_con_deficit(self):
+        """En un pedido largo el aviso es lo único que se lee: tiene que estar completo."""
+        otro_producto = self.env['product.product'].create({
+            'name': 'Mesa plegable (test)',
+            'uom_id': self.env.ref('uom.product_uom_unit').id,
+            'rent_ok': True,
+            'is_storable': True,
+            'company_id': False,
+        })
+        self._dar_stock(80, self.almacen)
+        pedido = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.cliente.id,
+            'rental_start_date': self.desde,
+            'rental_return_date': self.hasta,
+            'order_line': [
+                Command.create({'product_id': self.producto.id, 'product_uom_qty': 95}),
+                Command.create({'product_id': otro_producto.id, 'product_uom_qty': 4}),
+            ],
+        })
+
+        aviso = pedido.enteza_aviso_deficit
+        self.assertIn(self.producto.name, aviso)
+        self.assertIn(otro_producto.name, aviso)
+
+    def test_el_aviso_escapa_el_nombre_del_producto(self):
+        """El aviso es HTML construido a mano: que un nombre raro no inyecte marcado."""
+        travieso = self.env['product.product'].create({
+            'name': 'Silla <b>rota</b> & Cía',
+            'uom_id': self.env.ref('uom.product_uom_unit').id,
+            'rent_ok': True,
+            'is_storable': True,
+            'company_id': False,
+        })
+        pedido = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.cliente.id,
+            'rental_start_date': self.desde,
+            'rental_return_date': self.hasta,
+            'order_line': [Command.create({
+                'product_id': travieso.id, 'product_uom_qty': 10,
+            })],
+        })
+
+        self.assertIn('&lt;b&gt;', pedido.enteza_aviso_deficit)
+        self.assertNotIn('<b>rota</b>', pedido.enteza_aviso_deficit)
+
+    # ------------------------------------------------------------------
+    # Un préstamo ya reservado deja de contar como déficit
+    # ------------------------------------------------------------------
+
+    def test_un_prestamo_para_esta_linea_tapa_el_deficit(self):
+        """El material lo pone la OTRA compañía, así que el almacén propio no cambia.
+
+        Sin la resta de `_enteza_cubierto_por_prestamo`, el pedido seguiría avisando de que
+        faltan 15 cuando ya están resueltas — y eso es lo que va a pasar en cuanto el
+        enganche de `action_confirm` empiece a crear préstamos.
+        """
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(20, self.almacen_otra)
+        linea = self._linea(95)
+        self.assertEqual(linea.enteza_falta, 15)
+
+        self.env['enteza.stock.loan'].create({
+            'name': 'PRE/TEST/CUBRE',
+            'company_id': self.otra.id,
+            'company_dest_id': self.propia.id,
+            'warehouse_src_id': self.almacen_otra.id,
+            'warehouse_dest_id': self.almacen.id,
+            'state': 'reserved',
+            'line_ids': [Command.create({
+                'product_id': self.producto.id,
+                'product_uom_id': self.producto.uom_id.id,
+                'qty_reserved': 15,
+                'sale_line_id': linea.id,
+                'date_from': self.desde,
+                'date_to': self.hasta,
+            })],
+        })
+        linea.invalidate_recordset(['enteza_falta'])
+
+        self.assertEqual(linea.enteza_falta, 0)
+        self.assertFalse(linea.order_id.enteza_aviso_deficit)
+
+    def test_un_prestamo_en_borrador_no_tapa_nada(self):
+        """Una propuesta sin reservar no compromete material: no puede tapar el aviso."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(20, self.almacen_otra)
+        linea = self._linea(95)
+
+        self.env['enteza.stock.loan'].create({
+            'name': 'PRE/TEST/BORRADOR',
+            'company_id': self.otra.id,
+            'company_dest_id': self.propia.id,
+            'warehouse_src_id': self.almacen_otra.id,
+            'warehouse_dest_id': self.almacen.id,
+            'state': 'draft',
+            'line_ids': [Command.create({
+                'product_id': self.producto.id,
+                'product_uom_id': self.producto.uom_id.id,
+                'qty_proposed': 15,
+                'sale_line_id': linea.id,
+                'date_from': self.desde,
+                'date_to': self.hasta,
+            })],
+        })
+        linea.invalidate_recordset(['enteza_falta'])
+
+        self.assertEqual(linea.enteza_falta, 15)
+
+    # ------------------------------------------------------------------
     # 🔴 Por qué no se usa el campo nativo como atajo
     # ------------------------------------------------------------------
 

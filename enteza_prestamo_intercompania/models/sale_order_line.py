@@ -26,8 +26,10 @@ déficits reales**, que es exactamente el fallo que este módulo existe para imp
 
 import logging
 
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import float_compare, float_is_zero, formatLang
 
 _logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ class SaleOrderLine(models.Model):
                 ignorar_linea=linea,
             )[linea.product_id.id]
 
-            falta = linea.product_uom_qty - disponible
+            falta = linea.product_uom_qty - disponible - linea._enteza_cubierto_por_prestamo()
             if float_compare(falta, 0.0, precision_rounding=linea.product_uom_id.rounding) <= 0:
                 # Se sirve con lo propio: no se toca nada más. Este corte es el que mantiene
                 # el coste a raya —la consulta a la otra compañía es la cara— y es también lo
@@ -85,6 +87,63 @@ class SaleOrderLine(models.Model):
             prestable, origen = linea._enteza_buscar_prestamista(falta)
             linea.enteza_prestable_otra = prestable
             linea.enteza_origen_prestamo = origen
+
+    def _enteza_cubierto_por_prestamo(self):
+        """Unidades que un préstamo ya comprometido aporta para esta línea.
+
+        🔴 Sin esta resta, en cuanto el enganche de `action_confirm` cree el préstamo la línea
+        **seguiría avisando de que faltan 15 aunque ya estuvieran resueltas**: el material lo
+        pone la OTRA compañía, así que la disponibilidad del almacén propio no cambia y el
+        cálculo de arriba no se entera por sí solo.
+
+        Se cuenta desde `reserved`: es cuando el material queda comprometido de verdad. Un
+        préstamo en `draft` es una propuesta y no cubre nada; uno cancelado, tampoco.
+        """
+        self.ensure_one()
+        if not self.id:
+            return 0.0
+        # `sudo()`: el préstamo pertenece a la compañía prestamista y la regla de registro
+        # puede ocultárselo a quien mira el pedido. Se lee solo la cantidad.
+        lineas = self.env['enteza.stock.loan.line'].sudo().search([
+            ('sale_line_id', '=', self.id),
+            ('state', 'not in', ('draft', 'cancelled')),
+        ])
+        # `qty_sent` como respaldo para los estados en los que el material ya salió y la
+        # reserva pudo ajustarse a la baja.
+        return sum((linea._qty_comprometida() or linea.qty_sent) for linea in lineas)
+
+    def _enteza_detalle_aviso(self):
+        """Una línea del aviso de cabecera, ya en HTML (PRP §10.3)."""
+        self.ensure_one()
+        redondeo = self.product_uom_id.rounding
+        cantidad = formatLang(self.env, self.enteza_falta, dp='Product Unit of Measure')
+        unidad = self.product_uom_id.name or ''
+
+        if float_compare(self.enteza_prestable_otra, self.enteza_falta,
+                         precision_rounding=redondeo) >= 0:
+            cola = _(
+                '%(origen)s puede prestarlas: se reservarán al confirmar.',
+                origen=self.enteza_origen_prestamo,
+            )
+        elif float_compare(self.enteza_prestable_otra, 0.0,
+                           precision_rounding=redondeo) > 0:
+            # Nunca dar a entender que está resuelto cuando solo lo está a medias.
+            cola = _(
+                '%(origen)s solo puede prestar %(cubierto)s: quedarían %(resto)s sin cubrir.',
+                origen=self.enteza_origen_prestamo,
+                cubierto=formatLang(self.env, self.enteza_prestable_otra,
+                                    dp='Product Unit of Measure'),
+                resto=formatLang(self.env, self.enteza_falta - self.enteza_prestable_otra,
+                                 dp='Product Unit of Measure'),
+            )
+        else:
+            cola = _('Ninguna otra compañía del grupo tiene unidades libres en estas fechas.')
+
+        # `Markup % ...` escapa los argumentos que no son Markup, así que el nombre del
+        # producto no puede inyectar nada aunque lleve caracteres raros.
+        return Markup('<li>%s — faltan %s %s. %s</li>') % (
+            self.product_id.display_name, cantidad, unidad, str(cola),
+        )
 
     def _enteza_buscar_prestamista(self, falta):
         """Busca en las compañías del grupo quién puede cubrir `falta`.

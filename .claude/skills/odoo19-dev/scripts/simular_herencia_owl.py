@@ -161,7 +161,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('extensiones', nargs='*',
-                        help='Ficheros XML propios con las plantillas que heredan, en orden.')
+                        help='Ficheros XML propios con las plantillas que heredan, en orden. '
+                             'Si el fichero tiene varias plantillas, hay que decir cuál con '
+                             '`fichero.xml#modulo.Plantilla`; si no, se coge la primera y se '
+                             'compara contra la base equivocada.')
     parser.add_argument('--base', help='t-name de la plantilla base (se busca en el bundle).')
     parser.add_argument('--base-fichero', help='Fichero local con la plantilla base.')
     parser.add_argument('--del-bundle', action='append', default=[],
@@ -182,9 +185,11 @@ def main():
         base = aplicar(base, plantilla_del_bundle(nombre))
         if base is None:
             return 1
-    for ruta in args.extensiones:
-        print('Extensión (local): %s' % ruta)
-        base = aplicar(base, plantilla_de_fichero(ruta))
+    for referencia in args.extensiones:
+        # `fichero.xml#modulo.Plantilla` para los ficheros con más de una plantilla.
+        ruta, _, nombre = referencia.partition('#')
+        print('Extensión (local): %s' % referencia)
+        base = aplicar(base, plantilla_de_fichero(ruta, nombre or None))
         if base is None:
             return 1
 

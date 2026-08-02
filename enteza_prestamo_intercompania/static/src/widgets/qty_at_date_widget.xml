@@ -2,6 +2,28 @@
 <template id="template" xml:space="preserve">
 
     <!--
+        El icono en rojo cuando falta material.
+
+        Sin esto NO hay ninguna señal en pantalla de que una línea tiene un problema: el
+        mensaje solo se ve pinchando el icono, uno por uno. El rojo cuelga de nuestro campo y
+        no del `forecasted_issue` nativo a propósito — ese depende de `qty_to_deliver`, y en
+        alquiler `sale_stock_renting` pone el método de entrega en manual, así que no es de
+        fiar aquí. Colgándolo de `enteza_falta` el icono se pone rojo exactamente cuando hay
+        mensaje que leer.
+
+        Se reescribe `t-attf-class` entero porque es un atributo, no un nodo: hay que
+        ARRASTRAR las dos condiciones que ya traía (`forecasted_issue` y los lotes reservados
+        de alquiler) o se pierden. Copiadas literalmente de la 19, leídas del bundle de la
+        instancia.
+    -->
+    <t t-name="enteza_prestamo_intercompania.QtyAtDate"
+       t-inherit="sale_stock.QtyAtDate" t-inherit-mode="extension">
+        <xpath expr="//a" position="attributes">
+            <attribute name="t-attf-class">fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || !(props.record.data.available_reserved_lots ?? true) || props.record.data.enteza_falta &gt; 0) ? 'text-danger' : '' }}</attribute>
+        </xpath>
+    </t>
+
+    <!--
         Aviso de préstamo en la ventana flotante de disponibilidad (PRP §10.3).
 
         🔴 El `xpath` apunta al bloque que añade `sale_stock_renting`, no al nativo. La
