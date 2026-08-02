@@ -26,10 +26,8 @@ déficits reales**, que es exactamente el fallo que este módulo existe para imp
 
 import logging
 
-from markupsafe import Markup
-
 from odoo import _, api, fields, models
-from odoo.tools import float_compare, float_is_zero, formatLang
+from odoo.tools import float_compare, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -111,39 +109,6 @@ class SaleOrderLine(models.Model):
         # `qty_sent` como respaldo para los estados en los que el material ya salió y la
         # reserva pudo ajustarse a la baja.
         return sum((linea._qty_comprometida() or linea.qty_sent) for linea in lineas)
-
-    def _enteza_detalle_aviso(self):
-        """Una línea del aviso de cabecera, ya en HTML (PRP §10.3)."""
-        self.ensure_one()
-        redondeo = self.product_uom_id.rounding
-        cantidad = formatLang(self.env, self.enteza_falta, dp='Product Unit of Measure')
-        unidad = self.product_uom_id.name or ''
-
-        if float_compare(self.enteza_prestable_otra, self.enteza_falta,
-                         precision_rounding=redondeo) >= 0:
-            cola = _(
-                '%(origen)s puede prestarlas: se reservarán al confirmar.',
-                origen=self.enteza_origen_prestamo,
-            )
-        elif float_compare(self.enteza_prestable_otra, 0.0,
-                           precision_rounding=redondeo) > 0:
-            # Nunca dar a entender que está resuelto cuando solo lo está a medias.
-            cola = _(
-                '%(origen)s solo puede prestar %(cubierto)s: quedarían %(resto)s sin cubrir.',
-                origen=self.enteza_origen_prestamo,
-                cubierto=formatLang(self.env, self.enteza_prestable_otra,
-                                    dp='Product Unit of Measure'),
-                resto=formatLang(self.env, self.enteza_falta - self.enteza_prestable_otra,
-                                 dp='Product Unit of Measure'),
-            )
-        else:
-            cola = _('Ninguna otra compañía del grupo tiene unidades libres en estas fechas.')
-
-        # `Markup % ...` escapa los argumentos que no son Markup, así que el nombre del
-        # producto no puede inyectar nada aunque lleve caracteres raros.
-        return Markup('<li>%s — faltan %s %s. %s</li>') % (
-            self.product_id.display_name, cantidad, unidad, str(cola),
-        )
 
     def _enteza_buscar_prestamista(self, falta):
         """Busca en las compañías del grupo quién puede cubrir `falta`.

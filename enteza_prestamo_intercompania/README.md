@@ -22,35 +22,48 @@ El widget va antes que el diálogo a propósito: los dos necesitan el mismo cál
 primero a pantalla es la única forma de comprobarlo sin poder ejecutar pruebas. Si el diálogo
 se retrasara, lo entregado ya sirve por sí solo.
 
-## El aviso de préstamo (`19.0.2.1.0` y `19.0.2.2.0`)
+## El aviso de préstamo (`19.0.2.3.0`)
 
-Primera mitad de la entrega 2. Cuando el almacén propio no llega, el comercial se entera por
-**tres sitios a la vez**, de más visible a más detallado:
-
-1. **Aviso en la cabecera del pedido**, siempre a la vista y sin tener que pinchar nada. Es
-   lo que se lee en un pedido de treinta líneas.
-2. **El icono de disponibilidad de la línea en rojo**, para localizar cuál es.
-3. **La ventana flotante del icono**, con el detalle.
+Primera mitad de la entrega 2. Cuando el almacén propio no llega, **el icono de
+disponibilidad de la línea se pone rojo**, y al pincharlo la ventana flotante dice cuánto
+falta y quién puede prestarlo:
 
 ```
-┌─ Pedido de alquiler S00042 ────────────────────────────┐
-│ ⚠ Falta material para servir este pedido               │
-│   · VASO MACETA MAXI 50CL — faltan 15 Uds.             │
-│     Stileum · Jerez puede prestarlas: se reservarán    │
-│     al confirmar.                                      │
-│                                                        │
-│ Producto                  Cantidad   Disp.             │
-│ VASO MACETA MAXI 50CL        95       📉 ← en rojo      │
-└────────────────────────────────────────────────────────┘
+Producto                  Cantidad   Disp.
+VASO MACETA MAXI 50CL        95       📉  ← en rojo
+                                       │
+                     ┌─────────────────┴──────────────────┐
+                     │ Disponible para alquilar   80 Uds  │
+                     │ 15/08/2026 a 17/08/2026            │
+                     │                                    │
+                     │ ⚠ Faltan 15 Uds                    │
+                     │ Stileum · Jerez las presta.        │
+                     │ Se reservan al confirmar.          │
+                     └────────────────────────────────────┘
 ```
 
-Con material de sobra no aparece nada de esto: el widget se comporta como el nativo. Si la
-otra compañía solo cubre una parte, se dice lo que cubre **y lo que queda suelto**.
+Con material de sobra no aparece nada: el icono queda como el nativo y la ventana tampoco
+dice nada. Si la otra compañía solo cubre una parte, se dice lo que cubre **y lo que queda
+suelto**.
 
 El rojo del icono cuelga de **nuestro** campo y no del `forecasted_issue` nativo: ese depende
 de `qty_to_deliver`, y en alquiler `sale_stock_renting` pone el método de entrega en manual,
 así que no es de fiar aquí. Colgándolo de `enteza_falta`, el icono se pone rojo exactamente
 cuando hay mensaje que leer.
+
+> **Hubo un aviso en la cabecera del pedido y se quitó** (`19.0.2.3.0`, decisión del cliente
+> del 2026-08-02). Resumía las líneas con déficit sin tener que pinchar nada, pero en pedidos
+> de muchas líneas se convertía en ruido. El icono rojo es ahora **la única señal en
+> pantalla**: si algún día deja de pintarse, el déficit se vuelve invisible hasta la
+> confirmación. Está en el historial de git por si se quiere recuperar.
+
+### Limitación heredada del nativo
+
+**Dos líneas del mismo presupuesto no compiten entre sí.** Solo cuenta como demanda lo
+confirmado (`state = 'sale'`, ver `_get_active_rental_lines`), así que dos líneas de 95 y 10
+del mismo producto ven las dos las mismas 80 libres, aunque entre ambas pidan 105. El reparto
+real lo decide la confirmación, que es donde se reserva. Cubierto por
+`test_cada_linea_se_evalua_por_su_cuenta`.
 
 ### Un préstamo ya reservado deja de contar como déficit
 
@@ -115,6 +128,9 @@ Los campos usados (`start_date`, `return_date`, `is_rental`, `product_uom_qty`,
 `order_id.warehouse_id`, `uom.uom.rounding`) están comprobados por RPC contra `enteza26`.
 **El cálculo en sí no está ejecutado**: las pruebas de `test_widget_prestamo.py` están
 escritas y validadas por sintaxis, no corridas.
+
+Lo que sí está probado a mano en `enteza26` (2026-08-02): con 80 unidades en Sevilla y una
+línea de 95, la ventana flotante muestra el aviso con las cifras correctas.
 
 🔴 **Si el backend se queda en blanco tras actualizar**, empezar por el `t-inherit`: cuando no
 encuentra su `xpath` se cae el bundle entero y no queda nada en el log del servidor. Y probar

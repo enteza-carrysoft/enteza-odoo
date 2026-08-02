@@ -135,29 +135,8 @@ class TestWidgetPrestamo(TransactionCase):
         self.assertEqual(linea.enteza_prestable_otra, 0)
         self.assertFalse(linea.enteza_origen_prestamo)
 
-    # ------------------------------------------------------------------
-    # Aviso de la cabecera del pedido
-    # ------------------------------------------------------------------
-
-    def test_sin_deficit_no_hay_aviso_en_cabecera(self):
-        self._dar_stock(80, self.almacen)
-        linea = self._linea(50)
-
-        self.assertFalse(linea.order_id.enteza_aviso_deficit)
-
-    def test_el_aviso_nombra_producto_cantidad_y_prestamista(self):
-        self._dar_stock(80, self.almacen)
-        self._dar_stock(20, self.almacen_otra)
-        linea = self._linea(95)
-
-        aviso = linea.order_id.enteza_aviso_deficit
-        self.assertTrue(aviso)
-        self.assertIn(self.producto.name, aviso)
-        self.assertIn('15', aviso)
-        self.assertIn(self.otra.name, aviso)
-
-    def test_el_aviso_recoge_todas_las_lineas_con_deficit(self):
-        """En un pedido largo el aviso es lo único que se lee: tiene que estar completo."""
+    def test_cada_linea_se_evalua_por_su_cuenta(self):
+        """En un pedido de muchas líneas, cada una marca su icono o no lo marca."""
         otro_producto = self.env['product.product'].create({
             'name': 'Mesa plegable (test)',
             'uom_id': self.env.ref('uom.product_uom_unit').id,
@@ -172,34 +151,21 @@ class TestWidgetPrestamo(TransactionCase):
             'rental_return_date': self.hasta,
             'order_line': [
                 Command.create({'product_id': self.producto.id, 'product_uom_qty': 95}),
+                Command.create({'product_id': self.producto.id, 'product_uom_qty': 10}),
                 Command.create({'product_id': otro_producto.id, 'product_uom_qty': 4}),
             ],
         })
+        primera, segunda, tercera = pedido.order_line
 
-        aviso = pedido.enteza_aviso_deficit
-        self.assertIn(self.producto.name, aviso)
-        self.assertIn(otro_producto.name, aviso)
-
-    def test_el_aviso_escapa_el_nombre_del_producto(self):
-        """El aviso es HTML construido a mano: que un nombre raro no inyecte marcado."""
-        travieso = self.env['product.product'].create({
-            'name': 'Silla <b>rota</b> & Cía',
-            'uom_id': self.env.ref('uom.product_uom_unit').id,
-            'rent_ok': True,
-            'is_storable': True,
-            'company_id': False,
-        })
-        pedido = self.env['sale.order'].with_context(in_rental_app=True).create({
-            'partner_id': self.cliente.id,
-            'rental_start_date': self.desde,
-            'rental_return_date': self.hasta,
-            'order_line': [Command.create({
-                'product_id': travieso.id, 'product_uom_qty': 10,
-            })],
-        })
-
-        self.assertIn('&lt;b&gt;', pedido.enteza_aviso_deficit)
-        self.assertNotIn('<b>rota</b>', pedido.enteza_aviso_deficit)
+        self.assertEqual(primera.enteza_falta, 15)
+        # 🔴 Limitación conocida y heredada del nativo: dos líneas del MISMO presupuesto no
+        # compiten entre sí. Solo cuenta como demanda lo confirmado (`state = 'sale'`,
+        # `_get_active_rental_lines`), así que las dos ven las mismas 80 libres aunque entre
+        # ambas pidan 105. El reparto real lo decide la confirmación, que es donde se reserva.
+        self.assertEqual(segunda.enteza_falta, 0)
+        # De este producto no hay ni una unidad en ningún sitio.
+        self.assertEqual(tercera.enteza_falta, 4)
+        self.assertEqual(tercera.enteza_prestable_otra, 0)
 
     # ------------------------------------------------------------------
     # Un préstamo ya reservado deja de contar como déficit
@@ -236,7 +202,6 @@ class TestWidgetPrestamo(TransactionCase):
         linea.invalidate_recordset(['enteza_falta'])
 
         self.assertEqual(linea.enteza_falta, 0)
-        self.assertFalse(linea.order_id.enteza_aviso_deficit)
 
     def test_un_prestamo_en_borrador_no_tapa_nada(self):
         """Una propuesta sin reservar no compromete material: no puede tapar el aviso."""
