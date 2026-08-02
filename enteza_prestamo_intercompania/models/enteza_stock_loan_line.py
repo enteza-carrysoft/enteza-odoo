@@ -76,6 +76,22 @@ class EntezaStockLoanLine(models.Model):
         for linea in self:
             linea.qty_pending = linea.qty_sent - linea.qty_returned
 
+    def _enteza_cancelar_movimientos(self):
+        """Cancela los movimientos de stock que dependen de estas líneas.
+
+        Hay que llamarlo **antes** de borrar la línea: el enlace del movimiento es
+        `ondelete='set null'`, así que un borrado a secas dejaría un movimiento huérfano que
+        seguiría sacando material del almacén sin que nada lo relacionara con nada.
+        """
+        if not self:
+            return
+        movimientos = self.env['stock.move'].sudo().search([
+            ('enteza_loan_line_id', 'in', self.ids),
+        ])
+        movimientos.filtered(
+            lambda mov: mov.state not in ('done', 'cancel')
+        )._action_cancel()
+
     def _qty_comprometida(self):
         """Cantidad que esta línea compromete en la compañía prestamista.
 

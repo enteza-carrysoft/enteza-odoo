@@ -99,6 +99,64 @@ class SaleOrderLine(models.Model):
                 almacen=almacen_origen.display_name,
             )
 
+    def write(self, vals):
+        """Reducir la cantidad de una línea confirmada libera su parte del préstamo (§7.0.2).
+
+        Solo la **reducción**. Ampliar un pedido ya confirmado necesita volver a pasar por el
+        cálculo de déficit y por el diálogo de D5.1, y eso todavía no está: por ahora el icono
+        de la línea se pondrá rojo y habrá que resolverlo a mano. Está anotado en el README.
+
+        Las cantidades se leen **antes** de `super()`, que es cuando todavía se sabe cuánto
+        había.
+        """
+        reducciones = []
+        if 'product_uom_qty' in vals:
+            nueva = vals['product_uom_qty']
+            for linea in self:
+                if linea.state != 'sale' or not linea.is_rental:
+                    continue
+                quitado = linea.product_uom_qty - nueva
+                if float_compare(quitado, 0.0,
+                                 precision_rounding=linea.product_uom_id.rounding) > 0:
+                    reducciones.append((linea, quitado))
+
+        resultado = super().write(vals)
+
+        for linea, quitado in reducciones:
+            linea._enteza_liberar_prestamo(cantidad=quitado, motivo=_(
+                'Se ha reducido en %(cantidad)s la línea de %(producto)s del pedido '
+                '%(pedido)s.',
+                cantidad=quitado,
+                producto=linea.product_id.display_name,
+                pedido=linea.order_id.name,
+            ))
+        return resultado
+
+    def _enteza_liberar_prestamo(self, cantidad=None, motivo=''):
+        """Retira de los préstamos vivos lo que estas líneas tenían comprometido.
+
+        `cantidad` a `None` es «todo» (cancelación); con un número, esa cantidad (reducción).
+
+        `sudo()` porque el préstamo pertenece a la compañía prestamista y quien cancela el
+        pedido es de la receptora: sin él no vería el documento que tiene que liberar, y el
+        material se quedaría comprometido sin que nadie se enterara.
+        """
+        for linea in self:
+            lineas_prestamo = self.env['enteza.stock.loan.line'].sudo().search(
+                [('sale_line_id', '=', linea.id)], order='id',
+            )
+            for prestamo in lineas_prestamo.loan_id:
+                suyas = lineas_prestamo.filtered(
+                    lambda lin: lin.loan_id == prestamo
+                )
+                prestamo._enteza_liberar(suyas, cantidad=cantidad, motivo=motivo)
+                # El pedido deja de figurar como origen si ya no aporta ninguna línea: si no,
+                # el préstamo seguiría apuntando a un pedido que ya no tiene nada que ver.
+                if prestamo.exists() and not prestamo.line_ids.filtered(
+                    lambda lin: lin.sale_line_id.order_id == linea.order_id
+                ):
+                    prestamo.origin_order_ids = [(3, linea.order_id.id)]
+
     def _enteza_cubierto_por_prestamo(self):
         """Unidades que un préstamo ya comprometido aporta para esta línea.
 

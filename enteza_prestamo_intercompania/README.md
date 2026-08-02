@@ -126,6 +126,36 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+## Cancelar o reducir un pedido libera su parte (`19.0.4.1.0`)
+
+Contrapartida obligatoria de haber juntado varios pedidos en un mismo viaje. Sin esto,
+cancelar un evento dejaba su material comprometido para siempre y, si el traslado ya estaba
+aprobado, **viajaba igualmente**.
+
+| Estado del préstamo | Al cancelar el pedido |
+|---|---|
+| `reserved` | Se retira su línea. Si el préstamo se queda vacío, se cancela |
+| `approved` | Ídem, y **se ajusta el albarán existente** (§7.0.2). Si queda vacío, se cancelan los dos albaranes |
+| `in_transit` en adelante | 🔴 **No se toca nada.** El material ya salió: se marca el préstamo con «Necesita revisión» y el motivo |
+
+Reducir la cantidad de una línea confirmada libera la parte proporcional. **Ampliarla no hace
+nada todavía**: eso necesita volver a pasar por el cálculo de déficit y por el diálogo de
+D5.1. Por ahora el icono de la línea se pondrá rojo y hay que resolverlo a mano.
+
+Detalles que conviene no deshacer:
+
+- Se libera **antes** de `super()._action_cancel()`, mientras las líneas siguen en `sale`: es
+  el único momento en que se sabe con certeza qué aportaba cada una.
+- Los movimientos de stock se **cancelan antes** de borrar la línea de préstamo. El enlace es
+  `ondelete='set null'`, así que borrarla a secas dejaría un movimiento huérfano que seguiría
+  sacando material del almacén sin que nada lo relacionara con nada.
+- Vaciar un préstamo lo cancela **sin pasar por `action_cancelar`**, que exige el grupo de
+  responsable. Aquí no hay decisión que tomar —el motivo del préstamo ha desaparecido— y
+  exigir una firma solo dejaría viajes vivos sin carga.
+- Todo queda anotado con fecha en las notas del préstamo.
+
+Los préstamos marcados salen con el filtro **«Necesitan revisión»** de la lista.
+
 ## El traslado de ida: dos albaranes vía tránsito (`19.0.4.0.0`)
 
 Al **aprobar**, el préstamo deja de ser papel: se generan los dos albaranes y el material

@@ -32,6 +32,25 @@ ESPACIO_BLOQUEO_PRESTAMO = 720190
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    def _action_cancel(self):
+        """Al cancelar el pedido se libera lo que tenía comprometido en préstamos (§7.0.2).
+
+        🔴 Es lo que hace viable juntar varios pedidos en un mismo viaje. Sin esto, cancelar
+        uno de los eventos dejaba su material comprometido para siempre: la prestamista no
+        podía volver a venderlo y, si el traslado ya estaba aprobado, **viajaba igualmente**.
+
+        Se libera **antes** de llamar a `super()`: mientras las líneas siguen en `sale`. Es
+        el único momento en que se sabe con certeza qué aportaba cada una.
+
+        Se engancha en `_action_cancel` y no en `action_cancel` porque el segundo es solo el
+        botón; el asistente de cancelación y las llamadas de otros módulos pasan por este.
+        """
+        for pedido in self:
+            pedido.order_line._enteza_liberar_prestamo(motivo=_(
+                'Se ha cancelado el pedido %s.', pedido.name,
+            ))
+        return super()._action_cancel()
+
     def action_confirm(self):
         """Intercepta la confirmación si hay déficit que cubrir (PRP §7.0, paso 1).
 

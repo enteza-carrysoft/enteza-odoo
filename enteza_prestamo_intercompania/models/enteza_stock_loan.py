@@ -1,8 +1,11 @@
 from collections import defaultdict
 from datetime import timedelta
 
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import float_compare
 
 # Estados en los que el préstamo COMPROMETE material en la compañía prestamista, es decir,
 # los que alimentan `prestado_a_terceros` en el cálculo de disponibilidad.
@@ -120,6 +123,12 @@ class EntezaStockLoan(models.Model):
         digits='Product Unit of Measure',
         help='Suma de lo que este préstamo compromete hoy en la compañía prestamista.',
     )
+    revision_pendiente = fields.Boolean(
+        string='Necesita revisión', copy=False, index=True,
+        help='Un pedido que alimentaba este préstamo se ha cancelado o reducido cuando el '
+             'material ya había salido del almacén. Hay que decidir qué se hace con él.',
+    )
+    revision_motivo = fields.Text(string='Motivo de la revisión', copy=False, readonly=True)
     tiene_pendiente_aprobacion = fields.Boolean(
         string='Material pendiente de firmar', compute='_compute_pendiente_aprobacion',
         help='El préstamo ya está aprobado, pero se le ha acumulado material nuevo que '
@@ -465,6 +474,97 @@ class EntezaStockLoan(models.Model):
         return self._fecha_traslado_de(min(self.line_ids.mapped('date_from')))
 
     # ------------------------------------------------------------------
+    # Liberar lo que un pedido cancelado o reducido ya no necesita (§7.0.2)
+    # ------------------------------------------------------------------
+
+    def _enteza_liberar(self, lineas, cantidad=None, motivo=''):
+        """Retira de este préstamo lo que aportaban `lineas`.
+
+        🔴 Es lo que hace viable juntar varios pedidos en un mismo viaje. Sin esto, cancelar
+        uno de los eventos dejaba su material comprometido para siempre: la prestamista no
+        podía volver a venderlo y, si el préstamo estaba aprobado, **viajaba igualmente**.
+
+        `cantidad` a `None` significa «todo lo de estas líneas» (cancelación). Con un número,
+        se retira esa cantidad repartida entre ellas (reducción de pedido).
+
+        Devuelve `True` si se ha podido liberar y `False` si el material ya había salido.
+        """
+        self.ensure_one()
+        if self.state in ('returned', 'cancelled'):
+            return False
+        if self.state in ('in_transit', 'lent', 'partially_returned'):
+            # El material físicamente ya salió del almacén. Deshacerlo desde aquí dejaría las
+            # existencias descuadradas en las dos compañías: tiene que volver por el circuito
+            # de devolución, y mientras tanto alguien tiene que enterarse (§12, caso 11).
+            self._marcar_para_revision(motivo)
+            return False
+
+        pendiente = cantidad
+        for linea in lineas:
+            redondeo = linea.product_uom_id.rounding or 0.01
+            actual = linea._qty_comprometida() or linea.qty_proposed
+            quitar = actual if pendiente is None else min(pendiente, actual)
+            if pendiente is not None:
+                pendiente -= quitar
+            restante = actual - quitar
+
+            if float_compare(restante, 0.0, precision_rounding=redondeo) <= 0:
+                # Los movimientos se cancelan ANTES de borrar la línea: el enlace es
+                # `ondelete='set null'`, así que un borrado a secas dejaría un movimiento
+                # huérfano que seguiría sacando material del almacén.
+                linea._enteza_cancelar_movimientos()
+                linea.unlink()
+            else:
+                valores = {'qty_proposed': restante}
+                if linea.qty_reserved:
+                    valores['qty_reserved'] = restante
+                if linea.qty_approved:
+                    valores['qty_approved'] = restante
+                linea.write(valores)
+
+            if pendiente is not None and float_compare(
+                pendiente, 0.0, precision_rounding=redondeo
+            ) <= 0:
+                break
+
+        self._anotar(motivo)
+        if not self.line_ids:
+            self._enteza_cancelar_por_vacio()
+        elif self.state == 'approved':
+            # Quedan líneas: los albaranes se ajustan a la baja, no se rehacen (§7.0.2).
+            self._sincronizar_movimientos()
+        return True
+
+    def _enteza_cancelar_por_vacio(self):
+        """El préstamo se ha quedado sin material: se cancela con sus albaranes.
+
+        No se pasa por `action_cancelar` a propósito: ese exige el grupo de responsable, y
+        aquí no hay ninguna decisión que tomar —el motivo del préstamo ha desaparecido—.
+        Exigir una firma para cancelar un viaje que ya no tiene carga solo conseguiría que
+        quedaran documentos vivos sin sentido.
+        """
+        self.ensure_one()
+        albaranes = (self.picking_out_id | self.picking_in_id).filtered(
+            lambda albaran: albaran.state not in ('done', 'cancel')
+        )
+        albaranes.sudo().action_cancel()
+        self.state = 'cancelled'
+
+    def _marcar_para_revision(self, motivo):
+        self.ensure_one()
+        self.revision_pendiente = True
+        self.revision_motivo = '\n'.join(filter(None, [self.revision_motivo, motivo]))
+        self._anotar(motivo)
+
+    def _anotar(self, texto):
+        """Deja constancia en las notas. La trazabilidad pesa más que la limpieza aquí."""
+        self.ensure_one()
+        if not texto:
+            return
+        sello = fields.Datetime.to_string(fields.Datetime.now())
+        self.notes = (self.notes or Markup()) + Markup('<p>%s — %s</p>') % (sello, texto)
+
+    # ------------------------------------------------------------------
     # Traslado de ida: los dos albaranes vía tránsito (PRP §6.1 y §7.4)
     # ------------------------------------------------------------------
 
@@ -565,17 +665,29 @@ class EntezaStockLoan(models.Model):
             albaran = albaran.sudo().with_company(albaran.company_id)
             for linea in self.line_ids:
                 cantidad = linea.qty_approved
-                if not cantidad:
-                    continue
                 movimiento = albaran.move_ids.filtered(
                     lambda mov: mov.enteza_loan_line_id == linea
                 )
+                if not cantidad:
+                    # Línea sin firmar, o firmada y luego vaciada porque su pedido se redujo:
+                    # si tenía movimiento, se cancela. Dejarlo vivo sacaría material del
+                    # almacén para un evento que ya no existe.
+                    movimiento.filtered(
+                        lambda mov: mov.state not in ('done', 'cancel')
+                    )._action_cancel()
+                    continue
                 if movimiento:
                     if movimiento.product_uom_qty != cantidad:
                         movimiento.product_uom_qty = cantidad
                     continue
                 self.env['stock.move'].sudo().with_company(albaran.company_id).create({
-                    'name': linea.product_id.display_name,
+                    # 🔴 `name` NO existe en `stock.move` en la 19: se eliminó. La
+                    # descripción de la línea es `description_picking`. Con `name` la
+                    # creación revienta con «Invalid field 'name' in 'stock.move'».
+                    'description_picking': linea.product_id.display_name,
+                    # `date` es obligatorio en la 19; se ata a la fecha del traslado para que
+                    # el albarán y sus movimientos no digan días distintos.
+                    'date': albaran.scheduled_date,
                     'product_id': linea.product_id.id,
                     'product_uom_qty': cantidad,
                     'product_uom': (

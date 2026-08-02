@@ -23,6 +23,7 @@
                 <field name="qty_total" sum="Unidades"/>
                 <field name="origin" optional="hide"/>
                 <field name="date_reserved" optional="hide"/>
+                <field name="revision_pendiente" optional="show"/>
                 <field name="traslado_retrasado" column_invisible="1"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'reserved'"
@@ -72,6 +73,11 @@
                         La fecha de traslado ya ha pasado y el préstamo sigue sin aprobarse.
                         El material no se ha movido.
                     </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="not revision_pendiente">
+                        <strong>Este préstamo necesita una decisión.</strong>
+                        <field name="revision_motivo" nolabel="1" readonly="1"/>
+                    </div>
                     <div class="alert alert-warning" role="alert"
                          invisible="not tiene_pendiente_aprobacion">
                         Se ha añadido material a este traslado después de aprobarlo, para que
@@ -93,6 +99,7 @@
                             <field name="origin"/>
                             <field name="traslado_retrasado" invisible="1"/>
                             <field name="tiene_pendiente_aprobacion" invisible="1"/>
+                            <field name="revision_pendiente" invisible="1"/>
                         </group>
                     </group>
                     <notebook>
@@ -161,6 +168,8 @@
                     almacenado —depende de la fecha de hoy— y por eso no se puede filtrar
                     por él directamente.
                 -->
+                <filter name="f_revision" string="Necesitan revisión"
+                        domain="[('revision_pendiente', '=', True)]"/>
                 <filter name="f_retrasados" string="Traslado retrasado"
                         domain="[('state', '=', 'reserved'), ('date_transfer', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
                 <separator/>

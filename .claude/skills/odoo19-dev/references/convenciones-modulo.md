@@ -125,6 +125,9 @@ Necesita `lxml` (`python -m pip install lxml`). **Pasarlo no garantiza que el m�
 | `res.groups.category_id` | **eliminado** → `privilege_id` (ver abajo) |
 | `_sql_constraints = [...]` | **`models.Constraint('CHECK (...)', 'mensaje')`** |
 | `_auto_init` + `tools.create_index` | **`models.Index('(campo1, campo2)')`** |
+| `stock.move.name` | **eliminado** → `description_picking` (y `date` es obligatorio) |
+| `stock.location.scrap_location` / `return_location` | **eliminados** |
+| `stock.move.product_uom` | **sigue llamándose así**, no `product_uom_id` (ojo: en `sale.order.line` sí cambió) |
 
 ### Restricciones e índices: `_sql_constraints` ya no existe
 
