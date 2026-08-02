@@ -15,7 +15,9 @@ entregas siguientes de esta misma fase, en este orden:
    (D5/D5.1). Al montar el presupuesto, el icono de la línea se pone rojo y dice cuánto falta
    y quién puede prestarlo. Al confirmar, un diálogo propone el préstamo y **solo si el
    comercial acepta** se reserva en firme, con el recálculo y el bloqueo del §5.6.
-3. ⬜ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
+3. ✅ **Albaranes** — ubicación de tránsito, tipos de operación y el doble albarán al aprobar.
+
+Con esto la **fase 2 está completa**: el material se mueve de verdad de una sociedad a otra.
 
 ## El aviso de préstamo (`19.0.2.3.0`)
 
@@ -123,6 +125,70 @@ artículos se abrazan.
   Quien reserva es de la compañía receptora y no tiene acceso a los quants de la otra: sin
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
+
+## El traslado de ida: dos albaranes vía tránsito (`19.0.4.0.0`)
+
+Al **aprobar**, el préstamo deja de ser papel: se generan los dos albaranes y el material
+empieza a moverse de verdad.
+
+```
+Jerez/Stock  ──[ Préstamo · salida ]──▶  Inter-company transit  ──[ Préstamo · entrada ]──▶  Sevilla/Stock
+  (Stileum)                                (sin compañía)                                      (Vimaple)
+     │                                                                                            │
+     └─ al validar: préstamo → in_transit                        al validar: préstamo → lent ─────┘
+```
+
+Dos albaranes y no uno porque el movimiento cruza dos sociedades: cada almacén valida el suyo
+y ve solo su mitad. El material vive en la ubicación de tránsito entre una validación y la
+otra. **El estado del préstamo lo mueve el hecho físico**, no un botón: si dice `in_transit`
+es porque el material ha salido de las estanterías.
+
+### 🔴 La ubicación de tránsito ya existe en Odoo 19: no hay que crearla
+
+Esto **corrige el §6.1 del PRP en dos puntos**, y los dos habrían costado un despliegue:
+
+| El PRP decía | La realidad de la 19 |
+|---|---|
+| Crear una `stock.location` de tránsito propia | **Ya existe**: `stock.stock_location_inter_company`, `usage='transit'` y `company_id` vacío. Crear otra sería duplicar la que usan los flujos intercompañía del propio Odoo |
+| Colgarla de `stock.stock_location_locations_virtual` | Ese external id **no existe en la 19**. El XML del PRP habría reventado la instalación |
+
+Viene **archivada**, y por eso una búsqueda de ubicaciones de tránsito no la encuentra y
+parece que no hay ninguna — el §2 del PRP llegó a anotar «0 ubicaciones de tránsito en toda la
+base», que era cierto y engañoso a la vez. El módulo la reactiva desde `data/`, **fuera** del
+bloque `noupdate`, para que si alguien la archiva la siguiente actualización la deje usable.
+
+`_ubicacion_transito()` comprueba las tres condiciones y da un error claro si falla alguna. Sin
+`company_id` vacío la mitad del flujo se rompe con un error de acceso poco descriptivo, que es
+la causa número uno de problemas en este tipo de módulo.
+
+### Tipos de operación: uno por almacén, creados solos
+
+`Préstamo · salida` y `Préstamo · entrada`, con su propia secuencia (`PREOUT` / `PREIN`). **No
+se reutilizan los `OUT`/`IN` de cliente**: el operario vería traslados entre sociedades
+mezclados con las entregas a clientes, y no son lo mismo ni los prepara la misma persona.
+
+Se crean **la primera vez que hacen falta**, no como datos del módulo: los almacenes no existen
+al instalar y sus ids no se pueden poner en un XML. Así tampoco hay que acordarse de configurar
+nada cuando el cliente abra el tercer almacén. Quedan guardados en dos campos del propio
+almacén, así que se pueden ver y cambiar.
+
+⚠️ En la 19, `default_location_src_id` y `default_location_dest_id` son **obligatorios** en el
+tipo de operación; no lo eran antes.
+
+### Ampliar, nunca rehacer
+
+Si al préstamo se le acumula material después de aprobarlo (§7.2), la segunda aprobación
+**añade los movimientos al albarán que ya existe**. Cancelar y crear otro dejaría al almacén
+con documentos anulados que quizá ya había impreso, y el §7.0.2 pide expresamente lo
+contrario.
+
+El emparejamiento entre movimiento y línea de préstamo es explícito
+(`stock.move.enteza_loan_line_id`) y no por producto: un mismo préstamo puede llevar el mismo
+artículo dos veces para intervalos distintos, y emparejar por producto mezclaría las
+cantidades.
+
+**Solo se mueve lo que tiene `qty_approved`.** Es la traducción física de la regla de siempre:
+lo reservado protege el material, lo aprobado lo mueve.
 
 ### Un préstamo es un VIAJE, no un pedido (`19.0.3.1.0`)
 

@@ -260,6 +260,10 @@ class EntezaStockLoan(models.Model):
                 if not linea.qty_approved:
                     linea.qty_approved = linea.qty_reserved
             prestamo.state = 'approved'
+            # Aquí es donde el préstamo deja de ser papel: se generan los dos albaranes, o
+            # se amplían los que ya existan si esta aprobación solo firma material añadido
+            # después. Va DESPUÉS de fijar `qty_approved`, que es lo que decide qué se mueve.
+            prestamo._sincronizar_albaranes()
         return True
 
     def incorporar(self, vals_lineas, pedido=None):
@@ -459,6 +463,155 @@ class EntezaStockLoan(models.Model):
         if not self.line_ids:
             return False
         return self._fecha_traslado_de(min(self.line_ids.mapped('date_from')))
+
+    # ------------------------------------------------------------------
+    # Traslado de ida: los dos albaranes vía tránsito (PRP §6.1 y §7.4)
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _ubicacion_transito(self):
+        """Ubicación de tránsito compartida entre las dos sociedades.
+
+        🔴 **Odoo 19 ya la trae**: `stock.stock_location_inter_company`, con `usage='transit'`
+        y `company_id` vacío, que es exactamente lo que hace falta. Viene **archivada**, y por
+        eso una búsqueda normal de ubicaciones de tránsito no la encuentra y parece que no
+        existe. El módulo la activa en `data/prestamo_data.xml`.
+
+        Corrige al PRP §6.1 en dos puntos: no hay que crear una ubicación propia —sería un
+        duplicado de la que usan los flujos intercompañía del propio Odoo— y su ejemplo
+        colgaba de `stock.stock_location_locations_virtual`, que **no existe en la 19**.
+
+        Sin `company_id` vacío la mitad del flujo falla con un error de acceso poco
+        descriptivo: es la causa número uno de problemas en este tipo de módulo, así que se
+        comprueba y se dice claro en vez de dejar que reviente más adelante.
+        """
+        transito = self.env.ref(
+            'stock.stock_location_inter_company', raise_if_not_found=False,
+        )
+        if not transito:
+            raise UserError(_(
+                'No existe la ubicación de tránsito entre compañías '
+                '(`stock.stock_location_inter_company`). Sin ella no se puede mover '
+                'material de una sociedad a otra.'
+            ))
+        if not transito.sudo().active:
+            raise UserError(_(
+                'La ubicación de tránsito entre compañías está archivada. Hay que '
+                'reactivarla antes de trasladar material entre sociedades.'
+            ))
+        if transito.sudo().company_id:
+            raise UserError(_(
+                'La ubicación de tránsito «%s» tiene una compañía asignada. Tiene que '
+                'estar sin compañía, o la sociedad que recibe no podrá usarla.',
+                transito.display_name,
+            ))
+        return transito.sudo()
+
+    def _sincronizar_albaranes(self):
+        """Crea los dos albaranes del traslado, o amplía los que ya haya.
+
+        Se llama en cada aprobación, también en las que solo firman material añadido después
+        (§7.2). Por eso **amplía en vez de rehacer**: cancelar los albaranes y crear otros
+        dejaría al almacén con documentos anulados que ya había impreso, y el §7.0.2 pide
+        expresamente lo contrario.
+
+        Dos albaranes y no uno porque el movimiento cruza dos compañías: cada una valida el
+        suyo y ve solo su mitad. El material vive en la ubicación de tránsito entre una
+        validación y la otra.
+        """
+        self.ensure_one()
+        transito = self._ubicacion_transito()
+        if not self.picking_out_id:
+            self.picking_out_id = self._crear_albaran(True, transito)
+        if not self.picking_in_id:
+            self.picking_in_id = self._crear_albaran(False, transito)
+        self._sincronizar_movimientos()
+
+    def _crear_albaran(self, salida, transito):
+        self.ensure_one()
+        almacen = self.warehouse_src_id if salida else self.warehouse_dest_id
+        compania = almacen.company_id
+        # El albarán lo prepara y valida el almacén dueño, pero lo dispara la aprobación, que
+        # puede lanzar alguien de la otra sociedad: de ahí `sudo()` y `with_company()`.
+        return self.env['stock.picking'].sudo().with_company(compania).create({
+            'picking_type_id': almacen._enteza_tipo_prestamo(salida).id,
+            'location_id': (
+                self.warehouse_src_id.lot_stock_id.id if salida else transito.id
+            ),
+            'location_dest_id': (
+                transito.id if salida else self.warehouse_dest_id.lot_stock_id.id
+            ),
+            'company_id': compania.id,
+            'origin': self.name,
+            'scheduled_date': fields.Datetime.to_datetime(self.date_transfer)
+                              or fields.Datetime.now(),
+            'enteza_loan_id': self.id,
+        })
+
+    def _sincronizar_movimientos(self):
+        """Pone en cada albarán un movimiento por línea aprobada, sin duplicar.
+
+        El enlace es `stock.move.enteza_loan_line_id`, no el producto: un mismo préstamo
+        puede llevar el mismo artículo dos veces para intervalos distintos, y emparejar por
+        producto mezclaría las cantidades.
+
+        Solo entra lo que tiene `qty_approved`. Es la traducción física de la regla de
+        siempre: **lo reservado protege el material, lo aprobado lo mueve.**
+        """
+        self.ensure_one()
+        for salida, albaran in ((True, self.picking_out_id), (False, self.picking_in_id)):
+            if not albaran or albaran.state in ('done', 'cancel'):
+                continue
+            albaran = albaran.sudo().with_company(albaran.company_id)
+            for linea in self.line_ids:
+                cantidad = linea.qty_approved
+                if not cantidad:
+                    continue
+                movimiento = albaran.move_ids.filtered(
+                    lambda mov: mov.enteza_loan_line_id == linea
+                )
+                if movimiento:
+                    if movimiento.product_uom_qty != cantidad:
+                        movimiento.product_uom_qty = cantidad
+                    continue
+                self.env['stock.move'].sudo().with_company(albaran.company_id).create({
+                    'name': linea.product_id.display_name,
+                    'product_id': linea.product_id.id,
+                    'product_uom_qty': cantidad,
+                    'product_uom': (
+                        linea.product_uom_id.id or linea.product_id.uom_id.id
+                    ),
+                    'picking_id': albaran.id,
+                    'location_id': albaran.location_id.id,
+                    'location_dest_id': albaran.location_dest_id.id,
+                    'company_id': albaran.company_id.id,
+                    'enteza_loan_line_id': linea.id,
+                })
+            albaran.action_confirm()
+
+    def _enteza_albaran_validado(self, albaran):
+        """El almacén ha validado uno de los dos albaranes: el préstamo avanza.
+
+        El estado lo mueve el hecho físico, no un botón del documento. Si dice `in_transit`
+        es porque el material ha salido de verdad de las estanterías.
+
+        A partir de `in_transit` el préstamo **deja de contar** en
+        `_prestado_a_terceros` (ver `ESTADOS_COMPROMETEN`): el material ya no está en el
+        almacén de la prestamista y su stock real lo refleja. Seguir contándolo lo restaría
+        dos veces.
+        """
+        self.ensure_one()
+        if albaran == self.picking_out_id:
+            for movimiento in albaran.move_ids.filtered('enteza_loan_line_id'):
+                movimiento.enteza_loan_line_id.qty_sent = movimiento.quantity
+            if self.state in ('reserved', 'approved'):
+                self.state = 'in_transit'
+        elif albaran == self.picking_in_id:
+            if self.state in ('approved', 'in_transit'):
+                self.state = 'lent'
+            # La propiedad del material ya es de la receptora (D1). Es el punto donde la
+            # asesoría fiscal decidirá si esto genera documento (§9).
+            self._post_loan_hook()
 
     # ------------------------------------------------------------------
     # Puntos de enganche para la facturación (PRP §9)

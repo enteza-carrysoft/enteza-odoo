@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <!--
+        🔴 Ubicación de tránsito entre compañías.
+
+        NO se crea: Odoo 19 ya trae `stock.stock_location_inter_company`, con
+        `usage='transit'` y `company_id` vacío, que es justo lo que hace falta. Lo único que
+        pasa es que viene **archivada**, y por eso una búsqueda de ubicaciones de tránsito no
+        la encuentra y parece que no existe (el §2 del PRP llegó a anotar «0 ubicaciones de
+        tránsito en toda la base»).
+
+        Crear una propia sería duplicar la que usan los flujos intercompañía del propio Odoo.
+        Aquí solo se reactiva.
+
+        Va FUERA del bloque `noupdate="1"` a propósito: si alguien la archiva, la siguiente
+        actualización del módulo la vuelve a dejar utilizable.
+    -->
+    <record id="stock.stock_location_inter_company" model="stock.location">
+        <field name="active" eval="True"/>
+    </record>
+
     <data noupdate="1">
 
         <!--

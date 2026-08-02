@@ -387,6 +387,20 @@ apariencia de estar todo correcto.
 
 ### 6.1 Infraestructura de ubicaciones (datos del módulo)
 
+> 🔴 **CORREGIDO el 2026-08-02 contra la instancia. Lo de abajo NO se hizo así.**
+>
+> 1. **La ubicación de tránsito ya existe en Odoo 19**: `stock.stock_location_inter_company`,
+>    con `usage='transit'` y `company_id` vacío. Solo hay que **activarla**, viene archivada.
+>    Crear una propia sería duplicar la que usan los flujos intercompañía del propio Odoo.
+>    Que venga archivada explica el «0 ubicaciones de tránsito» del §2: era cierto y engañoso.
+> 2. **`stock.stock_location_locations_virtual` no existe en la 19.** El XML de ejemplo de
+>    abajo habría reventado la instalación con un error de referencia externa.
+>
+> Los tipos de operación sí se hicieron como dice el párrafo final, pero **creándolos la
+> primera vez que hacen falta** en vez de con una acción de configuración: los almacenes
+> pueden aparecer después y así no hay que acordarse de configurar nada. Ojo, en la 19
+> `default_location_src_id` y `default_location_dest_id` son **obligatorios**.
+
 Crear en un fichero de datos:
 
 ```xml
@@ -1051,7 +1065,8 @@ Se entrega en tres partes, en este orden:
 2. ✅ **Widget (§10.3) + enganche en `action_confirm` con el diálogo (§7.0, D5.1)** (`19.0.3.0.0`).
    El aviso de cabecera que se probó en `19.0.2.2.0` **se retiró**: en pedidos de muchas
    líneas era ruido. El icono rojo de la línea es la única señal en pantalla.
-3. ⬜ **Albaranes**: ubicación de tránsito sin compañía, tipos de operación y doble albarán.
+3. ✅ **Albaranes** (`19.0.4.0.0`): tránsito nativo reactivado, tipos de operación por
+   almacén creados sobre la marcha y doble albarán que se **amplía** al acumular.
 
 Hacer el widget **antes** que el diálogo salió bien y conviene recordar por qué: los dos usan
 exactamente el mismo cálculo, y sacarlo primero a pantalla fue la única forma de comprobarlo
