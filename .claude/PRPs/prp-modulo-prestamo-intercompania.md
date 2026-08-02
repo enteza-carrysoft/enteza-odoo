@@ -1073,9 +1073,11 @@ exactamente el mismo cálculo, y sacarlo primero a pantalla fue la única forma 
 sin poder ejecutar pruebas. El diálogo se escribió después ya sobre un cálculo que el cliente
 había visto funcionar.
 
-**Fase 3 — Devolución inteligente.**
-Cálculo de retención (§7.5), devoluciones parciales, cierre. Al terminar, el ejemplo de las 100
-prestadas / 30 retenidas / 70 devueltas debe salir solo.
+**Fase 3 — Devolución inteligente. ✅ HECHA (`19.0.5.0.0`).**
+Cálculo de retención (§7.5), devoluciones parciales, cierre. El ejemplo de las 100 prestadas /
+30 retenidas / 70 devueltas sale solo, y `[PENDIENTE-5]` queda implementado: la necesidad de la
+prestamista recorta la retención y las dos cifras se enseñan en la propuesta. La vista de
+control del §7.6 va en la misma entrega.
 
 **Fase 4 — Red de seguridad y control.**
 Cron de análisis por lotes, detección de reservas huérfanas y sobrantes, vista de control,

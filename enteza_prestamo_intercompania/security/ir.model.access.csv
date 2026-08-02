@@ -5,3 +5,5 @@ access_enteza_stock_loan_line_usuario,enteza.stock.loan.line usuario,model_entez
 access_enteza_stock_loan_line_responsable,enteza.stock.loan.line responsable,model_enteza_stock_loan_line,group_prestamo_responsable,1,1,1,1
 access_enteza_prestamo_confirm,enteza.prestamo.confirm,model_enteza_prestamo_confirm,base.group_user,1,1,1,1
 access_enteza_prestamo_confirm_line,enteza.prestamo.confirm.line,model_enteza_prestamo_confirm_line,base.group_user,1,1,1,1
+access_enteza_prestamo_devolucion,enteza.prestamo.devolucion,model_enteza_prestamo_devolucion,group_prestamo_responsable,1,1,1,1
+access_enteza_prestamo_devolucion_line,enteza.prestamo.devolucion.line,model_enteza_prestamo_devolucion_line,group_prestamo_responsable,1,1,1,1

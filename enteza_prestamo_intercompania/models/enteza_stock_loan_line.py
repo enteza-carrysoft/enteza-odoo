@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import api, fields, models
 
 
@@ -75,6 +77,62 @@ class EntezaStockLoanLine(models.Model):
     def _compute_qty_pending(self):
         for linea in self:
             linea.qty_pending = linea.qty_sent - linea.qty_returned
+
+    def _calcular_devolucion(self):
+        """Cuánto de lo prestado conviene devolver y cuánto retener (PRP §7.5).
+
+        Es el cálculo que el cliente pidió por su nombre. La idea: no devolver material que
+        la receptora va a volver a necesitar dentro de unos días, porque haría falta un viaje
+        de ida y otro de vuelta para nada.
+
+            ventana  = hoy .. hoy + N días        (parámetro, 7 por defecto)
+            necesita = pico de demanda de la receptora en la ventana
+            propio   = lo que hay en su almacén MENOS lo que tiene prestado sin devolver
+            retener  = min(pendiente, max(0, necesita - propio))
+            devolver = pendiente - retener
+
+        Ejemplo del cliente: prestadas 100, necesita 30 y no le llega con lo suyo →
+        retener 30, devolver 70.
+
+        🔴 **Si la prestamista también lo necesita, su necesidad manda** (`[PENDIENTE-5]`):
+        es su material. La retención se recorta en lo que le falte a ella, y las dos cifras
+        se devuelven para que el responsable vea por qué.
+
+        Devuelve un diccionario; **no escribe nada**. La devolución es una propuesta que
+        aprueba una persona (D2).
+        """
+        self.ensure_one()
+        prestamo = self.loan_id
+        motor = self.env['enteza.disponibilidad'].sudo()
+        pendiente = self.qty_pending
+
+        dias = prestamo._parametro('ventana_retencion', 7)
+        desde = fields.Datetime.now()
+        hasta = desde + timedelta(days=dias)
+
+        producto = self.product_id.sudo()
+        almacen_dest = prestamo.warehouse_dest_id.sudo()
+        almacen_src = prestamo.warehouse_src_id.sudo()
+
+        necesita = motor.comprometido(producto, almacen_dest, desde, hasta)[producto.id]
+        # Lo prestado está físicamente en la receptora y cuenta en su parque: hay que
+        # descontarlo para saber con cuánto se defiende ella sola.
+        propio = motor.parque(producto, almacen_dest)[producto.id] - pendiente
+        retener = min(pendiente, max(0.0, necesita - propio))
+
+        necesita_src = motor.comprometido(producto, almacen_src, desde, hasta)[producto.id]
+        falta_src = max(0.0, necesita_src - motor.parque(producto, almacen_src)[producto.id])
+        retener_ajustado = max(0.0, retener - falta_src)
+
+        return {
+            'linea_id': self.id,
+            'pendiente': pendiente,
+            'necesita_receptora': necesita,
+            'propio_receptora': propio,
+            'necesita_prestamista': falta_src,
+            'retener': retener_ajustado,
+            'devolver': pendiente - retener_ajustado,
+        }
 
     def _enteza_cancelar_movimientos(self):
         """Cancela los movimientos de stock que dependen de estas líneas.

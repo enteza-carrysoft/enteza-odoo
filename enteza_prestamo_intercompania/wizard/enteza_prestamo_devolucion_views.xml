@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_enteza_prestamo_devolucion_form" model="ir.ui.view">
+        <field name="name">enteza.prestamo.devolucion.form</field>
+        <field name="model">enteza.prestamo.devolucion</field>
+        <field name="arch" type="xml">
+            <form string="Devolver material prestado">
+                <div class="alert alert-info mb-3" role="alert">
+                    Se propone devolver lo que la compañía que tiene el material
+                    <strong>no va a necesitar</strong> en los próximos días. Lo que sí
+                    necesite se queda donde está, para no hacer un viaje de ida y otro de
+                    vuelta para nada.<br/>
+                    Puedes cambiar las cantidades antes de aceptar.
+                </div>
+
+                <field name="loan_id" invisible="1"/>
+                <field name="line_ids">
+                    <list editable="bottom" create="false" delete="false">
+                        <field name="loan_line_id" column_invisible="1"/>
+                        <field name="product_id" readonly="1"/>
+                        <field name="qty_pendiente" readonly="1"/>
+                        <field name="necesita_receptora" readonly="1" optional="show"/>
+                        <field name="propio_receptora" readonly="1" optional="show"/>
+                        <!--
+                            Se enseña aunque casi siempre valga cero: cuando no vale cero es
+                            la explicación de por qué se devuelve más de lo que la receptora
+                            querría, y sin verlo parecería un error del cálculo.
+                        -->
+                        <field name="necesita_prestamista" readonly="1" optional="show"/>
+                        <field name="qty_retener" readonly="1"/>
+                        <field name="qty_devolver"/>
+                    </list>
+                </field>
+
+                <footer>
+                    <button name="action_devolver" type="object" class="btn-primary"
+                            string="Generar la devolución"/>
+                    <button special="cancel" class="btn-secondary" string="Cancelar"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

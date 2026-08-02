@@ -197,6 +197,33 @@ class EntezaDisponibilidad(models.AbstractModel):
                 faltas[producto.id] = falta
         return faltas
 
+    def comprometido(self, productos, almacen, desde, hasta, ignorar_linea=None):
+        """Pico de material que los alquileres confirmados tienen comprometido.
+
+        Es la parte «alquilado» de `disponible()`, expuesta aparte porque el cálculo de la
+        devolución (§7.5) necesita saber **cuánta demanda hay**, no cuánto queda libre.
+        """
+        return {
+            producto.id: producto._get_unavailable_qty(
+                desde, hasta,
+                ignored_soline_id=ignorar_linea and ignorar_linea.id,
+                warehouse_id=almacen.id,
+            )
+            for producto in productos
+        }
+
+    def parque(self, productos, almacen):
+        """Unidades que hay HOY físicamente en el almacén.
+
+        Incluye lo que se haya recibido en préstamo: una vez validada la entrada, esas
+        unidades son inventario de la receptora como cualquier otra (D1). Quien quiera saber
+        cuánto es «suyo» tiene que restar lo pendiente de devolver.
+        """
+        return {
+            producto.id: producto.with_context(warehouse_id=almacen.id).qty_available
+            for producto in productos
+        }
+
     # ------------------------------------------------------------------
     # Cantidad rentable — réplica fiel del cálculo nativo
     # ------------------------------------------------------------------

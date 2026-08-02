@@ -16,6 +16,12 @@ class StockPicking(models.Model):
         ondelete='set null',
     )
 
+    enteza_devolucion = fields.Boolean(
+        string='Devolución de préstamo', copy=False,
+        help='Distingue el viaje de vuelta del de ida: los dos usan los mismos tipos de '
+             'operación, cambiados de bando.',
+    )
+
     def _action_done(self):
         """Avisa al préstamo cuando su albarán se valida.
 

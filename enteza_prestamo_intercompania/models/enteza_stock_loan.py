@@ -93,6 +93,17 @@ class EntezaStockLoan(models.Model):
     picking_in_id = fields.Many2one(
         'stock.picking', string='Albarán de entrada', copy=False, readonly=True,
     )
+    return_picking_ids = fields.One2many(
+        'stock.picking', 'enteza_loan_id', string='Albaranes de devolución',
+        domain=[('enteza_devolucion', '=', True)], readonly=True,
+        help='Cada devolución, total o parcial, genera su propio par de albaranes.',
+    )
+    qty_pendiente_devolver = fields.Float(
+        string='Pendiente de devolver', compute='_compute_qty_pendiente_devolver',
+        digits='Product Unit of Measure', store=True,
+        help='Lo que la receptora todavía no ha devuelto. Es la columna que mira a diario '
+             'el responsable de la prestamista (§7.6).',
+    )
 
     notes = fields.Html(string='Notas')
 
@@ -153,6 +164,11 @@ class EntezaStockLoan(models.Model):
             prestamo.qty_total = sum(
                 linea._qty_comprometida() for linea in prestamo.line_ids
             )
+
+    @api.depends('line_ids.qty_pending')
+    def _compute_qty_pendiente_devolver(self):
+        for prestamo in self:
+            prestamo.qty_pendiente_devolver = sum(prestamo.line_ids.mapped('qty_pending'))
 
     @api.depends('state', 'line_ids.qty_approved', 'line_ids.qty_reserved')
     def _compute_pendiente_aprobacion(self):
@@ -713,6 +729,13 @@ class EntezaStockLoan(models.Model):
         dos veces.
         """
         self.ensure_one()
+        if albaran.enteza_devolucion:
+            # De los dos albaranes de la vuelta, solo cuenta el que ATERRIZA en la
+            # prestamista. Anotar la devolución al validar la salida contaría como devuelto
+            # material que todavía va por la carretera.
+            if albaran.location_dest_id == self.warehouse_src_id.lot_stock_id:
+                self._enteza_devolucion_recibida(albaran)
+            return
         if albaran == self.picking_out_id:
             for movimiento in albaran.move_ids.filtered('enteza_loan_line_id'):
                 movimiento.enteza_loan_line_id.qty_sent = movimiento.quantity
@@ -724,6 +747,120 @@ class EntezaStockLoan(models.Model):
             # La propiedad del material ya es de la receptora (D1). Es el punto donde la
             # asesoría fiscal decidirá si esto genera documento (§9).
             self._post_loan_hook()
+
+    # ------------------------------------------------------------------
+    # Devolución (PRP §7.5)
+    # ------------------------------------------------------------------
+
+    def action_proponer_devolucion(self):
+        """Abre la propuesta de devolución. NO devuelve nada por su cuenta (D2)."""
+        self.ensure_one()
+        if self.state not in ('lent', 'partially_returned'):
+            raise UserError(_(
+                'Solo se puede proponer la devolución de un préstamo entregado. El %s está '
+                'en estado «%s».',
+                self.name, dict(ESTADOS).get(self.state, self.state),
+            ))
+        pendientes = self.line_ids.filtered(lambda linea: linea.qty_pending > 0)
+        if not pendientes:
+            raise UserError(_('El préstamo %s no tiene nada pendiente de devolver.',
+                              self.name))
+
+        asistente = self.env['enteza.prestamo.devolucion'].create({
+            'loan_id': self.id,
+            'line_ids': [
+                (0, 0, {
+                    'loan_line_id': datos['linea_id'],
+                    'product_id': linea.product_id.id,
+                    'qty_pendiente': datos['pendiente'],
+                    'necesita_receptora': datos['necesita_receptora'],
+                    'propio_receptora': datos['propio_receptora'],
+                    'necesita_prestamista': datos['necesita_prestamista'],
+                    'qty_retener': datos['retener'],
+                    'qty_devolver': datos['devolver'],
+                })
+                for linea, datos in (
+                    (linea, linea._calcular_devolucion()) for linea in pendientes
+                )
+            ],
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Devolver material prestado'),
+            'res_model': 'enteza.prestamo.devolucion',
+            'res_id': asistente.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def _crear_albaranes_devolucion(self, cantidades):
+        """Genera el par de albaranes de vuelta: receptora → tránsito → prestamista.
+
+        `cantidades` es `{linea_de_prestamo: cantidad}`. Cada devolución parcial genera **su
+        propio par**: son viajes distintos, y mezclarlos en un albarán que se reabre haría
+        imposible saber qué salió cada día.
+
+        Se reutilizan los tipos de operación que ya existen, cambiados de bando: la salida la
+        hace ahora el almacén que recibió el préstamo y la entrada el que lo prestó.
+        """
+        self.ensure_one()
+        transito = self._ubicacion_transito()
+        Albaran = self.env['stock.picking'].sudo()
+        Movimiento = self.env['stock.move'].sudo()
+
+        albaranes = self.env['stock.picking'].sudo()
+        for salida in (True, False):
+            almacen = self.warehouse_dest_id if salida else self.warehouse_src_id
+            compania = almacen.company_id
+            albaran = Albaran.with_company(compania).create({
+                'picking_type_id': almacen._enteza_tipo_prestamo(salida).id,
+                'location_id': (
+                    self.warehouse_dest_id.lot_stock_id.id if salida else transito.id
+                ),
+                'location_dest_id': (
+                    transito.id if salida else self.warehouse_src_id.lot_stock_id.id
+                ),
+                'company_id': compania.id,
+                'origin': _('%s · devolución', self.name),
+                'scheduled_date': fields.Datetime.now(),
+                'enteza_loan_id': self.id,
+                'enteza_devolucion': True,
+            })
+            for linea, cantidad in cantidades.items():
+                if cantidad <= 0:
+                    continue
+                Movimiento.with_company(compania).create({
+                    'description_picking': linea.product_id.display_name,
+                    'date': albaran.scheduled_date,
+                    'product_id': linea.product_id.id,
+                    'product_uom_qty': cantidad,
+                    'product_uom': linea.product_uom_id.id or linea.product_id.uom_id.id,
+                    'picking_id': albaran.id,
+                    'location_id': albaran.location_id.id,
+                    'location_dest_id': albaran.location_dest_id.id,
+                    'company_id': compania.id,
+                    'enteza_loan_line_id': linea.id,
+                })
+            albaran.action_confirm()
+            albaranes |= albaran
+        return albaranes
+
+    def _enteza_devolucion_recibida(self, albaran):
+        """La prestamista ha recibido el material de vuelta: se anota y se cierra si toca."""
+        self.ensure_one()
+        devueltas = self.env['enteza.stock.loan.line']
+        for movimiento in albaran.move_ids.filtered('enteza_loan_line_id'):
+            linea = movimiento.enteza_loan_line_id
+            linea.qty_returned += movimiento.quantity
+            devueltas |= linea
+
+        redondeo = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        cerrado = all(
+            float_compare(linea.qty_pending, 0.0, precision_digits=redondeo) <= 0
+            for linea in self.line_ids
+        )
+        self.state = 'returned' if cerrado else 'partially_returned'
+        self._post_return_hook(devueltas)
 
     # ------------------------------------------------------------------
     # Puntos de enganche para la facturación (PRP §9)

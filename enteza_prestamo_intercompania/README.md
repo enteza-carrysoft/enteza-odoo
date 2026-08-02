@@ -126,6 +126,43 @@ artículos se abrazan.
   esto la reserva fallaría siempre con un «no hay libre» falso, y de los difíciles de
   diagnosticar, porque el mismo préstamo sí se reserva bien desde la otra compañía.
 
+## Fase 3 · La devolución inteligente (`19.0.5.0.0`)
+
+El punto que el cliente pidió por su nombre. Cuando el material vuelve del evento, el
+responsable pulsa **Proponer devolución** y el módulo calcula cuánto conviene devolver:
+
+```
+ventana  = hoy .. hoy + 7 días          (parámetro `ventana_retencion`)
+necesita = pico de demanda de la receptora en la ventana
+propio   = lo que tiene en almacén MENOS lo que tiene prestado sin devolver
+retener  = min(pendiente, max(0, necesita - propio))
+devolver = pendiente - retener
+```
+
+**El ejemplo del cliente**: prestadas 100, necesita 30 en la ventana y no le llega con lo
+suyo → retiene 30, devuelve 70. La idea es no devolver material que va a hacer falta en unos
+días: sería un viaje de ida y otro de vuelta para nada.
+
+🔴 **Si la prestamista también lo necesita, su necesidad manda** (`[PENDIENTE-5]`): es su
+material. La retención se recorta en lo que le falte a ella, y **las dos cifras se enseñan en
+la propuesta**, porque si no parecería que el cálculo se ha equivocado.
+
+Es una **propuesta, no una ejecución** (D2): el responsable puede cambiar las cantidades antes
+de aceptar. Al aceptar se genera el par de albaranes de vuelta —receptora → tránsito →
+prestamista—, reutilizando los mismos tipos de operación cambiados de bando.
+
+- **Devoluciones parciales sucesivas**: cada una genera su propio par de albaranes. Son viajes
+  distintos y mezclarlos haría imposible saber qué salió cada día.
+- `qty_returned` se anota cuando la **prestamista recibe** el material, no cuando la receptora
+  lo despacha: entre una cosa y la otra va por la carretera.
+- Cuando no queda nada pendiente → `returned`. Si queda algo → `partially_returned`.
+
+### Vista de control (§7.6)
+
+La lista de préstamos responde de un vistazo qué hay prestado y cuánto falta por volver:
+columna **Sin devolver** con suma, y filtros **Pendientes de devolver** y **Necesitan
+revisión**.
+
 ## Cancelar o reducir un pedido libera su parte (`19.0.4.1.0`)
 
 Contrapartida obligatoria de haber juntado varios pedidos en un mismo viaje. Sin esto,
