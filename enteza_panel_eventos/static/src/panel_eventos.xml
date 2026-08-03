@@ -14,11 +14,31 @@
                 </button>
                 <button class="btn btn-secondary btn-sm" t-on-click="irAHoy">Hoy</button>
                 <span class="o_enteza_panel_mes fw-bold ms-2" t-esc="nombreMes"/>
+
+                <!--
+                    Los tres días de un pedido. Como la salida es la víspera del evento y la
+                    devolución el día siguiente, los tres contadores casi nunca coinciden: se
+                    enseñan siempre para que se vea de un vistazo el trabajo real del día.
+                -->
+                <div class="btn-group btn-group-sm ms-3" role="group">
+                    <button t-foreach="modos" t-as="modoDisponible" t-key="modoDisponible.clave"
+                            class="btn"
+                            t-att-class="state.modo === modoDisponible.clave ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.cambiarModo(modoDisponible.clave)">
+                        <t t-esc="modoDisponible.etiqueta"/>
+                        <span class="badge text-bg-light ms-1"
+                              t-esc="state.contadores[modoDisponible.clave]"/>
+                    </button>
+                </div>
+
                 <div class="flex-grow-1"/>
                 <span class="text-muted">
                     <t t-esc="state.totales.pedidos"/> pedidos ·
                     <t t-esc="state.totales.importe"/>
                 </span>
+                <button class="btn btn-secondary btn-sm" t-on-click="imprimirParte">
+                    <i class="fa fa-print me-1"/>Parte del día
+                </button>
                 <button class="btn btn-primary btn-sm" t-on-click="verPedidosDelDia">
                     Ver en lista
                 </button>
@@ -39,6 +59,7 @@
                                      'o_enteza_nivel_1': celda.nivel === 1,
                                      'o_enteza_nivel_2': celda.nivel === 2,
                                      'o_enteza_nivel_3': celda.nivel === 3,
+                                     'o_enteza_nivel_4': celda.nivel === 4,
                                      'o_enteza_hoy': celda.esHoy,
                                      'o_enteza_seleccionado': celda.seleccionado,
                                  }"
@@ -50,35 +71,92 @@
                             </div>
                         </t>
                     </div>
+                    <!-- Cortes medidos sobre la carga real: ver CORTES_CARGA en el JS. -->
                     <div class="o_enteza_leyenda mt-2 small text-muted">
                         <span class="o_enteza_muestra o_enteza_nivel_1"/> 1-2
-                        <span class="o_enteza_muestra o_enteza_nivel_2"/> 3-5
-                        <span class="o_enteza_muestra o_enteza_nivel_3"/> 6+
+                        <span class="o_enteza_muestra o_enteza_nivel_2"/> 3-9
+                        <span class="o_enteza_muestra o_enteza_nivel_3"/> 10-29
+                        <span class="o_enteza_muestra o_enteza_nivel_4"/> 30+
                     </div>
                 </div>
 
                 <!-- Bloque 2: material del día -->
-                <div class="o_enteza_panel_material flex-grow-1 p-2 overflow-auto">
-                    <h5 class="o_enteza_titulo">Material del día</h5>
-                    <table class="table table-sm table-hover">
+                <div class="o_enteza_panel_material flex-grow-1 d-flex flex-column p-2 overflow-auto">
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="o_enteza_titulo mb-0" t-esc="tituloMaterial"/>
+
+                        <input type="text" class="form-control form-control-sm o_enteza_filtro"
+                               placeholder="Filtro por descripción"
+                               t-model="state.filtroArticulo"/>
+
+                        <!--
+                            Las dos vistas de la aplicación anterior. «Sobre venta» deja solo
+                            el material del que hay comprometido más de lo que hay en el
+                            almacén: es la lista de lo que habría que comprar o subcontratar.
+                        -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn"
+                                    t-att-class="state.vistaMaterial === 'consumos' ? 'btn-secondary' : 'btn-outline-secondary'"
+                                    t-on-click="() => this.cambiarVistaMaterial('consumos')">
+                                Consumos
+                            </button>
+                            <button class="btn"
+                                    t-att-class="state.vistaMaterial === 'sobreventa' ? 'btn-danger' : 'btn-outline-danger'"
+                                    t-on-click="() => this.cambiarVistaMaterial('sobreventa')">
+                                Sobre venta
+                                <span t-if="state.totales.sobreventa" class="badge text-bg-light ms-1"
+                                      t-esc="state.totales.sobreventa"/>
+                            </button>
+                        </div>
+
+                        <span class="text-muted small ms-auto">
+                            <t t-esc="articulosVisibles.length"/> de
+                            <t t-esc="state.articulos.length"/> artículos ·
+                            <t t-esc="state.totales.unidades"/> unidades
+                        </span>
+                    </div>
+
+                    <table class="table table-sm table-hover mt-2">
                         <thead>
                             <tr>
-                                <th>Artículo</th>
-                                <th>Categoría</th>
-                                <th class="text-end">Unidades</th>
+                                <th>Descripción</th>
+                                <th>Clasificación</th>
+                                <th class="text-end">Total</th>
                                 <th class="text-end">Existencias</th>
+                                <th class="text-end">Faltan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr t-foreach="state.articulos" t-as="articulo" t-key="articulo.id">
+                            <!-- Pinchar un artículo filtra los pedidos de abajo a los que lo
+                                 llevan; volver a pincharlo quita el filtro. -->
+                            <tr t-foreach="articulosVisibles" t-as="articulo" t-key="articulo.id"
+                                class="o_enteza_fila_articulo"
+                                t-att-class="{
+                                    'o_enteza_sobreventa': articulo.sobreventa,
+                                    'table-active': state.articuloSeleccionado === articulo.id,
+                                }"
+                                t-on-click="() => this.seleccionarArticulo(articulo.id)">
                                 <td t-esc="articulo.articulo"/>
                                 <td class="text-muted" t-esc="articulo.categoria"/>
                                 <td class="text-end fw-bold" t-esc="articulo.unidades"/>
                                 <td class="text-end" t-esc="articulo.existencias"/>
+                                <td class="text-end fw-bold">
+                                    <t t-if="articulo.sobreventa"
+                                       t-esc="articulo.unidades - articulo.existencias"/>
+                                </td>
                             </tr>
-                            <tr t-if="!state.articulos.length">
-                                <td colspan="4" class="text-center text-muted p-3">
-                                    Sin material para este día
+                            <tr t-if="!articulosVisibles.length">
+                                <td colspan="5" class="text-center text-muted p-3">
+                                    <t t-if="!state.articulos.length">
+                                        Sin material para este día
+                                    </t>
+                                    <t t-elif="state.vistaMaterial === 'sobreventa'">
+                                        No falta material para este día
+                                    </t>
+                                    <t t-else="">
+                                        Ningún artículo coincide con el filtro
+                                    </t>
                                 </td>
                             </tr>
                         </tbody>
@@ -88,34 +166,56 @@
 
             <!-- Bloque 3: pedidos del día -->
             <div class="o_enteza_panel_pedidos border-top p-2 overflow-auto">
-                <h5 class="o_enteza_titulo">Pedidos del día</h5>
-                <table class="table table-sm table-hover">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="o_enteza_titulo mb-0">Pedidos del día</h5>
+                    <!-- Filtro activo por artículo: se ve siempre y se quita desde aquí, para
+                         que nadie lea una lista corta creyendo que es el día entero. -->
+                    <span t-if="state.articuloSeleccionado" class="badge text-bg-primary">
+                        <t t-esc="nombreArticuloSeleccionado"/>
+                        <span class="ms-2 o_enteza_quitar_filtro"
+                              t-on-click="quitarFiltroArticulo">✕</span>
+                    </span>
+                    <span t-if="state.articuloSeleccionado" class="text-muted small">
+                        <t t-esc="pedidosVisibles.length"/> de
+                        <t t-esc="state.pedidos.length"/> pedidos
+                    </span>
+                </div>
+                <table class="table table-sm table-hover mt-2">
                     <thead>
                         <tr>
                             <th>Nº</th>
                             <th>Cliente</th>
                             <th>Lugar de entrega</th>
-                            <th>Salida</th>
+                            <th t-if="state.modo !== 'evento'">Evento</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
                             <th>Estado</th>
                             <th class="text-end">Total</th>
                             <th>Notas</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr t-foreach="state.pedidos" t-as="pedido" t-key="pedido.id"
+                        <tr t-foreach="pedidosVisibles" t-as="pedido" t-key="pedido.id"
                             class="o_enteza_fila_pedido"
                             t-on-click="() => this.abrirPedido(pedido.id)">
                             <td t-esc="pedido.nombre"/>
                             <td t-esc="pedido.cliente"/>
                             <td class="text-muted" t-esc="pedido.lugar"/>
-                            <td t-esc="pedido.hora"/>
+                            <td t-if="state.modo !== 'evento'" t-esc="pedido.evento"/>
+                            <td t-esc="pedido.inicio"/>
+                            <td t-esc="pedido.fin"/>
                             <td t-esc="pedido.estado"/>
                             <td class="text-end" t-esc="pedido.importe"/>
                             <td class="text-muted text-truncate" t-esc="pedido.notas"/>
                         </tr>
-                        <tr t-if="!state.pedidos.length">
-                            <td colspan="7" class="text-center text-muted p-3">
-                                No hay eventos este día
+                        <tr t-if="!pedidosVisibles.length">
+                            <td t-att-colspan="columnasPedidos" class="text-center text-muted p-3">
+                                <t t-if="state.articuloSeleccionado">
+                                    Ningún pedido de este día lleva ese artículo
+                                </t>
+                                <t t-else="">
+                                    No hay eventos este día
+                                </t>
                             </td>
                         </tr>
                     </tbody>

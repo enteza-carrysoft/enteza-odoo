@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        El informe no lleva `binding_model_id`: no debe aparecer en el menú Imprimir de un
+        pedido, porque no habla de un pedido sino de una jornada entera. Se lanza solo desde
+        el panel, que es quien sabe el día y el modo.
+    -->
+    <record id="action_parte_dia" model="ir.actions.report">
+        <field name="name">Parte del día</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">enteza_panel_eventos.parte_dia</field>
+        <field name="report_file">enteza_panel_eventos.parte_dia</field>
+        <field name="print_report_name">'Parte del dia'</field>
+    </record>
+
+    <template id="parte_dia">
+        <t t-call="web.html_container">
+            <!--
+                `web.external_layout` empieza con `t-set="o" t-value="doc"` cuando `o` no
+                existe. Aquí no hay documento único (el parte es de un día, no de un pedido),
+                así que se definen los dos a False para que esa línea tenga qué leer.
+            -->
+            <t t-set="o" t-value="False"/>
+            <t t-set="doc" t-value="False"/>
+            <t t-call="web.external_layout">
+                <div class="page">
+
+                    <h2 class="mb-0">
+                        <span t-out="titulo"/>
+                    </h2>
+                    <h4 class="text-muted mt-0" t-out="fecha"/>
+
+                    <div t-if="solo_sobreventa" class="alert alert-warning mt-3 mb-3">
+                        Solo el material del que <strong>no hay suficiente</strong> en el
+                        almacén: es lo que habría que comprar o subcontratar para cumplir con
+                        los alquileres de este día.
+                    </div>
+
+                    <h4 class="mt-4">Material</h4>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th style="width: 2rem;"/>
+                                <th>Descripción</th>
+                                <th>Clasificación</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Existencias</th>
+                                <th class="text-end">Faltan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="articulos" t-as="articulo" t-key="articulo['id']">
+                                <!-- Casilla en blanco: el parte se va marcando al cargar. -->
+                                <td style="border: 1px solid #000; height: 1rem;"/>
+                                <td t-out="articulo['articulo']"/>
+                                <td t-out="articulo['categoria']"/>
+                                <td class="text-end fw-bold" t-out="articulo['unidades']"/>
+                                <td class="text-end" t-out="articulo['existencias']"/>
+                                <td class="text-end">
+                                    <span t-if="articulo['sobreventa']"
+                                          t-out="articulo['unidades'] - articulo['existencias']"/>
+                                </td>
+                            </tr>
+                            <tr t-if="not articulos">
+                                <td colspan="6" class="text-center">
+                                    Sin material para este día.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot t-if="articulos">
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold">Total unidades</td>
+                                <td class="text-end fw-bold" t-out="total_unidades"/>
+                                <td colspan="2"/>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <h4 class="mt-4">Pedidos</h4>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Nº</th>
+                                <th>Cliente</th>
+                                <th>Lugar</th>
+                                <th>Evento</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="pedidos" t-as="pedido" t-key="pedido['id']">
+                                <td t-out="pedido['nombre']"/>
+                                <td t-out="pedido['cliente']"/>
+                                <td t-out="pedido['lugar']"/>
+                                <td t-out="pedido['evento']"/>
+                                <td t-out="pedido['inicio']"/>
+                                <td t-out="pedido['fin']"/>
+                                <td class="text-end" t-out="pedido['importe']"/>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="6" class="text-end fw-bold">Total</td>
+                                <td class="text-end fw-bold" t-out="total_importe"/>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- Las notas van al final y solo si las hay: en `enteza26` casi ningún
+                         pedido las tiene, y una columna vacía en la tabla estorbaría. -->
+                    <t t-set="con_notas" t-value="[p for p in pedidos if p['notas']]"/>
+                    <div t-if="con_notas" class="mt-4">
+                        <h4>Notas</h4>
+                        <div t-foreach="con_notas" t-as="pedido" t-key="pedido['id']">
+                            <strong t-out="pedido['nombre']"/>:
+                            <span t-out="pedido['notas']"/>
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

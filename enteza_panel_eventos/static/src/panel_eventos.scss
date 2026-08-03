@@ -43,9 +43,13 @@
 
     // Escala de carga. Se mantiene deliberadamente monocroma sobre el color de marca en vez
     // de usar rojo/amarillo: aquí "muchos pedidos" es un buen día de trabajo, no una alarma.
-    .o_enteza_nivel_1 { background-color: rgba(113, 75, 103, 0.15); }
-    .o_enteza_nivel_2 { background-color: rgba(113, 75, 103, 0.35); }
-    .o_enteza_nivel_3 { background-color: rgba(113, 75, 103, 0.60); color: #fff; }
+    //
+    // Cuatro niveles, no tres: con la carga real de Enteza (mediana 3 pedidos/día y sábados
+    // de temporada de 46 a 57) una escala de tres saturaba y todos los sábados pintaban igual.
+    .o_enteza_nivel_1 { background-color: rgba(113, 75, 103, 0.12); }
+    .o_enteza_nivel_2 { background-color: rgba(113, 75, 103, 0.32); }
+    .o_enteza_nivel_3 { background-color: rgba(113, 75, 103, 0.58); color: #fff; }
+    .o_enteza_nivel_4 { background-color: rgba(113, 75, 103, 0.85); color: #fff; }
 
     .o_enteza_hoy {
         font-weight: 700;
@@ -89,6 +93,26 @@
     }
 
     .o_enteza_fila_pedido {
+        cursor: pointer;
+    }
+
+    // Las filas de material también se pinchan: seleccionan el artículo y filtran los pedidos.
+    .o_enteza_fila_articulo {
+        cursor: pointer;
+    }
+
+    // Sobreventa: hay comprometido más material del que hay en el almacén. Aquí sí toca rojo,
+    // porque es lo único del panel que obliga a hacer algo (comprar o subcontratar).
+    .o_enteza_sobreventa td {
+        color: var(--o-color-danger, #d9534f);
+    }
+
+    // El filtro por descripción no debe comerse el ancho de la cabecera del bloque.
+    .o_enteza_filtro {
+        max-width: 18rem;
+    }
+
+    .o_enteza_quitar_filtro {
         cursor: pointer;
     }
 

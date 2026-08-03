@@ -139,6 +139,34 @@ Para una rejilla que empieza en lunes: `(fecha.getDay() + 6) % 7`.
 No se puede depurar por RPC. Al entregar una acción cliente, decirlo explícitamente y contar
 con una ronda de ajuste.
 
+### 🔴 Un informe con `data` pierde los `docids`
+
+Medido leyendo `web/static/src/webclient/actions/reports/utils.js` de la 19 al añadir el parte
+del día a `enteza_panel_eventos` (2026-08-03).
+
+Cuando una acción cliente lanza un informe con `report_action(registros, data={...})`, es
+tentador dar por hecho que `_get_report_values` recibirá esos `docids`. **No los recibe.**
+`getReportUrl` monta la URL de dos formas incompatibles:
+
+```js
+if (action.data && JSON.stringify(action.data) !== "{}") {
+    url += `?options=${options}&context=${context}`;   // ← sin docids en la ruta
+} else {
+    url += `/${actionContext.active_ids.join(",")}`;   // ← con docids
+}
+```
+
+Es decir: **en cuanto `data` no está vacío, los ids desaparecen de la ruta** y el controlador
+llama a `_get_report_values(None, data)`. El síntoma es un informe que sale en blanco o con
+solo las cabeceras, sin ningún error.
+
+Salidas, de mejor a peor:
+
+1. **Recalcular el conjunto desde el propio `data`** (el día, el filtro…). Es lo que hace el
+   parte del día: el informe queda determinado por los mismos parámetros que la pantalla, así
+   que no pueden discrepar.
+2. Recuperarlos de `data['context']['active_ids']`, que sí sigue viajando.
+
 ### El navegador cachea el bundle de assets
 
 Tras instalar o actualizar un módulo con JS o SCSS hace falta **`Ctrl+F5`**. Sin eso se puede
