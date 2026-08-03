@@ -38,6 +38,19 @@
                         los alquileres de este día.
                     </div>
 
+                    <!-- El papel dice siempre si lleva presupuestos o no: quien lo lee en el
+                         almacén no tiene la pantalla delante para deducirlo. -->
+                    <p class="text-muted">
+                        <t t-if="solo_confirmados">
+                            Solo pedidos <strong>confirmados</strong>: los presupuestos sin
+                            confirmar no entran en estas cifras.
+                        </t>
+                        <t t-else="">
+                            Incluye <strong>presupuestos sin confirmar</strong>, marcados con
+                            <strong>(P)</strong> en la lista de pedidos.
+                        </t>
+                    </p>
+
                     <h4 class="mt-4">Material</h4>
                     <table class="table table-sm">
                         <thead>
@@ -45,17 +58,19 @@
                                 <th style="width: 2rem;"/>
                                 <th>Descripción</th>
                                 <th>Clasificación</th>
+                                <th t-if="mostrar_almacen">Almacén</th>
                                 <th class="text-end">Total</th>
                                 <th class="text-end">Existencias</th>
                                 <th class="text-end">Faltan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr t-foreach="articulos" t-as="articulo" t-key="articulo['id']">
+                            <tr t-foreach="articulos" t-as="articulo" t-key="articulo['clave']">
                                 <!-- Casilla en blanco: el parte se va marcando al cargar. -->
                                 <td style="border: 1px solid #000; height: 1rem;"/>
                                 <td t-out="articulo['articulo']"/>
                                 <td t-out="articulo['categoria']"/>
+                                <td t-if="mostrar_almacen" t-out="articulo['almacen']"/>
                                 <td class="text-end fw-bold" t-out="articulo['unidades']"/>
                                 <td class="text-end" t-out="articulo['existencias']"/>
                                 <td class="text-end">
@@ -64,14 +79,15 @@
                                 </td>
                             </tr>
                             <tr t-if="not articulos">
-                                <td colspan="6" class="text-center">
+                                <td colspan="7" class="text-center">
                                     Sin material para este día.
                                 </td>
                             </tr>
                         </tbody>
                         <tfoot t-if="articulos">
                             <tr>
-                                <td colspan="3" class="text-end fw-bold">Total unidades</td>
+                                <td t-att-colspan="mostrar_almacen and 4 or 3"
+                                    class="text-end fw-bold">Total unidades</td>
                                 <td class="text-end fw-bold" t-out="total_unidades"/>
                                 <td colspan="2"/>
                             </tr>
@@ -85,6 +101,8 @@
                                 <th>Nº</th>
                                 <th>Cliente</th>
                                 <th>Lugar</th>
+                                <th t-if="mostrar_almacen">Almacén</th>
+                                <th>Comercial</th>
                                 <th>Evento</th>
                                 <th>Inicio</th>
                                 <th>Fin</th>
@@ -93,9 +111,15 @@
                         </thead>
                         <tbody>
                             <tr t-foreach="pedidos" t-as="pedido" t-key="pedido['id']">
-                                <td t-out="pedido['nombre']"/>
+                                <td>
+                                    <span t-out="pedido['nombre']"/>
+                                    <!-- (P) de presupuesto: material que todavía puede no salir. -->
+                                    <strong t-if="not pedido['confirmado']"> (P)</strong>
+                                </td>
                                 <td t-out="pedido['cliente']"/>
                                 <td t-out="pedido['lugar']"/>
+                                <td t-if="mostrar_almacen" t-out="pedido['almacen']"/>
+                                <td t-out="pedido['comercial']"/>
                                 <td t-out="pedido['evento']"/>
                                 <td t-out="pedido['inicio']"/>
                                 <td t-out="pedido['fin']"/>
@@ -104,7 +128,8 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="6" class="text-end fw-bold">Total</td>
+                                <td t-att-colspan="mostrar_almacen and 8 or 7"
+                                    class="text-end fw-bold">Total</td>
                                 <td class="text-end fw-bold" t-out="total_importe"/>
                             </tr>
                         </tfoot>

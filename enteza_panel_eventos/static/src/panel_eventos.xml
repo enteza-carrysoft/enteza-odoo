@@ -5,7 +5,7 @@
         <div class="o_enteza_panel o_action d-flex flex-column h-100">
 
             <!-- Barra superior -->
-            <div class="o_enteza_panel_barra d-flex align-items-center gap-2 p-2 border-bottom">
+            <div class="o_enteza_panel_barra d-flex align-items-center gap-2 p-2 border-bottom flex-wrap">
                 <button class="btn btn-secondary btn-sm" t-on-click="() => this.cambiarMes(-1)">
                     <i class="oi oi-chevron-left"/>
                 </button>
@@ -31,7 +31,28 @@
                     </button>
                 </div>
 
+                <!--
+                    Un presupuesto sin confirmar todavía puede no ocurrir. Se ve por defecto
+                    —hay que saber que está ahí— pero desde aquí se quita del material, de la
+                    sobreventa y del parte que baja al almacén.
+                -->
+                <div class="form-check form-switch ms-3 mb-0"
+                     title="Deja fuera los presupuestos sin confirmar: material, sobreventa y parte del día">
+                    <input class="form-check-input" type="checkbox" id="o_enteza_solo_confirmados"
+                           t-att-checked="state.soloConfirmados"
+                           t-on-change="alternarSoloConfirmados"/>
+                    <label class="form-check-label small" for="o_enteza_solo_confirmados">
+                        Solo confirmados
+                        <span t-if="!state.soloConfirmados &amp;&amp; state.totales.borradores"
+                              class="badge text-bg-warning ms-1"
+                              t-esc="state.totales.borradores"/>
+                    </label>
+                </div>
+
                 <div class="flex-grow-1"/>
+                <span t-if="state.cargando" class="text-muted small">
+                    <i class="fa fa-circle-o-notch fa-spin me-1"/>Cargando…
+                </span>
                 <span class="text-muted">
                     <t t-esc="state.totales.pedidos"/> pedidos ·
                     <t t-esc="state.totales.importe"/>
@@ -44,7 +65,17 @@
                 </button>
             </div>
 
-            <div class="o_enteza_panel_cuerpo d-flex flex-grow-1 overflow-auto">
+            <!--
+                Un error de RPC dejaba la pantalla en blanco sin decir nada, y el panel se usa
+                desde el almacén: allí nadie va a abrir la consola del navegador.
+            -->
+            <div t-if="state.error" class="alert alert-danger m-2 mb-0" role="alert">
+                <strong>No se han podido cargar los datos.</strong>
+                <div class="small" t-esc="state.error"/>
+            </div>
+
+            <div class="o_enteza_panel_cuerpo d-flex flex-grow-1 overflow-auto"
+                 t-att-class="{ 'o_enteza_cargando': state.cargando }">
 
                 <!-- Bloque 1: calendario mensual -->
                 <div class="o_enteza_panel_calendario p-2 border-end">
@@ -63,7 +94,7 @@
                                      'o_enteza_hoy': celda.esHoy,
                                      'o_enteza_seleccionado': celda.seleccionado,
                                  }"
-                                 t-att-title="celda.pedidos ? celda.pedidos + ' pedidos' : 'Sin pedidos'"
+                                 t-att-title="celda.titulo"
                                  t-on-click="() => this.seleccionarDia(celda.clave)">
                                 <span t-esc="celda.dia"/>
                                 <span t-if="celda.pedidos" class="o_enteza_contador"
@@ -88,7 +119,8 @@
 
                         <input type="text" class="form-control form-control-sm o_enteza_filtro"
                                placeholder="Filtro por descripción"
-                               t-model="state.filtroArticulo"/>
+                               t-att-value="state.filtroArticulo"
+                               t-on-input="alFiltrarArticulos"/>
 
                         <!--
                             Las dos vistas de la aplicación anterior. «Sobre venta» deja solo
@@ -113,7 +145,7 @@
                         <span class="text-muted small ms-auto">
                             <t t-esc="articulosVisibles.length"/> de
                             <t t-esc="state.articulos.length"/> artículos ·
-                            <t t-esc="state.totales.unidades"/> unidades
+                            <t t-esc="unidadesVisibles"/> unidades
                         </span>
                     </div>
 
@@ -122,6 +154,9 @@
                             <tr>
                                 <th>Descripción</th>
                                 <th>Clasificación</th>
+                                <!-- Solo si el día mezcla almacenes: con uno repetiría el
+                                     mismo valor en todas las filas. -->
+                                <th t-if="mostrarAlmacen">Almacén</th>
                                 <th class="text-end">Total</th>
                                 <th class="text-end">Existencias</th>
                                 <th class="text-end">Faltan</th>
@@ -130,15 +165,16 @@
                         <tbody>
                             <!-- Pinchar un artículo filtra los pedidos de abajo a los que lo
                                  llevan; volver a pincharlo quita el filtro. -->
-                            <tr t-foreach="articulosVisibles" t-as="articulo" t-key="articulo.id"
+                            <tr t-foreach="articulosVisibles" t-as="articulo" t-key="articulo.clave"
                                 class="o_enteza_fila_articulo"
                                 t-att-class="{
                                     'o_enteza_sobreventa': articulo.sobreventa,
-                                    'table-active': state.articuloSeleccionado === articulo.id,
+                                    'table-active': state.articuloSeleccionado === articulo.clave,
                                 }"
-                                t-on-click="() => this.seleccionarArticulo(articulo.id)">
+                                t-on-click="() => this.seleccionarArticulo(articulo.clave)">
                                 <td t-esc="articulo.articulo"/>
                                 <td class="text-muted" t-esc="articulo.categoria"/>
+                                <td t-if="mostrarAlmacen" class="text-muted" t-esc="articulo.almacen"/>
                                 <td class="text-end fw-bold" t-esc="articulo.unidades"/>
                                 <td class="text-end" t-esc="articulo.existencias"/>
                                 <td class="text-end fw-bold">
@@ -147,7 +183,7 @@
                                 </td>
                             </tr>
                             <tr t-if="!articulosVisibles.length">
-                                <td colspan="5" class="text-center text-muted p-3">
+                                <td t-att-colspan="columnasMaterial" class="text-center text-muted p-3">
                                     <t t-if="!state.articulos.length">
                                         Sin material para este día
                                     </t>
@@ -165,17 +201,21 @@
             </div>
 
             <!-- Bloque 3: pedidos del día -->
-            <div class="o_enteza_panel_pedidos border-top p-2 overflow-auto">
+            <div class="o_enteza_panel_pedidos border-top p-2 overflow-auto"
+                 t-att-class="{ 'o_enteza_cargando': state.cargando }">
                 <div class="d-flex align-items-center gap-2">
                     <h5 class="o_enteza_titulo mb-0">Pedidos del día</h5>
                     <!-- Filtro activo por artículo: se ve siempre y se quita desde aquí, para
                          que nadie lea una lista corta creyendo que es el día entero. -->
-                    <span t-if="state.articuloSeleccionado" class="badge text-bg-primary">
-                        <t t-esc="nombreArticuloSeleccionado"/>
+                    <span t-if="articuloActivo" class="badge text-bg-primary">
+                        <t t-esc="articuloActivo.articulo"/>
+                        <t t-if="mostrarAlmacen">
+                            · <t t-esc="articuloActivo.almacen"/>
+                        </t>
                         <span class="ms-2 o_enteza_quitar_filtro"
                               t-on-click="quitarFiltroArticulo">✕</span>
                     </span>
-                    <span t-if="state.articuloSeleccionado" class="text-muted small">
+                    <span t-if="articuloActivo" class="text-muted small">
                         <t t-esc="pedidosVisibles.length"/> de
                         <t t-esc="state.pedidos.length"/> pedidos
                     </span>
@@ -186,31 +226,51 @@
                             <th>Nº</th>
                             <th>Cliente</th>
                             <th>Lugar de entrega</th>
+                            <th t-if="mostrarAlmacen">Almacén</th>
+                            <th>Comercial</th>
                             <th t-if="state.modo !== 'evento'">Evento</th>
                             <th>Inicio</th>
                             <th>Fin</th>
                             <th>Estado</th>
+                            <!-- Cuántas unidades del artículo pinchado lleva cada pedido: es
+                                 la pregunta que viene justo después de «quién lo lleva». -->
+                            <th t-if="articuloActivo" class="text-end">Uds.</th>
                             <th class="text-end">Total</th>
-                            <th>Notas</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr t-foreach="pedidosVisibles" t-as="pedido" t-key="pedido.id"
                             class="o_enteza_fila_pedido"
+                            t-att-class="{ 'o_enteza_sin_confirmar': !pedido.confirmado }"
                             t-on-click="() => this.abrirPedido(pedido.id)">
-                            <td t-esc="pedido.nombre"/>
+                            <td>
+                                <t t-esc="pedido.nombre"/>
+                                <!-- `note` es el campo de términos y condiciones y casi ningún
+                                     pedido lo tiene: no merece una columna, sí un indicador. -->
+                                <i t-if="pedido.notas" class="fa fa-sticky-note-o ms-1 text-muted"
+                                   t-att-title="pedido.notas"/>
+                            </td>
                             <td t-esc="pedido.cliente"/>
                             <td class="text-muted" t-esc="pedido.lugar"/>
+                            <td t-if="mostrarAlmacen" class="text-muted" t-esc="pedido.almacen"/>
+                            <td class="text-muted" t-esc="pedido.comercial"/>
                             <td t-if="state.modo !== 'evento'" t-esc="pedido.evento"/>
                             <td t-esc="pedido.inicio"/>
                             <td t-esc="pedido.fin"/>
-                            <td t-esc="pedido.estado"/>
+                            <td>
+                                <span t-if="!pedido.confirmado" class="badge text-bg-warning me-1"
+                                      title="Presupuesto sin confirmar: este material todavía puede no salir">
+                                    Presupuesto
+                                </span>
+                                <t t-esc="pedido.estado"/>
+                            </td>
+                            <td t-if="articuloActivo" class="text-end fw-bold"
+                                t-esc="unidadesDelPedido(pedido)"/>
                             <td class="text-end" t-esc="pedido.importe"/>
-                            <td class="text-muted text-truncate" t-esc="pedido.notas"/>
                         </tr>
                         <tr t-if="!pedidosVisibles.length">
                             <td t-att-colspan="columnasPedidos" class="text-center text-muted p-3">
-                                <t t-if="state.articuloSeleccionado">
+                                <t t-if="articuloActivo">
                                     Ningún pedido de este día lleva ese artículo
                                 </t>
                                 <t t-else="">

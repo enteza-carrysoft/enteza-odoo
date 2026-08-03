@@ -116,8 +116,18 @@
         cursor: pointer;
     }
 
-    // Las notas pueden ser largas: se recortan para no romper la tabla.
-    .o_enteza_panel_pedidos td.text-truncate {
-        max-width: 20rem;
+    // Presupuesto sin confirmar: se ve, pero atenuado. El material de estas filas todavía
+    // puede no salir del almacén, y el interruptor «Solo confirmados» las quita del todo.
+    .o_enteza_sin_confirmar td {
+        opacity: 0.65;
+        font-style: italic;
+    }
+
+    // Mientras se carga el día, los bloques siguen enseñando los datos del anterior. Sin
+    // esto no se distinguía un día vacío de un día que aún no ha llegado.
+    .o_enteza_cargando {
+        opacity: 0.45;
+        pointer-events: none;
+        transition: opacity 0.15s ease-in-out;
     }
 }

@@ -10,6 +10,11 @@ from odoo.tools import float_compare, format_date, formatLang, html2plaintext
 # Estados que no cuentan como evento: un pedido cancelado no lleva material a ningún sitio.
 ESTADOS_EXCLUIDOS = ('cancel',)
 
+# Lo que está vendido de verdad. Un presupuesto (`draft`/`sent`) todavía puede no ocurrir, así
+# que el panel deja elegir si cuenta o no: por defecto se ve, pero marcado y con un interruptor
+# para quitarlo del material, de la sobreventa y del parte que baja al almacén.
+ESTADOS_CONFIRMADOS = ('sale',)
+
 # Los tres días distintos que tiene un mismo pedido, y el campo que representa cada uno.
 #
 # No son intercambiables: `rental_custom` deja la salida la víspera del evento y la
@@ -30,7 +35,7 @@ class SaleOrder(models.Model):
     # API para el panel (client action OWL)
     # ------------------------------------------------------------------
     # Las agregaciones se hacen en Python sobre un `search_read`, no con `_read_group`.
-    # Es deliberado: el volumen es pequeño (1.156 pedidos de alquiler en total, y un mes
+    # Es deliberado: el volumen es pequeño (1.159 pedidos de alquiler en total, y un mes
     # son decenas) y así el código no depende de una firma de `_read_group` que en este
     # entorno no se puede probar. Si algún día el volumen crece, este es el sitio donde
     # cambiarlo, sin tocar el JS.
@@ -65,17 +70,18 @@ class SaleOrder(models.Model):
         return fields.Date.to_string(valor)
 
     @api.model
-    def _enteza_panel_dominio(self, modo, desde, hasta):
+    def _enteza_panel_dominio(self, modo, desde, hasta, solo_confirmados=False):
         """Pedidos de alquiler vivos cuyo día según `modo` cae en `[desde, hasta)`.
 
         Los límites llegan como `date`. En los dos modos de almacén el campo es un Datetime
         guardado en UTC, así que hay que traducirlos: el día del usuario no empieza a la
         misma hora que el día de la base de datos.
         """
-        dominio = [
-            ('is_rental_order', '=', True),
-            ('state', 'not in', ESTADOS_EXCLUIDOS),
-        ]
+        if solo_confirmados:
+            estado = ('state', 'in', ESTADOS_CONFIRMADOS)
+        else:
+            estado = ('state', 'not in', ESTADOS_EXCLUIDOS)
+        dominio = [('is_rental_order', '=', True), estado]
         campo = MODOS[modo]
         if modo == 'evento':
             return dominio + [
@@ -88,11 +94,12 @@ class SaleOrder(models.Model):
         ]
 
     @api.model
-    def enteza_panel_carga_mes(self, anio, mes, modo='evento'):
+    def enteza_panel_carga_mes(self, anio, mes, modo='evento', solo_confirmados=False):
         """Carga de trabajo de cada día del mes, para colorear el calendario.
 
-        Devuelve `{'2026-07-31': {'pedidos': 3, 'importe': 4520.5}, ...}`. Solo aparecen los
-        días con al menos un pedido: el JS trata la ausencia como día vacío.
+        Devuelve `{'2026-07-31': {'pedidos': 3, 'importe': '4.520,50 €'}, ...}`. Solo aparecen
+        los días con al menos un pedido: el JS trata la ausencia como día vacío. El importe se
+        usa en el tooltip de la celda, para poder comparar un sábado con otro sin abrirlos.
         """
         modo = self._enteza_panel_modo(modo)
         primero = date(anio, mes, 1)
@@ -100,7 +107,7 @@ class SaleOrder(models.Model):
         campo = MODOS[modo]
 
         pedidos = self.search_read(
-            self._enteza_panel_dominio(modo, primero, siguiente),
+            self._enteza_panel_dominio(modo, primero, siguiente, solo_confirmados),
             [campo, 'amount_total'],
         )
 
@@ -109,20 +116,30 @@ class SaleOrder(models.Model):
             clave = self._enteza_panel_clave(pedido[campo])
             carga[clave]['pedidos'] += 1
             carga[clave]['importe'] += pedido['amount_total'] or 0.0
-        return dict(carga)
+
+        moneda = self.env.company.currency_id
+        return {
+            clave: {
+                'pedidos': dato['pedidos'],
+                'importe': formatLang(self.env, dato['importe'], currency_obj=moneda),
+            }
+            for clave, dato in carga.items()
+        }
 
     @api.model
-    def _enteza_panel_pedidos(self, dia, modo):
+    def _enteza_panel_pedidos(self, dia, modo, solo_confirmados=False):
         """Pedidos de un día concreto. `dia` llega del JS como cadena (`'2026-07-31'`)."""
         jornada = fields.Date.to_date(dia)
         orden = 'rental_return_date, name' if modo == 'devolucion' else 'rental_start_date, name'
         return self.search(
-            self._enteza_panel_dominio(modo, jornada, jornada + timedelta(days=1)),
+            self._enteza_panel_dominio(
+                modo, jornada, jornada + timedelta(days=1), solo_confirmados
+            ),
             order=orden,
         )
 
     @api.model
-    def _enteza_panel_contadores(self, dia):
+    def _enteza_panel_contadores(self, dia, solo_confirmados=False):
         """Cuántos pedidos tocan este día por cada uno de los tres motivos.
 
         Los tres números casi nunca coinciden, y ahí está el valor: enseñan de un vistazo
@@ -131,21 +148,32 @@ class SaleOrder(models.Model):
         jornada = fields.Date.to_date(dia)
         siguiente = jornada + timedelta(days=1)
         return {
-            modo: self.search_count(self._enteza_panel_dominio(modo, jornada, siguiente))
+            modo: self.search_count(
+                self._enteza_panel_dominio(modo, jornada, siguiente, solo_confirmados)
+            )
             for modo in MODOS
         }
 
     @api.model
-    def enteza_panel_dia(self, dia, modo='evento'):
+    def enteza_panel_dia(self, dia, modo='evento', solo_confirmados=False):
         """Pedidos, material y contadores de un día concreto."""
         modo = self._enteza_panel_modo(modo)
-        pedidos = self._enteza_panel_pedidos(dia, modo)
+        solo_confirmados = bool(solo_confirmados)
+        pedidos = self._enteza_panel_pedidos(dia, modo, solo_confirmados)
         articulos = pedidos._enteza_panel_datos_articulos()
         return {
             'pedidos': pedidos._enteza_panel_datos_pedidos(),
             'articulos': articulos,
+            # Los almacenes que aparecen en el día. El JS solo enseña la columna de almacén
+            # cuando hay más de uno: con un solo almacén repetiría el mismo valor en todas
+            # las filas y quitaría sitio a lo que sí cambia. Se miran los pedidos y no los
+            # artículos, para que la columna no aparezca y desaparezca al filtrar.
+            'almacenes': sorted(pedidos.warehouse_id.mapped('display_name')),
             'totales': {
                 'pedidos': len(pedidos),
+                'borradores': sum(
+                    1 for pedido in pedidos if pedido.state not in ESTADOS_CONFIRMADOS
+                ),
                 'unidades': sum(articulo['unidades'] for articulo in articulos),
                 'sobreventa': sum(1 for articulo in articulos if articulo['sobreventa']),
                 'importe': formatLang(
@@ -154,11 +182,11 @@ class SaleOrder(models.Model):
                     currency_obj=self.env.company.currency_id,
                 ),
             },
-            'contadores': self._enteza_panel_contadores(dia),
+            'contadores': self._enteza_panel_contadores(dia, solo_confirmados),
         }
 
     @api.model
-    def enteza_panel_accion_lista(self, dia, modo='evento'):
+    def enteza_panel_accion_lista(self, dia, modo='evento', solo_confirmados=False):
         """Los mismos pedidos en una lista normal, para filtrar, agrupar y exportar.
 
         El dominio lo arma Python y no el JS a propósito: en los modos de almacén hay que
@@ -170,28 +198,38 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': _("Pedidos de %s", format_date(self.env, jornada)),
             'res_model': 'sale.order',
-            'domain': self._enteza_panel_dominio(modo, jornada, jornada + timedelta(days=1)),
+            'domain': self._enteza_panel_dominio(
+                modo, jornada, jornada + timedelta(days=1), bool(solo_confirmados)
+            ),
             'views': [(False, 'list'), (False, 'form')],
             'target': 'current',
             'context': {'in_rental_app': 1},
         }
 
     @api.model
-    def enteza_panel_imprimir(self, dia, modo='evento', solo_sobreventa=False):
+    def enteza_panel_imprimir(self, dia, modo='evento', solo_sobreventa=False,
+                              solo_confirmados=False):
         """Parte del día en PDF, para bajarlo al almacén en papel.
 
-        `solo_sobreventa` imprime lo que se está viendo en pantalla: si el panel está en
-        «Sobre venta», el papel sale como lista de lo que hay que comprar o subcontratar.
+        `solo_sobreventa` y `solo_confirmados` imprimen lo que se está viendo en pantalla: si
+        el panel está en «Sobre venta», el papel sale como lista de lo que hay que comprar o
+        subcontratar; si está en «Solo confirmados», el papel no lleva presupuestos.
         """
         modo = self._enteza_panel_modo(modo)
-        pedidos = self._enteza_panel_pedidos(dia, modo)
+        solo_confirmados = bool(solo_confirmados)
+        pedidos = self._enteza_panel_pedidos(dia, modo, solo_confirmados)
         if not pedidos:
             raise UserError(_("No hay nada que imprimir para este día."))
         # `config=False` evita que a un administrador sin plantilla de informe configurada
         # le salte el asistente de diseño en vez del parte.
         return self.env.ref('enteza_panel_eventos.action_parte_dia').report_action(
             pedidos,
-            data={'dia': dia, 'modo': modo, 'solo_sobreventa': bool(solo_sobreventa)},
+            data={
+                'dia': dia,
+                'modo': modo,
+                'solo_sobreventa': bool(solo_sobreventa),
+                'solo_confirmados': solo_confirmados,
+            },
             config=False,
         )
 
@@ -208,12 +246,21 @@ class SaleOrder(models.Model):
         )
         filas = []
         for pedido in self:
+            # Cantidad de cada artículo en este pedido. Con esto el JS puede filtrar los
+            # pedidos al pinchar un artículo sin volver al servidor —son decenas de pedidos
+            # como mucho y la respuesta tiene que ser inmediata— y además enseñar cuántas
+            # unidades lleva cada uno, que es la pregunta que viene justo después.
+            unidades = defaultdict(float)
+            for linea in pedido.order_line:
+                if not linea.display_type and linea.product_id:
+                    unidades[str(linea.product_id.id)] += linea.product_uom_qty
+
             filas.append({
                 'id': pedido.id,
                 'nombre': pedido.name,
                 'cliente': pedido.partner_id.display_name or '',
                 # El lugar de entrega solo aporta si difiere del cliente. Hoy en `enteza26`
-                # coinciden en los 1.156 pedidos, así que la columna saldrá vacía hasta que
+                # coinciden en los 1.159 pedidos, así que la columna saldrá vacía hasta que
                 # se informen direcciones de entrega propias.
                 'lugar': (
                     pedido.partner_shipping_id.display_name
@@ -225,29 +272,38 @@ class SaleOrder(models.Model):
                 'fin': self._enteza_panel_fecha(pedido.rental_return_date),
                 'estado': etiquetas_estado.get(pedido.rental_status, ''),
                 'estado_tecnico': pedido.rental_status or '',
+                # Un presupuesto sin confirmar todavía puede no ocurrir. Va marcado para que
+                # nadie cargue un camión con material que nadie ha vendido.
+                'confirmado': pedido.state in ESTADOS_CONFIRMADOS,
+                'almacen': pedido.warehouse_id.display_name or '',
+                'almacen_id': pedido.warehouse_id.id or 0,
+                'comercial': pedido.user_id.name or '',
                 'importe': formatLang(
                     self.env, pedido.amount_total, currency_obj=pedido.currency_id
                 ),
+                # `note` es el campo de términos y condiciones, no una nota del evento: en
+                # `enteza26` solo 2 de 1.159 pedidos lo tienen informado. Por eso no ocupa
+                # una columna, sino un indicador en la fila que enseña el texto al pasar.
                 'notas': html2plaintext(pedido.note or '').strip(),
-                # Artículos que lleva el pedido. Con esto el JS puede filtrar los pedidos al
-                # pinchar un artículo sin volver al servidor: son decenas de pedidos como
-                # mucho, y la respuesta tiene que ser inmediata para que sirva de algo.
-                'productos': pedido.order_line.filtered(
-                    lambda linea: not linea.display_type and linea.product_id
-                ).product_id.ids,
+                'productos': dict(unidades),
             })
         return filas
 
     def _enteza_panel_datos_articulos(self):
-        """Líneas de todos los pedidos del día, agrupadas por artículo.
+        """Líneas de todos los pedidos del día, agrupadas por almacén y artículo.
 
         Se excluyen las líneas de sección y de nota (`display_type`), que no son material.
 
-        Cada fila trae `sobreventa`: el día compromete más unidades de las que hay en el
-        almacén, así que ese material hay que comprarlo o subcontratarlo. La regla es la
-        misma que usaba la aplicación anterior (unidades del día contra existencias), y por
-        eso **no descuenta el material que está fuera por alquileres de días contiguos**:
-        un alquiler del día 1 al 3 no resta en el día 2.
+        **Se agrupa por almacén, no solo por artículo**, porque las existencias son de un
+        almacén concreto: una sobreventa en Jerez no se resuelve con material que está en
+        Sevilla. Medido en `enteza26`: el producto 972 tiene 80 unidades en `SEV/Stock`
+        (Vimaple) y 20 en `JER/Stock` (Stileum), y `qty_available` sin acotar devuelve 100.
+
+        Cada fila trae `sobreventa`: ese día compromete más unidades de las que hay en ese
+        almacén, así que ese material hay que comprarlo o subcontratarlo. La regla es la misma
+        que usaba la aplicación anterior (unidades del día contra existencias), y por eso
+        **no descuenta el material que está fuera por alquileres de días contiguos**: un
+        alquiler del día 1 al 3 no resta en el día 2.
         """
         lineas = self.mapped('order_line').filtered(
             lambda linea: not linea.display_type and linea.product_id
@@ -255,27 +311,63 @@ class SaleOrder(models.Model):
 
         acumulado = defaultdict(float)
         for linea in lineas:
-            acumulado[linea.product_id] += linea.product_uom_qty
+            acumulado[(linea.order_id.warehouse_id, linea.product_id)] += linea.product_uom_qty
+
+        existencias = self._enteza_panel_existencias(acumulado)
 
         filas = []
-        for producto, unidades in acumulado.items():
-            existencias = producto.qty_available
+        for (almacen, producto), unidades in acumulado.items():
+            disponible = existencias.get((almacen.id, producto.id), 0.0)
             filas.append({
-                'id': producto.id,
+                # Clave estable para el `t-key` del JS y para saber qué fila está pinchada:
+                # el artículo solo identifica una fila junto con su almacén.
+                'clave': f"{almacen.id or 0}-{producto.id}",
+                'producto_id': producto.id,
+                'almacen_id': almacen.id or 0,
+                'almacen': almacen.display_name or '',
                 'articulo': producto.display_name or '',
                 'categoria': producto.categ_id.display_name or '',
                 'unidades': unidades,
                 # Saldrá 0 mientras el inventario esté sin cargar en `enteza26`. No es un
                 # fallo del panel: apenas hay `stock.quant` con cantidad. Mientras siga así,
                 # «Sobre venta» marcará casi todo.
-                'existencias': existencias,
+                'existencias': disponible,
                 'sobreventa': float_compare(
-                    unidades, existencias,
+                    unidades, disponible,
                     precision_rounding=producto.uom_id.rounding or 0.01,
                 ) > 0,
                 'uom': producto.uom_id.display_name or '',
             })
-        return sorted(filas, key=lambda fila: fila['articulo'])
+        return sorted(filas, key=lambda fila: (fila['almacen'], fila['articulo']))
+
+    @api.model
+    def _enteza_panel_existencias(self, acumulado):
+        """Existencias de cada `(almacén, producto)` de `acumulado`, en una lectura por almacén.
+
+        🔴 Dos cosas que hay que hacer aquí y que `qty_available` a secas no hace:
+
+        1. **Acotar al almacén.** La clave de contexto en la 19 es `warehouse_id`; `warehouse`
+           (la de versiones anteriores) se ignora en silencio y devuelve la suma de todos.
+           Comprobado contra `enteza26` con el producto 972: sin contexto 100, con
+           `warehouse_id=1` 80 y con `warehouse_id=2` 20.
+        2. **Dejar fuera el material que está en un evento.** `Customers/Alquiler` tiene
+           `usage='internal'`, así que cuenta como existencias aunque el material esté en
+           casa de un cliente. Acotar al almacén ya lo resuelve: esa ubicación cuelga de
+           `Customers`, no de la vista del almacén.
+
+        Y se lee **en bloque por almacén**, no artículo a artículo: el día más cargado de
+        `enteza26` (2026-05-02, 57 pedidos) tiene 389 productos distintos.
+        """
+        productos_por_almacen = defaultdict(lambda: self.env['product.product'])
+        for almacen, producto in acumulado:
+            productos_por_almacen[almacen] |= producto
+
+        existencias = {}
+        for almacen, productos in productos_por_almacen.items():
+            ambito = productos.with_context(warehouse_id=almacen.id) if almacen else productos
+            for dato in ambito.read(['qty_available']):
+                existencias[(almacen.id, dato['id'])] = dato['qty_available']
+        return existencias
 
     @api.model
     def _enteza_panel_fecha(self, valor):

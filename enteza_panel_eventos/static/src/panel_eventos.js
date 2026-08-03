@@ -54,7 +54,7 @@ function aClaveDia(fecha) {
  * encuentre «MANTELERÍA». El rango U+0300-U+036F son los acentos que NFD deja sueltos.
  */
 function normalizar(texto) {
-    return (texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return (texto || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 export class PanelEventos extends Component {
@@ -76,50 +76,82 @@ export class PanelEventos extends Component {
             cargaMes: {},
             pedidos: [],
             articulos: [],
-            totales: { pedidos: 0, importe: "", unidades: 0, sobreventa: 0 },
+            almacenes: [],
+            totales: { pedidos: 0, borradores: 0, importe: "", unidades: 0, sobreventa: 0 },
             contadores: { evento: 0, salida: 0, devolucion: 0 },
             // Bloque de material: filtro por descripción y vista, como en la aplicación
             // anterior. `sobreventa` deja solo los artículos de los que no hay bastante.
             filtroArticulo: "",
             vistaMaterial: "consumos",
-            // Artículo pinchado: filtra los pedidos de abajo a los que lo llevan.
+            // Un presupuesto sin confirmar todavía puede no ocurrir. Se ve por defecto —hay
+            // que saber que está ahí— pero se puede quitar del material, de la sobreventa y
+            // del parte, para no cargar un camión con lo que nadie ha vendido.
+            soloConfirmados: false,
+            // Fila de material pinchada (`'almacenId-productoId'`): filtra los pedidos.
             articuloSeleccionado: null,
             cargando: true,
+            error: "",
         });
 
-        onWillStart(async () => {
-            await Promise.all([this.cargarMes(), this.cargarDia(this.state.diaSeleccionado)]);
-        });
+        onWillStart(() => this.recargar());
     }
 
     // ------------------------------------------------------------------
     // Carga de datos
     // ------------------------------------------------------------------
 
+    /**
+     * Envoltorio de toda carga: marca «cargando» y recoge el error.
+     *
+     * El error se guarda en `state.error` en vez de dejarlo subir. Una excepción dentro de
+     * `onWillStart` deja la pantalla en blanco sin decir nada, y el panel se usa desde el
+     * almacén: allí nadie va a abrir la consola del navegador para enterarse.
+     *
+     * El indicador lo lleva **solo** este método, no cada carga por su cuenta: si `cargarMes`
+     * y `cargarDia` lo tocaran las dos, la primera en terminar lo apagaría con la otra aún en
+     * vuelo y la pantalla diría que ya está cuando no lo está.
+     */
+    async _conCarga(trabajo) {
+        this.state.cargando = true;
+        this.state.error = "";
+        try {
+            await trabajo();
+        } catch (error) {
+            this.state.error = error.data?.message || error.message || String(error);
+        } finally {
+            this.state.cargando = false;
+        }
+    }
+
+    /** Recarga el mes y el día a la vez: el modo y el interruptor afectan a los dos. */
+    recargar() {
+        return this._conCarga(
+            () => Promise.all([this.cargarMes(), this.cargarDia(this.state.diaSeleccionado)])
+        );
+    }
+
     async cargarMes() {
         this.state.cargaMes = await this.orm.call(
             "sale.order",
             "enteza_panel_carga_mes",
-            [this.state.anio, this.state.mes, this.state.modo]
+            [this.state.anio, this.state.mes, this.state.modo, this.state.soloConfirmados]
         );
     }
 
     async cargarDia(clave) {
-        this.state.cargando = true;
         // La selección de artículo es del día que se estaba mirando: al cambiar de día
         // apuntaría a un artículo que quizá ya no está en la lista.
         this.state.articuloSeleccionado = null;
-        try {
-            const datos = await this.orm.call(
-                "sale.order", "enteza_panel_dia", [clave, this.state.modo]
-            );
-            this.state.pedidos = datos.pedidos;
-            this.state.articulos = datos.articulos;
-            this.state.totales = datos.totales;
-            this.state.contadores = datos.contadores;
-        } finally {
-            this.state.cargando = false;
-        }
+        const datos = await this.orm.call(
+            "sale.order",
+            "enteza_panel_dia",
+            [clave, this.state.modo, this.state.soloConfirmados]
+        );
+        this.state.pedidos = datos.pedidos;
+        this.state.articulos = datos.articulos;
+        this.state.almacenes = datos.almacenes;
+        this.state.totales = datos.totales;
+        this.state.contadores = datos.contadores;
     }
 
     // ------------------------------------------------------------------
@@ -157,11 +189,20 @@ export class PanelEventos extends Component {
         for (let dia = 1; dia <= diasDelMes; dia++) {
             const clave = aClaveDia(new Date(anio, mes - 1, dia));
             const carga = this.state.cargaMes[clave];
+            const pedidos = carga ? carga.pedidos : 0;
             celdas.push({
                 dia,
                 clave,
-                pedidos: carga ? carga.pedidos : 0,
-                nivel: this.nivelCarga(carga ? carga.pedidos : 0),
+                pedidos,
+                nivel: this.nivelCarga(pedidos),
+                // El importe del día ya viene calculado: sirve para comparar dos sábados sin
+                // tener que abrirlos uno a uno.
+                titulo: pedidos
+                    ? _t("%(pedidos)s pedidos · %(importe)s", {
+                          pedidos,
+                          importe: carga.importe,
+                      })
+                    : _t("Sin pedidos"),
                 esHoy: clave === this.claveHoy,
                 seleccionado: clave === this.state.diaSeleccionado,
             });
@@ -185,6 +226,17 @@ export class PanelEventos extends Component {
         return MODOS.find((modo) => modo.clave === this.state.modo).material;
     }
 
+    /**
+     * La columna de almacén solo aparece si el día mezcla varios.
+     *
+     * Con un solo almacén repetiría el mismo valor en todas las filas y quitaría sitio a las
+     * columnas que sí cambian. Hoy en `enteza26` solo el 2026-08-01 mezcla Sevilla y Jerez,
+     * pero el cliente ha confirmado que habrá más almacenes.
+     */
+    get mostrarAlmacen() {
+        return this.state.almacenes.length > 1;
+    }
+
     /** Artículos tras aplicar el filtro por descripción y la vista elegida. */
     get articulosVisibles() {
         const busqueda = normalizar(this.state.filtroArticulo);
@@ -201,35 +253,60 @@ export class PanelEventos extends Component {
         });
     }
 
+    /** Unidades del material que se está viendo, no del día entero: el filtro también suma. */
+    get unidadesVisibles() {
+        return this.articulosVisibles.reduce((total, articulo) => total + articulo.unidades, 0);
+    }
+
+    /** La fila de material pinchada, o `undefined`. `state.articuloSeleccionado` es su clave. */
+    get articuloActivo() {
+        return this.state.articulos.find(
+            (fila) => fila.clave === this.state.articuloSeleccionado
+        );
+    }
+
     /**
      * Pedidos de abajo, filtrados al artículo pinchado si lo hay.
      *
-     * El filtro se hace aquí y no en el servidor porque cada pedido ya trae la lista de sus
-     * artículos: son decenas de pedidos como mucho y la respuesta tiene que ser inmediata.
+     * Se compara también el almacén: la misma referencia en Sevilla y en Jerez son dos filas
+     * distintas del bloque de material, y pinchar la de Jerez no debe sacar los pedidos de
+     * Sevilla.
+     *
+     * El filtro se hace aquí y no en el servidor porque cada pedido ya trae las unidades de
+     * sus artículos: son decenas de pedidos como mucho y la respuesta tiene que ser inmediata.
      */
     get pedidosVisibles() {
-        const producto = this.state.articuloSeleccionado;
-        if (!producto) {
+        const articulo = this.articuloActivo;
+        if (!articulo) {
             return this.state.pedidos;
         }
-        return this.state.pedidos.filter((pedido) => pedido.productos.includes(producto));
-    }
-
-    get nombreArticuloSeleccionado() {
-        const articulo = this.state.articulos.find(
-            (fila) => fila.id === this.state.articuloSeleccionado
+        const producto = String(articulo.producto_id);
+        return this.state.pedidos.filter(
+            (pedido) => pedido.almacen_id === articulo.almacen_id && pedido.productos[producto]
         );
-        return articulo ? articulo.articulo : "";
     }
 
-    /** La columna del día del evento solo aporta cuando no es el día que se está mirando. */
+    /** Unidades del artículo seleccionado que lleva un pedido, para la columna «Uds.». */
+    unidadesDelPedido(pedido) {
+        const articulo = this.articuloActivo;
+        return articulo ? pedido.productos[String(articulo.producto_id)] || 0 : 0;
+    }
+
+    /** Columnas de la tabla de pedidos, para el `colspan` de la fila de «no hay nada». */
     get columnasPedidos() {
-        return this.state.modo === "evento" ? 8 : 9;
+        return 8
+            + (this.state.modo === "evento" ? 0 : 1)
+            + (this.mostrarAlmacen ? 1 : 0)
+            + (this.articuloActivo ? 1 : 0);
     }
 
-    seleccionarArticulo(idArticulo) {
+    get columnasMaterial() {
+        return this.mostrarAlmacen ? 6 : 5;
+    }
+
+    seleccionarArticulo(clave) {
         this.state.articuloSeleccionado =
-            this.state.articuloSeleccionado === idArticulo ? null : idArticulo;
+            this.state.articuloSeleccionado === clave ? null : clave;
     }
 
     quitarFiltroArticulo() {
@@ -240,9 +317,21 @@ export class PanelEventos extends Component {
         this.state.vistaMaterial = vista;
         // Un artículo seleccionado que la nueva vista ya no muestra dejaría los pedidos
         // filtrados por algo que no se ve en ninguna parte.
+        this.olvidarSeleccionInvisible();
+    }
+
+    /** Filtro por descripción. Si esconde la fila pinchada, deja de filtrar los pedidos. */
+    alFiltrarArticulos(ev) {
+        this.state.filtroArticulo = ev.target.value;
+        this.olvidarSeleccionInvisible();
+    }
+
+    olvidarSeleccionInvisible() {
         if (
             this.state.articuloSeleccionado
-            && !this.articulosVisibles.some((fila) => fila.id === this.state.articuloSeleccionado)
+            && !this.articulosVisibles.some(
+                (fila) => fila.clave === this.state.articuloSeleccionado
+            )
         ) {
             this.state.articuloSeleccionado = null;
         }
@@ -252,9 +341,9 @@ export class PanelEventos extends Component {
     // Interacción
     // ------------------------------------------------------------------
 
-    async seleccionarDia(clave) {
+    seleccionarDia(clave) {
         this.state.diaSeleccionado = clave;
-        await this.cargarDia(clave);
+        return this._conCarga(() => this.cargarDia(clave));
     }
 
     async cambiarModo(modo) {
@@ -262,27 +351,36 @@ export class PanelEventos extends Component {
             return;
         }
         this.state.modo = modo;
-        await Promise.all([this.cargarMes(), this.cargarDia(this.state.diaSeleccionado)]);
+        await this.recargar();
     }
 
-    async cambiarMes(desplazamiento) {
+    /** Quita o devuelve los presupuestos sin confirmar. Afecta a los tres bloques y al parte. */
+    async alternarSoloConfirmados() {
+        this.state.soloConfirmados = !this.state.soloConfirmados;
+        await this.recargar();
+    }
+
+    cambiarMes(desplazamiento) {
         const referencia = new Date(this.state.anio, this.state.mes - 1 + desplazamiento, 1);
         this.state.anio = referencia.getFullYear();
         this.state.mes = referencia.getMonth() + 1;
-        await this.cargarMes();
-        // Si el día seleccionado se queda fuera del mes que se está mirando, los bloques de
-        // abajo hablarían de un mes que el calendario ya no enseña.
-        if (!this.state.diaSeleccionado.startsWith(this.prefijoMes)) {
-            await this.seleccionarDia(aClaveDia(referencia));
-        }
+        return this._conCarga(async () => {
+            await this.cargarMes();
+            // Si el día seleccionado se queda fuera del mes que se está mirando, los bloques
+            // de abajo hablarían de un mes que el calendario ya no enseña.
+            if (!this.state.diaSeleccionado.startsWith(this.prefijoMes)) {
+                this.state.diaSeleccionado = aClaveDia(referencia);
+                await this.cargarDia(this.state.diaSeleccionado);
+            }
+        });
     }
 
     async irAHoy() {
         const hoy = new Date();
         this.state.anio = hoy.getFullYear();
         this.state.mes = hoy.getMonth() + 1;
-        await this.cargarMes();
-        await this.seleccionarDia(this.claveHoy);
+        this.state.diaSeleccionado = this.claveHoy;
+        await this.recargar();
     }
 
     abrirPedido(idPedido) {
@@ -306,7 +404,7 @@ export class PanelEventos extends Component {
         const accion = await this.orm.call(
             "sale.order",
             "enteza_panel_accion_lista",
-            [this.state.diaSeleccionado, this.state.modo]
+            [this.state.diaSeleccionado, this.state.modo, this.state.soloConfirmados]
         );
         await this.action.doAction(accion);
     }
@@ -321,6 +419,7 @@ export class PanelEventos extends Component {
                 this.state.diaSeleccionado,
                 this.state.modo,
                 this.state.vistaMaterial === "sobreventa",
+                this.state.soloConfirmados,
             ]
         );
         await this.action.doAction(accion);

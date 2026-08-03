@@ -26,6 +26,7 @@ class ParteDia(models.AbstractModel):
         modo = data.get('modo') or 'evento'
         dia = data.get('dia')
         solo_sobreventa = data.get('solo_sobreventa')
+        solo_confirmados = bool(data.get('solo_confirmados'))
 
         # 🔴 Aquí `docids` llega vacío casi siempre, y no es un error: cuando la acción lleva
         # `data`, el cliente web construye la URL como
@@ -35,7 +36,9 @@ class ParteDia(models.AbstractModel):
         # modo, se recalculan los pedidos y así el papel no puede discrepar de la pantalla.
         pedidos = self.env['sale.order']
         if dia:
-            pedidos = pedidos._enteza_panel_pedidos(dia, pedidos._enteza_panel_modo(modo))
+            pedidos = pedidos._enteza_panel_pedidos(
+                dia, pedidos._enteza_panel_modo(modo), solo_confirmados
+            )
         if not pedidos:
             ids = docids or (data.get('context') or {}).get('active_ids') or []
             pedidos = self.env['sale.order'].browse(ids)
@@ -45,6 +48,12 @@ class ParteDia(models.AbstractModel):
         articulos = pedidos._enteza_panel_datos_articulos()
         if solo_sobreventa:
             articulos = [articulo for articulo in articulos if articulo['sobreventa']]
+
+        # La columna de almacén solo sale si el día mezcla varios: con uno solo repetiría el
+        # mismo valor en todas las filas y estrecharía las que sí cambian. Se mira en los
+        # pedidos y no en `articulos`, que puede venir recortado por «Sobre venta»: si no,
+        # la columna aparecería o desaparecería según lo que se estuviera imprimiendo.
+        almacenes = pedidos.warehouse_id
 
         return {
             'doc_ids': pedidos.ids,
@@ -56,7 +65,9 @@ class ParteDia(models.AbstractModel):
             'titulo': TITULOS.get(modo, TITULOS['evento'])(),
             'fecha': format_date(self.env, fields.Date.to_date(dia)) if dia else '',
             'solo_sobreventa': bool(solo_sobreventa),
+            'solo_confirmados': solo_confirmados,
             'articulos': articulos,
+            'mostrar_almacen': len(almacenes) > 1,
             'pedidos': pedidos._enteza_panel_datos_pedidos(),
             'total_unidades': sum(articulo['unidades'] for articulo in articulos),
             'total_importe': formatLang(
