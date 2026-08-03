@@ -45,8 +45,10 @@
                 </h2>
 
                 <!-- El periodo de alquiler se imprime UNA sola vez aquí, en lugar de repetirlo
-                     en cada línea. Sólo cuando toda la factura viene de un único pedido. -->
-                <t t-set="pedido" t-value="o.enteza_pedido_alquiler()"/>
+                     en cada línea. Sólo cuando toda la factura viene de un único pedido.
+                     Sin horas: contabilidad sólo quiere el día. -->
+                <t t-set="periodo" t-value="o.enteza_periodo_alquiler()"/>
+                <t t-set="fecha_evento" t-value="o.enteza_fecha_evento()"/>
 
                 <div id="informations" class="row mt-4 mb-4">
                     <div class="col-3" t-if="o.invoice_date">
@@ -67,12 +69,26 @@
                     </div>
                 </div>
 
-                <div t-if="pedido" class="row mb-4">
+                <!-- Recuadro en dos bloques: a la izquierda el periodo de alquiler, a la
+                     derecha el día del evento, que es la fecha que mira el negocio. -->
+                <div t-if="(periodo[0] and periodo[1]) or fecha_evento" class="row mb-4">
                     <div class="col-12">
                         <div class="border rounded p-2">
-                            <strong>Periodo de alquiler:</strong>
-                            del <span t-field="pedido.rental_start_date"/>
-                            al <span t-field="pedido.rental_return_date"/>
+                            <div class="row">
+                                <div class="col-6">
+                                    <t t-if="periodo[0] and periodo[1]">
+                                        <strong>Periodo de alquiler:</strong>
+                                        del <span t-out="periodo[0]" t-options='{"widget": "date"}'/>
+                                        al <span t-out="periodo[1]" t-options='{"widget": "date"}'/>
+                                    </t>
+                                </div>
+                                <div class="col-6">
+                                    <t t-if="fecha_evento">
+                                        <strong>Fecha evento:</strong>
+                                        <span t-out="fecha_evento" t-options='{"widget": "date"}'/>
+                                    </t>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

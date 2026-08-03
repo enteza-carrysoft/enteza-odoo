@@ -14,7 +14,7 @@ Los métodos son públicos a propósito: QWeb no puede llamar a métodos que emp
 """
 import re
 
-from odoo import models
+from odoo import fields, models
 
 # El periodo lo escribe `sale_renting` al facturar, en un renglón propio de la descripción.
 # Se contemplan las dos formas que se han visto, en castellano y en inglés, y se exige que
@@ -57,10 +57,6 @@ class AccountMove(models.Model):
     def enteza_pedido_alquiler(self):
         """El pedido de alquiler de la factura, sólo si es UNO solo.
 
-        Se devuelve el registro (no un texto) para que la plantilla lo pinte con `t-field` y
-        sea Odoo quien aplique el huso horario del usuario: `rental_start_date` se guarda en
-        UTC y en el papel tiene que verse en hora local.
-
         Si la factura agrupa varios pedidos, se devuelve vacío y el periodo sigue saliendo en
         cada línea, que es lo correcto: no sería el mismo para todas.
         """
@@ -69,6 +65,37 @@ class AccountMove(models.Model):
             lambda o: o.is_rental_order and o.rental_start_date and o.rental_return_date
         )
         return pedidos if len(pedidos) == 1 else pedidos.browse()
+
+    def enteza_periodo_alquiler(self):
+        """Periodo de alquiler como fechas SIN hora: `(desde, hasta)` o `(False, False)`.
+
+        Contabilidad pidió que no salieran las horas (2026-08-03).
+
+        La conversión de huso se hace aquí y no en la plantilla a propósito:
+        `rental_start_date` se guarda en UTC (11:00) y en el papel debe verse la fecha local
+        (13:00 del mismo día). Recortar la hora en la plantilla sobre el valor UTC daría el día
+        equivocado en los alquileres que empiezan o terminan de madrugada.
+        """
+        self.ensure_one()
+        pedido = self.enteza_pedido_alquiler()
+        if not pedido:
+            return (False, False)
+        a_local = lambda dt: fields.Datetime.context_timestamp(self, dt).date()
+        return (a_local(pedido.rental_start_date), a_local(pedido.rental_return_date))
+
+    def enteza_fecha_evento(self):
+        """Fecha del evento (`event_date`), si toda la factura comparte una.
+
+        Sustituye a la fecha de vencimiento en el impreso (petición de contabilidad del
+        2026-08-03): en este negocio la fecha que importa es el día del evento.
+
+        Se lee de las líneas de pedido y no del pedido, porque `event_date` existe en los dos
+        sitios y así también sale cuando la factura agrupa varios pedidos del mismo evento.
+        Es un `date`, sin hora: no hay que convertir huso.
+        """
+        self.ensure_one()
+        fechas = set(self.invoice_line_ids.sale_line_ids.mapped("event_date")) - {False}
+        return fechas.pop() if len(fechas) == 1 else False
 
 
 class AccountMoveLine(models.Model):
