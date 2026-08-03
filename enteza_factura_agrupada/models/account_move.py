@@ -86,15 +86,22 @@ class AccountMove(models.Model):
     def enteza_fecha_evento(self):
         """Fecha del evento (`event_date`), si toda la factura comparte una.
 
-        Sustituye a la fecha de vencimiento en el impreso (petición de contabilidad del
-        2026-08-03): en este negocio la fecha que importa es el día del evento.
+        En este negocio la fecha que importa es el día del evento (petición de contabilidad del
+        2026-08-03), así que se imprime junto al periodo de alquiler.
 
-        Se lee de las líneas de pedido y no del pedido, porque `event_date` existe en los dos
-        sitios y así también sale cuando la factura agrupa varios pedidos del mismo evento.
-        Es un `date`, sin hora: no hay que convertir huso.
+        Se lee del **pedido** y no de la línea: `sale.order.line.event_date` existe, pero es un
+        related de `order_id.event_date` con `store=False`, de modo que el valor bueno está en
+        la cabecera y leerlo ahí evita calcularlo línea a línea. Sigue funcionando cuando la
+        factura agrupa varios pedidos del mismo evento, porque se comparan todos.
+
+        Es un `date`, sin hora: aquí no hay huso que convertir.
+
+        Devuelve `False` si ningún pedido la tiene informada — pasa en pedidos donde no se
+        rellenó (2 de los 1.159 a 2026-08-03) — o si hay varias fechas distintas, porque
+        entonces no habría una sola fecha cierta para toda la factura.
         """
         self.ensure_one()
-        fechas = set(self.invoice_line_ids.sale_line_ids.mapped("event_date")) - {False}
+        fechas = set(self.invoice_line_ids.sale_line_ids.order_id.mapped("event_date")) - {False}
         return fechas.pop() if len(fechas) == 1 else False
 
 

@@ -65,9 +65,15 @@ puede llamar a métodos que empiezan por `_`:
 `rental_start_date` se guarda en UTC y recortar la hora sobre el valor UTC daría el día
 equivocado en los alquileres que empiezan o terminan de madrugada.
 
-`enteza_fecha_evento()` lee `event_date` de las **líneas de pedido**, no del pedido, porque el
-campo existe en los dos sitios y así también sale cuando la factura agrupa varios pedidos del
-mismo evento. Es un `date`: no hay huso que convertir.
+`enteza_fecha_evento()` lee `event_date` del **pedido**. Existe también en la línea, pero ahí es
+un related de `order_id.event_date` con `store=False`: el valor bueno está en la cabecera y
+leerlo ahí evita calcularlo línea a línea. Es un `date`: no hay huso que convertir.
+
+> **Si el bloque sale vacío, no es el informe: es que el pedido no tiene fecha de evento.** El
+> campo está en el formulario del pedido y se rellena solo si alguien lo escribe. A 2026-08-03,
+> 1.157 de los 1.159 pedidos de alquiler la tienen; los dos que faltan (`S00014` y `S00016`) se
+> crearon en la 19 sin rellenarla. Si interesa que no vuelva a pasar, se puede hacer obligatorio
+> en pedidos de alquiler — es otro módulo.
 
 > ⚠️ **Los 16 pedidos con devolución a las 23:59.** La migración guardó su `rental_return_date`
 > como `23:59:59` **UTC**, que en hora española es el día siguiente. Odoo ya los muestra así hoy
