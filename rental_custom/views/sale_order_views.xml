@@ -8,7 +8,11 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="inherit_id" ref="sale_renting.rental_order_primary_form_view" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='date_order']" position="after">
-                <field name="event_date" />
+                <!-- Obligatoria: esta vista es la del formulario de ALQUILER
+                     (`sale_renting.rental_order_primary_form_view`), así que no afecta a los
+                     pedidos de venta normales. Sin ella, la factura sale sin fecha de evento y
+                     el calendario de eventos no coloca el pedido. -->
+                <field name="event_date" required="1" />
         	<field name="place_number" />
             </xpath>
             <xpath expr="//field[@name='partner_shipping_id']" position="after">

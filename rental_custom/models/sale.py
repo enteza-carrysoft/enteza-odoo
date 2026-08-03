@@ -24,6 +24,30 @@ class SaleOrder(models.Model):
             self.rental_start_date = self.event_date - timedelta(days=1)
             self.rental_return_date = self.event_date + timedelta(days=1)
 
+    def action_confirm(self):
+        """No deja confirmar un alquiler sin fecha de evento.
+
+        La vista de alquiler ya la pide como obligatoria, pero eso sólo cubre la interfaz: un
+        pedido creado por RPC, por importación o desde el formulario de ventas se colaría sin
+        ella. Se valida al CONFIRMAR y no al guardar para no estorbar mientras se prepara un
+        presupuesto, que es cuando puede no conocerse todavía la fecha.
+
+        Sin este dato, la factura sale sin fecha de evento y el pedido no aparece en el
+        calendario. Motivo por el que se añadió (2026-08-03): dos pedidos hechos en Odoo 19
+        (S00014 y S00016) se confirmaron y facturaron sin rellenarla.
+        """
+        sin_fecha = self.filtered(lambda o: o.is_rental_order and not o.event_date)
+        if sin_fecha:
+            raise ValidationError(
+                _(
+                    "Falta la fecha del evento en: %s\n\n"
+                    "En los pedidos de alquiler es obligatoria: sin ella la factura sale sin "
+                    "fecha de evento y el pedido no aparece en el calendario.",
+                    ", ".join(sin_fecha.mapped("name")),
+                )
+            )
+        return super().action_confirm()
+
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
