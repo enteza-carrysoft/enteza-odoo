@@ -1,26 +1,21 @@
 ## Module <auto_database_backup>
 
-#### 07.05.2022
-#### Version 15.0.1.0.0
+#### 19.09.2025
+#### Version 19.0.1.0.0
 #### ADD
-- Initial commit for auto_database_backup
 
-#### 14.06.2022
-#### Version 15.0.2.0.1
-#### ADD
-- Dropbox integration added. Backup can be stored in to dropbox.
+- Initial commit for Automatic Database Backup To Local Server, Remote Server, Google Drive, Dropbox, Onedrive, Nextcloud and Amazon S3 Odoo19.
 
-#### 20.08.2022
-#### Version 15.0.3.0.1
-#### ADD
-- Onedrive integration added. Backup can be stored in to onedrive.
+#### 25.05.2026
+#### Version 19.0.1.0.1
+#### UPDT
 
-#### 15.11.2022
-#### Version 15.0.3.1.1
-#### ADD
-- Google Drive authentication updated.
+- Added option to submit support ticket.
 
-#### 16.10.2023
-#### Version 15.0.4.1.2
-#### ADD
-- Nextcloud and Amazon S3 integration added. Backup can be stored into Nextcloud and Amazon S3.
+#### 20.07.2026
+#### Version 19.0.2.0.2
+#### IMP
+
+- Code Refactored
+- New Features added
+

@@ -3,8 +3,8 @@
 #
 #    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2023-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
-#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions (odoo@cybrosys.com)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -20,34 +20,45 @@
 #
 ###############################################################################
 {
-    'name': "Automatic Database Backup To Local Server, Remote Server, Google "
-            "Drive, Dropbox, Onedrive, Nextcloud and Amazon S3",
-    'version': '15.0.4.1.2',
-    'category': 'Discuss,Extra Tools',
-    'summary': """Generate automatic backup of databases and store to local,
-     google drive, dropbox, nextcloud, amazon S3, onedrive or 
-     remote server""",
-    'description': """This module helps to generate backups of your databases 
-     automatically on regular interval of times. The generated backups can be 
-     stored into local storage, ftp server, sftp server, dropbox, Google Drive, 
-     Onedrive Nextcloud and Amazon S3. User can enable auto remove option to 
-     automatically delete old backups. User can enable email notification to 
-     be notified about the success and failure of the backup generation and 
-     storage.""",
+    'name': "Automatic Database Backup To Local Server, Remote Server,"
+            "Google Drive, Dropbox, Onedrive, Nextcloud and Amazon S3 Odoo19",
+    'version': '19.0.2.0.2',
+    'live_test_url': 'https://youtu.be/Q2yMZyYjuTI',
+    'category': 'Extra Tools',
+    'summary': """Odoo Database Backup, Automatic Backup, Database Backup, 
+     Automatic Backup,Database auto-backup, odoo backup google drive, dropbox,
+     nextcloud, amazon S3, onedrive or remote server, Odoo19, Backup, Database,
+      Odoo Apps""",
+    'description': """Odoo Database Backup, Database Backup, Automatic Backup, 
+    automatic database backup, odoo19, odoo apps,backup, automatic backup, 
+    odoo19 automatic database backup,backup google drive,backup dropbox, backup
+     nextcloud, backup amazon S3, backup onedrive. It also provides option to 
+     submit support tickets.""",
     'author': "Cybrosys Techno Solutions",
     'company': 'Cybrosys Techno Solutions',
     'maintainer': 'Cybrosys Techno Solutions',
     'website': "https://www.cybrosys.com",
-    'depends': ['base', 'mail'],
+    'depends': ['base', 'mail', 'web'],
     'data': [
+        'security/db_backup_security.xml',
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
-        'data/mail_data.xml',
+        'data/mail_template_data.xml',
         'views/db_backup_configure_views.xml',
+        'views/db_backup_history_views.xml',
+        'wizard/auto_database_backup_support_views.xml',
         'wizard/dropbox_auth_code_views.xml',
     ],
     'external_dependencies': {
-        'python': ['dropbox', 'pyncclient', 'boto3', 'nextcloud-api-wrapper','paramiko'],
+        'python': ['dropbox', 'pyncclient', 'boto3', 'nextcloud-api-wrapper',
+                   'paramiko', 'azure-storage-blob', 'google-cloud-storage',
+                   'webdavclient3']},
+    'assets': {
+        'web.assets_backend': [
+            'auto_database_backup/static/src/js/auto_database_backup_systray.js',
+            'auto_database_backup/static/src/xml/auto_database_backup_systray.xml',
+            'auto_database_backup/static/src/css/auto_database_backup.css',
+        ],
     },
     'images': ['static/description/banner.gif'],
     'license': 'LGPL-3',

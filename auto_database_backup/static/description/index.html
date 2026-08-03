@@ -1,1062 +1,988 @@
-<div style="background-color: #714B67;  height: 810px; width: 100%; padding: 15px; position: relative;">
-    <!-- TITLE BAR -->
-    <div class="d-flex justify-content-between align-items-center"
-         style="border-bottom: 1px solid #875A7B; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <img src="assets/misc/cybrosys-logo.png" width="42" height="42"
-             style="width: 42px; height: 42px;"/>
-        <div>
-            <div
-                    style="color: #7C7BAD; font-size: 14px; font-family: 'Montserrat', sans-serif; font-weight: bold; background-color: white; display: inline-block; padding: 3px 10px; border-radius: 50px;"
-                    class="mr-2">
-                <i class="fa fa-check mr-1"></i>Community
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>app index</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+</head>
+
+
+<body style="font-family: &quot;Montserrat&quot;, sans-serif;background-color: #71639e08;">
+
+<!-- ===== Header ===== -->
+<div class="container-fluid cmpad">
+    <div style="background-color:#fff;border:1px solid #eceaf6;border-radius:16px;padding:18px 32px;box-shadow:0 6px 22px rgba(79,70,229,.07);margin:16px 0;">
+        <div class="row justify-content-between align-items-center g-3">
+            <div class="col-lg-3 col-md-4 text-center text-md-start">
+                <img src="//apps.odoocdn.com/apps/assets/17.0/theme_boec/images/Cybrosys.png?fcdde35"
+                     style="width:230px;max-width:100%;" alt="Cybrosys Technologies">
             </div>
-            <div
-                    style="color: #875A7B; font-size: 14px; font-family: 'Montserrat', sans-serif; font-weight: bold; background-color: white; display: inline-block; padding: 3px 10px; border-radius: 50px;"
-                    class="mr-2">
-                <i class="fa fa-check mr-1"></i>Enterprise
+            <div class="col-lg-9 col-md-8">
+                <div class="d-flex flex-column align-items-center align-items-md-end gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center justify-content-md-end">
+                        <span style="font-weight:700;color:#334155;">Supports:</span>
+                        <span style="background-color:#4f46e5;color:#fff;font-weight:600;padding:8px 22px;border-radius:50px;font-size:.95rem;box-shadow:0 5px 14px rgba(79,70,229,.30);">Community</span>
+                        <span style="background-color:#4f46e5;color:#fff;font-weight:600;padding:8px 22px;border-radius:50px;font-size:.95rem;box-shadow:0 5px 14px rgba(79,70,229,.30);">Enterprise</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center justify-content-md-end">
+                        <span style="font-weight:700;color:#334155;">Availability:</span>
+                        <span class="hdr-avail"
+                              style="display:inline-block;padding:7px 15px;border-radius:30px;font-weight:600;font-size:.92rem;background-color:#ecfdf3;border:1px solid #bbf3d0;color:#15803d;">
+                            <img src="./assets/tick.png" alt="" width="17" height="17"> On Premise
+                        </span>
+                        <span class="hdr-avail"
+                              style="display:inline-block;padding:7px 15px;border-radius:30px;font-weight:600;font-size:.92rem;background-color:#fef2f2;border:1px solid #fbd5d5;color:#b91c1c;">
+                            <img src="./assets/close.png" alt="" width="17" height="17"> Odoo.sh
+                        </span>
+                        <span class="hdr-avail"
+                              style="display:inline-block;padding:7px 15px;border-radius:30px;font-weight:600;font-size:.92rem;background-color:#fef2f2;border:1px solid #fbd5d5;color:#b91c1c;">
+                            <img src="./assets/close.png" alt="" width="17" height="17"> Odoo Online
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <!-- END OF TITLE BAR -->
+</div>
 
-    <!-- APP HERO -->
-    <div class="container">
+<!-- ===== Hero intro ===== -->
+<div class="container-fluid cmpad text-center" style="padding-top:34px;padding-bottom:6px;">
+    <div style="display:inline-block;margin-bottom:20px;padding:7px 18px;background-color:#eef0fe;border:1px solid #dcd8f6;border-radius:50px;">
+        <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background-color:#4f46e5;color:#fff;text-align:center;line-height:28px;vertical-align:middle;margin-right:9px;"><i
+                class="fa fa-rocket" style="font-size:13px;"></i></span><span
+            style="display:inline-block;vertical-align:middle;color:#4f46e5;font-weight:800;font-size:.9rem;letter-spacing:.02em;">NEW &middot; v19.0.1.0.1</span>
+        <span style="display:inline-block;vertical-align:middle;color:#3a3f57;font-weight:780;font-size:.93rem;margin-left:8px;">Now with Azure, Google Cloud &amp; WebDAV destinations, S3-compatible endpoints, Backup Now, backup history &amp; multi-database backups</span>
+    </div>
+    <br/>
+    <span style="display:inline-block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#4f46e5;font-weight:700;background-color:#eef0fe;border:1px solid #dcdcfb;padding:7px 16px;border-radius:30px;margin-bottom:18px;">Backup Tools &middot; Community &amp; Enterprise</span>
+    <h3 class="mainhead"
+        style="font-size:2.5rem;font-weight:800;color:#0f172a;letter-spacing:-.02em;margin:0 0 12px;line-height:1.15;">
+        Automatic Database <span style="color:#4f46e5;">Backup</span></h3>
+    <p class="para" style="font-size:1.25rem;color:#000;margin:0 0 26px;">Schedule automatic database backups to local
+        storage, remote servers and the cloud in Odoo 19 &mdash; with history, alerts, one-click manual backups and
+        multi-database support.</p>
+    <div style="text-align:center;">
+        <a href="mailto:odoo@cybrosys.com" class="hdr-btn"
+           style="display:inline-block;text-align:center;padding:14px 28px;border-radius:50px;font-size:15px;font-weight:600;text-decoration:none;color:#fff;min-width:210px;background-color:#4f46e5;margin:4px 6px;">
+            <img src="./assets/mail.png" alt="" width="23" height="23" style="vertical-align:middle;margin-right:8px;">
+            Email Us
+        </a>
+        <a href="https://wa.me/919074270811" class="hdr-btn"
+           style="display:inline-block;text-align:center;padding:14px 28px;border-radius:50px;font-size:15px;font-weight:600;text-decoration:none;color:#fff;min-width:210px;background-color:#25d366;margin:4px 6px;">
+            <img src="./assets/whatsapp.png" alt="" width="23" height="23"
+                 style="vertical-align:middle;margin-right:8px;"> +91 9074270811
+        </a>
+    </div>
+    <div style="display:inline-block;margin-top:24px;padding:9px 24px;background-color:#faf6f1;border:1.5px solid #f0e2d0;border-radius:50px;">
+        <span style="display:inline-block;width:36px;height:36px;border-radius:50%;background-color:#f97316;color:#fff;text-align:center;line-height:36px;vertical-align:middle;margin-right:10px;"><i
+                class="fa fa-headphones" style="font-size:16px;"></i></span>
+        <span style="display:inline-block;vertical-align:middle;color:#334155;font-weight:700;font-size:.98rem;">Instant Support</span>
+        <span style="display:inline-block;vertical-align:middle;color:#c7c2e8;margin:0 8px;">|</span>
+        <span style="display:inline-block;vertical-align:middle;color:#4f46e5;font-weight:600;font-size:.95rem;word-break:break-all;">https://support.cybrosys.com/instant-support</span>
+    </div>
+</div>
+
+<!-- ===== Hero banner ===== -->
+<div class="container-fluid cmpad">
+    <div class="text-center mb-4" style="padding-left:2.5rem;padding-right:2.5rem;">
+        <img src="./assets/hero.jpg"
+             alt="Automatic Database Backup — Odoo 19"
+             style="width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 16px 48px rgba(12,47,39,.32);"/>
+    </div>
+</div>
+
+<!-- ===== Blog / Tutorial cards ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="cc-card cc-blog h-100"
+                 style="background-color:#fff;border:1px solid #ece8f6;border-radius:18px;padding:32px;box-shadow:0 6px 20px rgba(79,70,229,.07);">
+                <div style="width:58px;height:58px;border-radius:15px;background-color:#4f46e5;display:inline-block;text-align:center;line-height:58px;margin-bottom:20px;">
+                    <img src="./assets/document.png" alt="" width="28" height="28" style="vertical-align:middle;">
+                </div>
+                <h3 style="font-size:1.4rem;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-.01em;">Read
+                    the Blog</h3>
+                <p style="font-size:15.5px;color:#475062;line-height:1.6;margin:0 0 22px;">Read our blog on automatic
+                    database backups in Odoo &mdash; setup, destinations and best practices.</p>
+                <a href="https://www.cybrosys.com/blog"
+                   target="_blank" rel="noopener noreferrer" class="cc-btn"
+                   style="display:inline-block;padding:11px 24px;border-radius:50px;font-weight:600;font-size:14.5px;text-decoration:none;color:#fff;background-color:#4f46e5;box-shadow:0 6px 16px rgba(79,70,229,.28);">
+                    <img src="./assets/copy.png" alt="" width="16" height="16"> Read Blog
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="cc-card cc-vid h-100"
+                 style="background-color:#fff;border:1px solid #f4e2e2;border-radius:18px;padding:32px;box-shadow:0 6px 20px rgba(239,68,68,.06);">
+                <div style="width:58px;height:58px;border-radius:15px;background-color:#ef4444;display:inline-block;text-align:center;line-height:58px;margin-bottom:20px;">
+                    <img src="./assets/play.png" alt="" width="22" height="22" style="vertical-align:middle;">
+                </div>
+                <h3 style="font-size:1.4rem;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-.01em;">Watch
+                    the Tutorial</h3>
+                <p style="font-size:15.5px;color:#475062;line-height:1.6;margin:0 0 22px;">Watch a full video
+                    walkthrough of the module on our YouTube channel for hands-on learning.</p>
+                <a href="https://youtu.be/Q2yMZyYjuTI" target="_blank"
+                   rel="noopener noreferrer" class="cc-btn"
+                   style="display:inline-block;padding:11px 24px;border-radius:50px;font-weight:600;font-size:14.5px;text-decoration:none;color:#fff;background-color:#ef4444;box-shadow:0 6px 16px rgba(239,68,68,.28);">
+                    <img src="./assets/play.png" alt="" width="14" height="14"> Watch Demo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Key Highlights ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div class="highlights-section">
+        <h2 class="text-center" style="font-size:2.1rem;font-weight:800;color:#1b2233;margin:0;letter-spacing:-0.01em;">
+            Key Highlights</h2>
+        <div style="width:70px;height:4px;margin:16px auto 12px;border-radius:3px;background-color:#4f46e5;"></div>
+        <p class="text-center" style="color:#5b6472;font-size:1.08rem;max-width:62ch;margin:0 auto 30px;">Everything the
+            module adds to protect your Odoo&nbsp;19 database &mdash; at a glance.</p>
+
         <div class="row">
-            <div class="col-sm-12 col-md-12 col-lg-12">
-                <!-- APP HERO -->
-                <h1 style="color: #FFFFFF; font-weight: bolder; font-size: 50px; text-align: center; margin-top: 50px;">
-                    Automatic Database Backup To Local Server, Remote Server, Google Drive, Dropbox, Onedrive, Nextcloud and Amazon S3</h1>
-                <p style="color:#FFFFFF; padding: 8px 15px; text-align: center; font-size: 24px;">
-                    This Module Helps To Generate Backup Of Databases.</p>
-                <!-- END OF APP HERO -->
-                <img src="assets/screenshots/v15-hero.gif" class="img-responsive"
-                     style="width: 100%; margin-left: auto; margin-right: auto;"/>
-            </div>
-        </div>
-    </div>
-
-
-</div>
-
-<!-- NAVIGATION SECTION -->
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px; margin-top: 300px;">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/compass.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Explore This
-        Module</h2>
-</div>
-<div class="row my-4" style="font-family: 'Montserrat', sans-serif;">
-    <div class="col-sm-12 col-md-6 my-3">
-        <a href="#overview">
-            <div class="d-flex justify-content-between align-items-center"
-                 style="background-color: #f5f5f5; padding: 30px; width: 100%;">
-                <div>
-                    <span style="color: #714B67; font-size: 24px; font-weight: 500; display: block;">Overview</span>
-                    <span style="color: #714B67; font-size: 16px; font-weight: 400; color:#282F33;  display: block;">Learn
-            more about this
-            module</span>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-cloud-upload" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        12 Storage Destinations</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">Local, FTP, SFTP, Google Drive,
+                        Dropbox, OneDrive, Nextcloud, Amazon S3, Azure, Google Cloud &amp; WebDAV.</p>
                 </div>
-                <img src="assets/misc/right-arrow.png" width="36" height="36"/>
             </div>
-        </a>
-    </div>
-    <div class="col-sm-12 col-md-6 my-3">
-        <a href="#features">
-            <div class="d-flex justify-content-between align-items-center"
-                 style="background-color: #f5f5f5; padding: 30px; width: 100%;">
-                <div>
-                    <span style="color: #714B67; font-size: 24px; font-weight: 500; display: block;">Features</span>
-                    <span style="color: #714B67; font-size: 16px; font-weight: 400; color:#282F33;  display: block;">View
-            features of this
-            module</span>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-clock-o" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        Scheduled Automatic Backups</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">Back up daily, weekly or monthly
+                        with Odoo scheduled actions &mdash; fully hands-off.</p>
                 </div>
-                <img src="assets/misc/right-arrow.png" width="36" height="36"/>
             </div>
-        </a>
-    </div>
-    <div class="col-sm-12 col-md-6 my-3">
-        <a href="#screenshots">
-            <div class="d-flex justify-content-between align-items-center"
-                 style="background-color: #f5f5f5; padding: 30px; width: 100%;">
-                <div>
-                    <span style="color: #714B67; font-size: 24px; font-weight: 500; display: block;">Screenshots</span>
-                    <span style="color: #714B67; font-size: 16px; font-weight: 400; color:#282F33;  display: block;">View
-            screenshots for this
-            module</span>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-bolt" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        Backup Now &amp; Download</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">Run a backup instantly from the
+                        form, or download a fresh backup straight to your browser.</p>
                 </div>
-                <img src="assets/misc/right-arrow.png" width="36" height="36"/>
             </div>
-        </a>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-history" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        Backup History &amp; Status</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">Every run is logged with status,
+                        duration and errors; each config shows its last-run health.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-database" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        Multi-Database Backup</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">One configuration can back up a
+                        single database, all databases, or a selected list.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="hlx-card"
+                     style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-top:4px solid #4f46e5;border-radius:16px;padding:30px 26px;box-shadow:0 12px 30px rgba(79,70,229,.10);position:relative;overflow:hidden;">
+                    <div class="hlx-ic"
+                         style="width:60px;height:60px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.30);margin-bottom:20px;">
+                        <i class="fa fa-lock" style="color:#fff;font-size:24px;line-height:1;"></i>
+                    </div>
+                    <h3 style="font-size:19px;font-weight:700;color:#1b2233;margin:0 0 8px;letter-spacing:-0.01em;">
+                        Secure &amp; Manager-Only</h3>
+                    <p style="font-size:15px;color:#4b5563;margin:0;line-height:1.6;">The master password is never
+                        stored, and only Backup Managers can see or edit configs and secrets.</p>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="text-center" style="font-size:1.5rem;font-weight:800;color:#1b2233;margin:26px 0 0;letter-spacing:-0.01em;">
+            Supported <span style="color:#4f46e5;">Destinations</span></h3>
+        <div style="width:60px;height:3px;margin:12px auto 26px;border-radius:3px;background-color:#4f46e5;"></div>
+        <div class="row">
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-hdd-o" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Local Storage</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Local server directory.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-server" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">FTP</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Upload to an FTP server.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-lock" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">SFTP</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Secure upload over SSH.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-google" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Google Drive</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Store in a Drive folder.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-dropbox" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Dropbox</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Store in a Dropbox folder.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">OneDrive</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Microsoft OneDrive.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Nextcloud</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Self-hosted Nextcloud.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-amazon" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Amazon S3</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">S3 &amp; S3-compatible.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-windows" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Azure Blob</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Azure Blob Storage.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-google" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Google Cloud</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Google Cloud Storage.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-globe" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">WebDAV</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Any WebDAV server.</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-fire" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Backblaze B2</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Low-cost cloud storage (S3 Compatible)</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-database" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Wasabi</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Hot cloud storage (S3 Compatible)</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">Cloudflare R2</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Zero-egress storage (S3 Compatible)</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-hdd-o" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">MinIO</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Self-hosted S3 server (S3 Compatible)</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-tint" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">DO Spaces</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">DigitalOcean storage (S3 Compatible)</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 18px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                    <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:16px;"><i class="fa fa-server" style="color:#fff;font-size:22px;"></i></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#1b2233;margin:0 0 4px;">iDrive e2</h4>
+                    <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">Cloud object storage (S3 Compatible)</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<!-- END OF NAVIGATION SECTION -->
 
-<!-- OVERVIEW SECTION -->
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;" id="overview">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/pie-chart.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Overview
-    </h2>
-</div>
-<div class="row"
-     style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; line-height: 200%;">
-    <div class="col-sm-12 py-4">
-        This module helps to generate backups of your databases automatically on
-        regular interval of times. The generated backups can be stored into
-        local storage, ftp server, sftp server, dropbox,nextcloud, Google Drive
-        or Onedrive and Amazon S3. User can enable auto remove option to automatically delete
-        old backups. User can enable email notification to be notified about the
-        success and failure of the backup generation and storage.
-        Using Automatic Database Backup module user can generate and store
-        database backups to multiple location.
-        <div class="alert alert-primary mt-4">
-            <hr/>
-            This module uses an external python dependency 'dropbox'.Before
-            installing the module install the python
-            package
-            first.The required python package can be installed using the
-            following command,
-            <br/>
-            <code class="d-block mt-2">pip install dropbox</code>
+<!-- ===== Before Installation ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div style="max-width:1080px;margin:0 auto;padding:0 16px;">
+        <div style="text-align:center;margin-bottom:22px;">
+            <h2 style="font-size:2rem;font-weight:800;color:#1b2233;margin:0;">Before
+                <span style="color:#4f46e5;">Installation</span></h2>
+            <div style="width:66px;height:4px;background-color:#4f46e5;border-radius:3px;margin:14px auto 0;"></div>
         </div>
-        <div class="alert alert-primary mt-4">
-            <hr/>
-            This module uses an external python dependency 'nextcloud'.Before
-            installing the module install the python
-            package
-            first.The required python package can be installed using the
-            following command,
-            <br/>
-            <code class="d-block mt-2">pip install pyncclient</code>
-        </div>
-              <div class="alert alert-primary mt-4">
-            <hr/>
-            This module uses an external python dependency 'nextcloud-api-wrapper'.Before
-            installing the module install the python
-            package
-            first.The required python package can be installed using the
-            following command,
-            <br/>
-            <code class="d-block mt-2">pip install nextcloud-api-wrapper</code>
-        </div>
-
-    <div class="alert alert-primary mt-4">
-        <hr/>
-        This module uses an external python dependency 'Boto3'.Before installing
-        the module install the python
-        package
-        first.The required python package can be installed using the following
-        command,
-        <br/>
-        <code class="d-block mt-2">pip install boto3</code>
-    </div>
-
-    <div class="alert alert-primary mt-4">
-        <hr/>
-        This module uses an external python dependency 'paramiko'.Before
-        installing the module install the python
-        package
-        first.The required python package can be installed using the following
-        command,
-        <br/>
-        <code class="d-block mt-2">pip install paramiko</code>
-    </div>
-</div>
-
-
-
-</div>
-<!-- END OF OVERVIEW SECTION -->
-
-<!-- FEATURES SECTION -->
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;" id="features">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/features.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Features
-    </h2>
-</div>
-<div class="row"
-     style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; line-height: 200%;">
-    <div class="col-sm-12 col-md-6">
-        <div class="d-flex align-items-center"
-             style="margin-top: 40px; margin-bottom: 40px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Generate Database
-        Backups on regular intervals</span>
-        </div>
-
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Store Backup to
-        Dropbox</span>
-        </div>
-
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Store Backup to
-        Onedrive</span>
-        </div>
-
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Notify user on
-        success
-        and failure of backup generation</span>
-        </div>
-    </div>
-    <div class="col-sm-12 col-md-6">
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Store Backup to
-        Remote
-        Server</span>
-        </div>
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Store Backup to
-        Nextcloud</span>
-        </div>
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Store Backup to
-        Amazon S3</span>
-        </div>
-
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Generated backup can
-        be
-        stored to Google Drive</span>
-        </div>
-
-        <div class="d-flex align-items-center"
-             style="margin-top: 30px; margin-bottom: 30px">
-            <img src="assets/misc/check-box.png" class="mr-2"/>
-            <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">Automatically remove
-        old backups</span>
+        <p style="text-align:center;color:#5b6472;font-size:1rem;max-width:72ch;margin:0 auto 22px;">
+            This module uses a few external Python packages. Install the ones
+            you need for your chosen destinations first, then install the
+            module.</p>
+        <div style="background-color:#eef0fe;border:1px solid #d9dbfb;border-left:4px solid #4f46e5;border-radius:10px;padding:14px 18px;margin-bottom:22px;color:#3a3f63;font-size:14.5px;">
+            <b>Required packages:</b> dropbox, pyncclient, boto3,
+            nextcloud-api-wrapper, paramiko, azure-storage-blob,
+            google-cloud-storage and webdavclient3. Install these before
+            installing the module using the commands below.</div>
+        <div style="font-weight:700;color:#1b2233;font-size:1.05rem;margin:0 0 12px;">
+            Install the Python packages</div>
+        <div style="margin:0 0 18px;">
+            <div style="font-family:Consolas,Menlo,monospace;font-size:12px;color:#6b7280;margin-bottom:6px;">bash</div>
+            <pre style="margin:0;padding:16px 18px;background-color:#f6f8fa;border:1px solid #e5e7eb;border-radius:10px;color:#1f2937;font-family:Consolas,Menlo,monospace;font-size:13.5px;line-height:1.6;overflow-x:auto;">pip3 install dropbox
+pip3 install pyncclient
+pip3 install boto3
+pip3 install nextcloud-api-wrapper
+pip3 install paramiko
+pip3 install azure-storage-blob
+pip3 install google-cloud-storage
+pip3 install webdavclient3</pre>
         </div>
     </div>
 </div>
-<!-- END OF FEATURES SECTION -->
 
-<!-- SCREENSHOTS SECTION -->
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;"
-     id="screenshots">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/pictures.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Screenshots
-    </h2>
-</div>
-<div class="row">
-    <div class="col-sm-12">
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Database Backup
-                Configuration Menu</h3>
-            <p
-                    style="font-family: 'Roboto', sans-serif !important; font-weight: 400 !important; color: #282F33 !important; font-size: 1rem !important;">
-                Go to Setting --> Technical --> Backup Configuration to configure
-                backups</p>
-            <img src="assets/screenshots/enter_1.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Create New Database
-                Backup
-                Configuration</h3>
-            <p
-                    style="font-family: 'Roboto', sans-serif !important; font-weight: 400 !important; color: #282F33 !important; font-size: 1rem !important;">
-                Enter the Database Name and Master Password. Specify Backup Destination.
-                Enter the backup directory path, if directory does not exist new
-                directory will be created.</p>
-            <img src="assets/screenshots/enter_2.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Remote
-                SFTP Server</h3>
-            <p
-                    style="font-family: 'Roboto', sans-serif !important; font-weight: 400 !important; color: #282F33 !important; font-size: 1rem !important;">
-                Select Backup Destination as SFTP, enter credentials.
-                "TEST CONNECTION" button to check whether the connection is
-                successful.
-            </p>
-            <img src="assets/screenshots/enter_4.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Remote
-                FTP Server</h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Select Backup
-                Destination
-                as FTP, enter credentials.
-                "TEST CONNECTION" button to check whether the connection is
-                successful.</p>
-            <img src="assets/screenshots/enter_6.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Google
-                Drive</h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                You'll need to create a
-                new
-                Google API project and enabling the Google Drive API, Go to the
-                <a href="https://console.developers.google.com/"
-                   target="_blank">Google API Console</a> and log into your
-                account.
-                While creating the project, for the Redirect URI restrictions,
-                copy your Odoo database URI followed by
-                /google_drive/authentication. Example:</p>
-            <img src="assets/screenshots/drive1.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                ENABLE API AND SERVICES</p>
-            <img src="assets/screenshots/drive2.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                ENABLE GOOGLE DRIVE API</p>
-            <img src="assets/screenshots/drive3.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Create Credentials,
-                Follow
-                the steps, select Website application for the Application
-                Type.</p>
-                <img src="assets/screenshots/drive4.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Under the Authorized
-                JavaScript Origins section, click + Add URI and type your
-                company's Odoo URL address.
-                Under the Authorized redirect URIs section, click + Add URI and
-                type your company's Odoo URL address
-                followed
-                by <i>/google_drive/authentication</i>.
-                After all the steps are completed, A Client ID and Client secret will
-                be given, copy the credentials
-            </p>
-            <img src="assets/screenshots/drive5.png" class="img-thumbnail">
-            
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Go to the "OAuth consent screen", then Test users and click on 'ADD USERS' then add the user.
-            </p>
-        <img src="assets/screenshots/add.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                You can get the drive folder id from the url of the drive folder.
-            </p>
-        <img src="assets/screenshots/gd_folder_id.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Configure Backup, Copy
-                Client ID and Client Secret from Google Drive API Credentials
-                and paste into their respective fields.</p>
-            <img src="assets/screenshots/backup5.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Setup Token, it will
-                be
-                redirected to an authorization page.</p>
-            <img src="assets/screenshots/backup6.png" class="img-thumbnail">
-            <br/>
-            <img src="assets/screenshots/backup7.png" class="img-thumbnail"/>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Reset the token if
-                required by clicking on the  "Reset Token"</p>
-            <img src="assets/screenshots/backup8.png" class="img-thumbnail"/>
-        </div>
-
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to Dropbox
-            </h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                To get the app key and secret key go to the <a
-                    href="https://www.dropbox.com/developers/apps"
-                    target="_blank">App
-                Console</a>.
-                Create a new app
-            </p>
-            <img src="assets/screenshots/drop2.png" class="img-thumbnail">
-
-            Once you created the App , you can get the App key and App Secret as seen in the screenshot
-            <img src="assets/screenshots/drop3.png" class="img-thumbnail">
-            Choose your app's permission (files.content.write and files.content.read permissions required).then click on Submit
-            <img src="assets/screenshots/drop4.png" class="img-thumbnail">
-            Choose Dropbox as that of the backup destination. Enter the app secret and key and dropbox Folder. 
-            <img src="assets/screenshots/enter_7.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Click on the Setup Token</p>
-            <img src="assets/screenshots/enter_8.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Get the Authorization
-                Code
-                and click confirm.</p>
-            <img src="assets/screenshots/enter_9.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Reset the refresh token
-                if
-                required by clicking on the "Reset Token"</p>
-            <img src="assets/screenshots/enter_10.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Onedrive
-            </h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Select Backup
-                Destination
-                as OneDrive. Enter the App key and App secret.
-                you'll need to register a new app in the <a
-                    href="https://portal.azure.com/" target="_blank">Microsoft
-                Azure
-                portal</a>.
-                While registering the app for the Redirect URI restrictions,
-                copy your Odoo database URI followed by
-                /onedrive/authentication. Example:</p>
-            <img src="assets/screenshots/onedrive1.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Copy the Client ID</p>
-            <img src="assets/screenshots/onedrive2.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Generate Client
-                Secret.</p>
-            <img src="assets/screenshots/onedrive3.png" class="img-thumbnail">
-            <img src="assets/screenshots/onedrive4.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Get OneDrive folder ID,
-                where need to store the backup files.</p>
-            <img src="assets/screenshots/onedrive5.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Configure the
-                Backup</p>
-            <img src="assets/screenshots/enter_13.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Setup Token, it will
-                be
-                redirected to an authorization page.</p>
-            <img src="assets/screenshots/enter_22.png" class="img-thumbnail">
-            <img src="assets/screenshots/onedrive8.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Reset the token if
-                required by clicking on the "Reset Token"
-            </p>
-            <img src="assets/screenshots/onedrive9.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Nextcloud
-            </h3>
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                To Create an account in Nextcloud go to
-                https://nextcloud.com/sign-up/, Enter Your Email Address and
-                Sign up .
-                <img src="assets/screenshots/nextcloud_4.png"
-                     class="img-thumbnail">
-
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                You will be redirected to the page as shown in the screenshot,
-                and it will ask you enter your email and password for the
-                Nextcloud.</p>
-            <img src="assets/screenshots/nextcloud_create_3.png"
-                 class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                To get the Domain of the Nextcloud.Go to Settings in the
-                Nextcloud and Click on Mobile & desktop. You will see server
-                address Copy link and paste it in your Domain Name.</p>
-            <img src="assets/screenshots/next_cloud_9.png"
-                 class="img-thumbnail">
-
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Select the backup destination as Nextcloud. Enter the Domain
-                Name, UserName, Password and Folder Name where you want to store
-                your backup on the NextCloud server. Check the Connect button
-                to check if the connection is successful.
-                <img src="assets/screenshots/enter_next1.png"
-                     class="img-thumbnail">
-
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Every day, a Scheduled Action will take place to store a backup
-                on the Nextcloud Server. The backup will be stored as the folder
-                name provided in the Folder ID field in Odoo.
-                <img src="assets/screenshots/nextcloud_5.png"
-                     class="img-thumbnail">
-                <img src="assets/screenshots/nextcloud_6.png"
-                     class="img-thumbnail">
-
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Store Backup to
-                Amazon S3
-            </h3>
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                To Create an account in Amazon S3 go to
-                https://portal.aws.amazon.com/billing/signup#/start/email, Enter
-                Your Email Address and Sign up .
-                <img src="assets/screenshots/amazons3_signup.png"
-                     class="img-thumbnail">
-
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                After you created the account.You need to get the Access Key and
-                Secret Key,To get these go the account Security credentials and
-                go the Access Keys and create new access keys from there you
-                will get Access Key and Secret Key.</p>
-            <img src="assets/screenshots/amazon_s3_pci1.png"
-                 class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;"></p>
-            <img src="assets/screenshots/amazon_s3_pic 2.png"
-                 class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;"></p>
-            <img src="assets/screenshots/amazons3_access.png"
-                 class="img-thumbnail">
-
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Next You need to create a Bucket Folder in the Amazon S3.To do
-                that Go the Services in the top right and go to Storage and S3
-                as shown in the Screen shot.</p>
-            <img src="assets/screenshots/amazons3_pick 3.png"
-                 class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                To create Bucket folder,Click on the Create bucket Button.</p>
-            <img src="assets/screenshots/amazons3_4.png" class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                On Creating a Bucket Folder,Check the rules for naming the
-                Bucket folder,and Select the region as well.After that click on
-                the create Bucket Button in the bottom of the page.</p>
-            <img src="assets/screenshots/amazons3_5.png" class="img-thumbnail">
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                You will see the Bucket Folder as shown in the screenshot.</p>
-            <img src="assets/screenshots/amazons3_6.png" class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Select Backup Destination as Amazon S3. Enter the Amazon S3
-                Access Key,Amazon S3 Secret Key,Bucket Name->Bucket folder you
-                have created in the Amazon S3 and the File Name->The Folder You
-                want to store your backup in Amazon S3 Bucket Folder.Test
-                connection button to check whether the connection is
-                successful.</p>
-            <img src="assets/screenshots/enter_amazons3.png" class="img-thumbnail">
-
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Every day, a Scheduled Action will take place to store a backup
-                on the Amazon S3 Server. The backup will be stored as the folder
-                name provided in the File Name field in Odoo.</p>
-            <img src="assets/screenshots/amazons3_7.png" class="img-thumbnail">
-            <img src="assets/screenshots/amazon_s3_8.png" class="img-thumbnail">
-
-
-        </div>
-
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Automatically Remove
-                Old
-                Backups</h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Enable auto remove
-                option,
-                specify number of days to remove backups.</p>
-            <img src="assets/screenshots/enter_old1.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Notify User on
-                Success
-                and Failure of Backup Generation</h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Enable notify user
-                option,
-                and select a user to notify. An email notification will be sent
-                to the selected user on
-                backup successful and failure.
-            </p>
-            <img src="assets/screenshots/older_2.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Successful backup
-                notification email</h3>
-            <img src="assets/screenshots/backup18.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Notification email
-                when
-                backup generation failed</h3>
-            <img src="assets/screenshots/backup17.png" class="img-thumbnail">
-        </div>
-
-        <div style="display: block; margin: 30px auto;">
-            <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: bold;">
-                Scheduled Action For
-                Generating Backup</h3>
-            <p style="font-weight: 400; font-family: 'Montserrat', sans-serif; font-size: 14px;">
-                Enable the 'Automatic
-                database Backup' scheduled action, and set up the execution
-                interval.
-                Based on the scheduled action setup, backups will be generated
-                on regular intervals.</p>
-            <img src="assets/screenshots/enter_schedule.png" class="img-thumbnail">
-            <img src="assets/screenshots/enter_9999.png" class="img-thumbnail">
-        </div>
-
-    </div>
-</div>
-<!-- END OF SCREENSHOTS SECTION -->
-
-<!-- SUGGESTED PRODUCTS -->
-    <div class="row">
-      <div class="col-lg-12 d-flex flex-column justify-content-center"
-        style="text-align: center; padding: 2.5rem 1rem !important;">
-        <h2 style="color: #212529 !important;">Suggested Products</h2>
-        <hr style="border: 3px solid #714B67 !important; background-color: #714B67 !important; width: 80px !important; margin-bottom: 2rem !important;" />
-
-        <div id="demo1" class="row carousel slide" data-ride="carousel">
-          <!-- The slideshow -->
-          <div class="carousel-inner">
-            <div class="carousel-item active" style="min-height:0px">
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/15.0/woo_commerce/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/1.png">
-                  </div>
+<!-- ===== Tabbed section (Screenshot / Features / FAQ / Latest Release) ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div class="tabs-design1">
+        <ul class="nav nav-pills justify-content-start justify-content-md-center pb-4"
+            style="flex-flow: nowrap;overflow: hidden;overflow-x: auto;" id="pills1" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="screenshot-tab" data-bs-toggle="pill" data-bs-target="#screenshot"
+                   type="button" role="tab"
+                   style="width: max-content;border-radius: 50px;margin: 0 5px;padding: 12px 24px;font-weight: 500;border: 2px solid #e9ecef;position: relative;">
+                    Screenshot
                 </a>
-              </div>
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/15.0/shopify_odoo_connector/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/2.png">
-                  </div>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="features-tab" data-bs-toggle="pill" data-bs-target="#features" type="button"
+                   role="tab"
+                   style="width: max-content;border-radius: 50px;margin: 0 5px;padding: 12px 24px;font-weight: 500;border: 2px solid #e9ecef;position: relative;">
+                    Features
                 </a>
-              </div>
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/15.0/odoo_slack_connector/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/3.png">
-                  </div>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="faq-tab" data-bs-toggle="pill" data-bs-target="#faq" type="button" role="tab"
+                   style="width: max-content;border-radius: 50px;margin: 0 5px;padding: 12px 24px;font-weight: 500;border: 2px solid #e9ecef;position: relative;">
+                    Frequent Questions
                 </a>
-              </div>
-            </div>
-            <div class="carousel-item" style="min-height:0px">
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/15.0/recruitment_twitter/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/4.png">
-                  </div>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="latest-release-tab" data-bs-toggle="pill" data-bs-target="#latest-release"
+                   type="button" role="tab"
+                   style="width: max-content;border-radius: 50px;margin: 0 5px;padding: 12px 24px;font-weight: 500;border: 2px solid #e9ecef;position: relative;">
+                    Latest Release
                 </a>
-              </div>
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/16.0/odoo_magento_2_4_5/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/5.png">
-                  </div>
-                </a>
-              </div>
-              <div class="col-xs-12 col-sm-4 col-md-4 mb16 mt16" style="float:left">
-                <a href="https://apps.odoo.com/apps/modules/16.0/odoo_icecat_connector/" target="_blank">
-                  <div style="border-radius:10px">
-                    <img class="img img-responsive center-block"
-                      style="border-top-left-radius:10px; border-top-right-radius:10px" src="./assets/modules/6.png">
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-          <!-- Left and right controls -->
-          <a class="carousel-control-prev" href="#demo1" data-slide="prev" style="left:-25px;width: 35px;color: #000;">
-            <span class="carousel-control-prev-icon"><i class="fa fa-chevron-left" style="font-size:24px"></i></span>
-          </a> <a class="carousel-control-next" href="#demo1" data-slide="next"
-            style="right:-25px;width: 35px;color: #000;">
-            <span class="carousel-control-next-icon"><i class="fa fa-chevron-right" style="font-size:24px"></i></span>
-          </a>
-        </div>
-      </div>
-    </div>
-    <!-- END OF SUGGESTED PRODUCTS -->
+            </li>
+        </ul>
+        <div class="tab-content bg-white rounded-4" style="border: 2px solid #e9ecef;border-radius: 10px;"
+             id="pills1Content">
 
-<!-- OUR SERVICES -->
+            <!-- Screenshot tab -->
+            <div class="tab-pane fade show active" id="screenshot" role="tabpanel">
+                <div class="p-3 py-md-5">
+                    <h2 class="text-center" style="font-size:2rem;font-weight:800;color:#0f172a;margin:0;">App <span
+                            style="color:#4f46e5;">Screenshots</span></h2>
+                    <div style="width:66px;height:4px;background-color:#4f46e5;border-radius:3px;margin:14px auto 26px;"></div>
 
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/star.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Our Services
-    </h2>
-</div>
-
-<div class="container my-5">
-    <div class="row">
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #1dd1a1 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/cogs.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Customization</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #ff6b6b !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/wrench.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Implementation</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #6462CD !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/lifebuoy.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center d-flex justify-content-center align-items-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Support</h6>
-        </div>
-
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #ffa801 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/user.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Hire
-                Odoo
-                Developer</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #54a0ff  !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/puzzle.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Integration</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #6d7680 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/update.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Migration</h6>
-        </div>
-
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #786fa6 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/consultation.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Consultancy</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #f8a5c2 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/training.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Implementation</h6>
-        </div>
-
-        <div class="col-lg-4 d-flex flex-column justify-content-center align-items-center my-4">
-            <div class="d-flex justify-content-center align-items-center mx-3 my-3"
-                 style="background-color: #e6be26 !important; border-radius: 15px !important; height: 80px; width: 80px;">
-                <img src="assets/icons/license.png" class="img-responsive"
-                     height="48px" width="48px">
-            </div>
-            <h6 class="text-center"
-                style="font-family: Montserrat, 'sans-serif' !important; font-weight: bold;">
-                Odoo
-                Licensing Consultancy</h6>
-        </div>
-    </div>
-
-</div>
-
-<!-- END OF OUR SERVICES -->
-
-<!-- OUR INDUSTRIES -->
-
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/corporate.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Our
-        Industries
-    </h2>
-</div>
-
-<div class="container my-5">
-    <div class="row">
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/trading-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Trading
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Easily procure
-                    and
-                    sell your products</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/pos-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    POS
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Easy
-                    configuration
-                    and convivial experience</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/education-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Education
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    A platform for
-                    educational management</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/manufacturing-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Manufacturing
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Plan, track and
-                    schedule your operations</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/ecom-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    E-commerce &amp; Website
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Mobile
-                    friendly,
-                    awe-inspiring product pages</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/service-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Service Management
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Keep track of
-                    services and invoice</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/restaurant-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Restaurant
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    Run your bar or
-                    restaurant methodically</p>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <div class="my-4 d-flex flex-column justify-content-center"
-                 style="background-color: #f6f8f9 !important; border-radius: 0px; padding: 2rem !important; height: 250px !important;">
-                <img src="assets/icons/hotel-black.png"
-                     class="img-responsive mb-3" height="48px" width="48px">
-                <h5 style="font-family: Montserrat, sans-serif !important; color: #000 !important; font-weight: bold;">
-                    Hotel Management
-                </h5>
-                <p style="font-family: Montserrat, sans-serif !important; font-size: 0.9rem !important;">
-                    An
-                    all-inclusive
-                    hotel management application</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- END OF OUR INDUSTRIES -->
-
-<!-- SUPPORT -->
-<div class="d-flex align-items-center"
-     style="border-bottom: 2px solid #714B67; padding: 15px 0px;">
-    <div class="d-flex justify-content-center align-items-center mr-2"
-         style="background-color: #F5F5F5; border-radius: 0px; width: 40px; height: 40px;">
-        <img src="assets/misc/customer-support.png"/>
-    </div>
-    <h2 class="mt-2"
-        style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: bold;">
-        Support
-    </h2>
-</div>
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-sm-12 col-md-6">
-            <div style="background-color: #F6F8F9; padding: 30px; display: flex; align-items: center;">
-                <div class="mr-4"
-                     style="background-color: #714B67; display: inline-block; height: 70px; width: 70px; display: flex; align-items: center; justify-content: center;">
-                    <img src="assets/misc/support.png" height="48" width="48"
-                         style="width: 42px; height: 42px;"/>
-                </div>
-                <div>
-                    <h4>Need Help?</h4>
-                    <p style="line-height: 100%;">Got questions or need help?
-                        Get in touch.</p>
-                    <a href="mailto:odoo@cybrosys.com">
-                        <p style="font-weight: 400; font-size: 28px; line-height: 80%; color: #714B67;">
-                            odoo@cybrosys.com</p>
-                    </a>
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tr>
+                            <td style="width:250px;vertical-align:top;padding-right:20px;">
+                                <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
+                                    <a class="nav-link active" data-bs-toggle="pill" data-bs-target="#adb-sc-1" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Configuration</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-2" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: Local Storage</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-3" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: FTP / SFTP</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-4" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: Google Drive</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-5" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: Dropbox</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-6" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: OneDrive</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-7" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: Nextcloud</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-8" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Backup: Amazon S3</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-9" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Email Notifications</a>
+                                    <a class="nav-link" data-bs-toggle="pill" data-bs-target="#adb-sc-10" type="button" role="tab" style="display:block;text-align:left;border:1px solid #eceaf6;border-radius:12px;margin-bottom:6px;padding:12px 15px;font-weight:600;color:#334155;">Scheduled Actions</a>
+                                </div>
+                            </td>
+                            <td style="vertical-align:top;">
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="adb-sc-1" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup Configuration</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Create a backup configuration, choose the format and destination, and test the connection.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/backup.png" alt="Backup Configuration" style="width:100%;height:auto;display:block;"></div>
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:22px 0 6px;">Frequency &amp; Options</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Schedule daily, weekly or monthly backups and enable automatic removal of old backups.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/backup_frequency.png" alt="Backup Frequency" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-2" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: Local Storage</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Store backups directly on the local server in a chosen folder.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/local.png" alt="Local Storage Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-3" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: FTP / SFTP</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Push backups to a remote FTP or secure SFTP server.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/ftp.png" alt="FTP Backup" style="width:100%;height:auto;display:block;"></div>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/sftp.png" alt="SFTP Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-4" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: Google Drive</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Connect a Google Drive account and store backups in a chosen folder.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/google.png" alt="Google Drive Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-5" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: Dropbox</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Authorize a Dropbox account and upload backups automatically.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/drop2.png" alt="Dropbox Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-6" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: OneDrive</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Back up to Microsoft OneDrive through OAuth authentication.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/onedrive.png" alt="OneDrive Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-7" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: Nextcloud</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Back up to a self-hosted Nextcloud server over WebDAV.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/nextcloud1.png" alt="Nextcloud Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-8" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Backup: Amazon S3 &amp; S3-Compatible</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Back up to Amazon S3 or any S3-compatible provider (Backblaze B2, Wasabi, Cloudflare R2, MinIO, and more) using a custom endpoint.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/amazons3.png" alt="Amazon S3 Backup" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-9" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Email Notifications</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Get notified by email when a backup succeeds or fails.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/success_mail.png" alt="Backup Success Email" style="width:100%;height:auto;display:block;"></div>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/failure_mail.png" alt="Backup Failure Email" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="adb-sc-10" role="tabpanel">
+                                        <h3 style="font-size:1.25rem;font-weight:700;color:#1b2233;margin:0 0 6px;">Scheduled Actions</h3>
+                                        <p style="color:#5b6472;font-size:15.5px;line-height:1.6;margin:0 0 14px;">Daily, weekly and monthly cron jobs run the automatic backups — reachable from the Schedule Actions smart button.</p>
+                                        <div style="border:1px solid #ececf6;border-radius:14px;overflow:hidden;margin-bottom:14px;"><img src="./assets/screenshots/scheduled_action.png" alt="Backup Scheduled Actions" style="width:100%;height:auto;display:block;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-12 col-md-6">
-            <div style="background-color: #F6F8F9; padding: 30px; display: flex; align-items: center;">
-                <div class="mr-4"
-                     style="background-color: #2AC44D; display: inline-block; height: 70px; width: 70px; display: flex; align-items: center; justify-content: center;">
-                    <img src="assets/misc/whatsapp.png" height="52" width="52"
-                         style="width: 52px; height: 52px;"/>
+
+            <!-- Features tab -->
+            <div class="tab-pane fade" id="features" role="tabpanel">
+                <div class="p-3 py-md-5">
+                    <h2 class="text-center" style="font-size:2rem;font-weight:800;color:#0f172a;margin:0;">Detailed
+                        <span style="color:#4f46e5;">Features</span></h2>
+                    <div style="width:70px;height:4px;margin:14px auto 10px;border-radius:3px;background-color:#4f46e5;"></div>
+                    <p class="text-center" style="color:#5b6472;font-size:1.05rem;max-width:64ch;margin:0 auto 28px;">
+                        Automatic, reliable and secure database backups &mdash; to anywhere you need them.</p>
+                    <table style="width:100%;border-collapse:separate;border-spacing:14px;">
+                        <tr>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">01</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">12 Storage Destinations</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Local, FTP, SFTP, Google Drive, Dropbox, OneDrive, Nextcloud, Amazon S3, Azure, Google Cloud &amp; WebDAV.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">02</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Scheduled Backups</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Automatic daily, weekly or monthly backups via Odoo scheduled actions.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">03</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Backup Now</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Run a backup instantly from the configuration form and see the result.</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">04</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Download Backup</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Generate a fresh backup and download it straight to your browser.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">05</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Backup History &amp; Status</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Every run logged with status, duration and errors; last-run status on each config.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">06</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Old-Backup Cleanup</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Automatically remove backups older than a chosen number of days.</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">07</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Email Notifications</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Notify a user on every run, or only when a backup fails.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">08</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Multi-Database Backup</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Back up one, all, or a selected set of databases from a single config.</div>
+                            </td>
+                            <td style="width:33.33%;vertical-align:top;background-color:#f3f2fe;border:1px solid #ececf6;border-left:4px solid #4f46e5;border-radius:14px;padding:22px;">
+                                <div style="display:inline-block;width:44px;height:44px;border-radius:50%;background-color:#4f46e5;color:#fff;font-size:1rem;font-weight:700;text-align:center;line-height:44px;margin-bottom:12px;">09</div>
+                                <div style="font-size:1.08rem;font-weight:700;margin:0 0 6px;color:#0f172a;line-height:1.3;">Secure by Design</div>
+                                <div style="font-size:14px;color:#334155;margin:0;line-height:1.55;">Master password never stored; access limited to a Backup Manager group.</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <h3 class="text-center" style="font-size:1.5rem;font-weight:800;color:#0f172a;margin:34px 0 0;">
+                        Supported <span style="color:#4f46e5;">Destinations</span></h3>
+                    <div style="width:60px;height:3px;margin:12px auto 24px;border-radius:3px;background-color:#4f46e5;"></div>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-hdd-o" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Local Storage</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Local server directory.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-server" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">FTP</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Upload to an FTP server.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-lock" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">SFTP</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Secure upload over SSH.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-google" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Google Drive</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Store in a Drive folder.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-dropbox" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Dropbox</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Store in a Dropbox folder.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">OneDrive</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Microsoft OneDrive.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Nextcloud</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Self-hosted Nextcloud.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-amazon" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Amazon S3</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">S3 &amp; S3-compatible.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-windows" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Azure Blob</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Azure Blob Storage.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-google" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Google Cloud</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Google Cloud Storage.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-globe" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">WebDAV</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Any WebDAV server.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-fire" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Backblaze B2</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Low-cost cloud storage (S3 Compatible)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-database" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Wasabi</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Hot cloud storage (S3 Compatible)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-cloud" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">Cloudflare R2</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Zero-egress storage (S3 Compatible)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-hdd-o" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">MinIO</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Self-hosted S3 server (S3 Compatible)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-tint" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">DO Spaces</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">DigitalOcean storage (S3 Compatible)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-4">
+                            <div style="height:100%;background-color:#fff;border:1px solid #ece8f6;border-radius:16px;padding:28px 16px;box-shadow:0 10px 26px rgba(79,70,229,.10);text-align:center;">
+                                <div style="width:56px;height:56px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;background-color:#4f46e5;box-shadow:0 8px 18px rgba(79,70,229,.28);margin-bottom:14px;"><i class="fa fa-server" style="color:#fff;font-size:22px;"></i></div>
+                                <h4 style="font-size:15px;font-weight:700;color:#1a2233;margin:0 0 3px;">iDrive e2</h4>
+                                <p style="font-size:12.5px;color:#6b7280;margin:0;line-height:1.5;">Cloud object storage (S3 Compatible)</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h4>WhatsApp</h4>
-                    <p style="line-height: 100%;">Say hi to us on WhatsApp!</p>
-                    <a href="https://api.whatsapp.com/send?phone=918606827707">
-                        <p style="font-weight: 400; font-size: 28px; line-height: 80%; color: #714B67;">
-                            +91 86068
-                            27707</p>
-                    </a>
+            </div>
+
+            <!-- FAQ tab -->
+            <div class="tab-pane fade" id="faq" role="tabpanel">
+                <div class="p-3 py-md-5">
+                    <h2 class="text-center" style="font-size:2rem;font-weight:800;color:#0f172a;">Frequently Asked <span
+                            style="color:#4f46e5;">Questions</span></h2>
+                    <div style="width:70px;height:4px;margin:14px auto 30px;border-radius:3px;background-color:#4f46e5;"></div>
+                    <div style="max-width:900px;margin:0 auto;">
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;" open>
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">Which storage destinations are supported?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">Twelve: Local storage, FTP, SFTP, Google Drive, Dropbox, OneDrive, Nextcloud, Amazon S3 (and S3-compatible providers such as Backblaze B2, Wasabi, Cloudflare R2, MinIO), Azure Blob Storage, Google Cloud Storage and WebDAV.</div>
+                        </details>
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;">
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">How often are backups taken?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">On a schedule you choose &mdash; daily, weekly or monthly &mdash; using Odoo scheduled actions. You can also run a backup at any time with the "Backup Now" button.</div>
+                        </details>
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;">
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">Are old backups removed automatically?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">Yes. Enable "Remove Old Backups" and set the number of days &mdash; backups older than that are deleted from the destination automatically.</div>
+                        </details>
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;">
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">Is my database master password stored?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">No. The master password is only used to authorize the configuration when you save it, and it is never stored on the record. Scheduled backups do not need it.</div>
+                        </details>
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;">
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">Can I back up more than one database at once?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">Yes. A single configuration can back up one database, every database on the server, or a selected list &mdash; each database gets its own history entry.</div>
+                        </details>
+                        <details style="background-color:#fff;border:1px solid #ece8f6;border-radius:14px;margin-bottom:14px;padding:2px 8px;">
+                            <summary style="cursor:pointer;padding:16px 14px;font-weight:700;font-size:1.05rem;color:#1b2233;">Where can I see whether a backup succeeded?</summary>
+                            <div style="padding:0 14px 18px;color:#475062;font-size:15px;line-height:1.65;">In the Backup History log (one row per run, with status, duration and any error) and on each configuration's last-run status. You can also enable email notifications.</div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Release tab -->
+            <div class="tab-pane fade" id="latest-release" role="tabpanel">
+                <div class="p-3 py-md-5">
+                    <h2 class="mainhead text-center mb-4" style="font-size: 2rem;font-weight: 700;color: black;">
+                        Latest <span>Releases</span></h2>
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="release-item h-100"
+                                 style="position: relative;padding: 30px;border: 2px solid #71639e24;border-radius: 15px;">
+                                <div class="release-header d-flex align-items-center flex-wrap gap-3"
+                                     style="margin-bottom: 0.75rem;">
+                                    <div class="version" style="font-size: 1.25rem;font-weight: 700;color: #1a202c;">
+                                        Latest Release 19.0.2.0.2
+                                    </div>
+                                    <div style="padding: 0.25rem 0.75rem;border-radius: 20px;font-size: 0.75rem;font-weight: 600;text-transform: uppercase;letter-spacing: 0.5px;background-color: #c7d2fe;color: #3730a3;border: 2px solid #a5b4fc;"
+                                         class="imp">IMP
+                                    </div>
+                                    <div class="date"
+                                         style="color: #64748b;font-size: 0.875rem;font-weight: 500;gap: 0.5rem;">
+                                        <img src="./assets/calendar.png" alt="" width="16" height="16"
+                                             style="margin-right: 5px;">
+                                        July 20, 2026
+                                    </div>
+                                </div>
+                                <div class="feature-list">
+                                    <div class="feature-item p-3"
+                                         style="border-radius: 5px;display: flex;align-items: center;padding: 25px;background-color: #f5f5f5e7;border-radius: 10px;text-align: left;">
+                                        <div class="feature-text"
+                                             style="color: #6b7280;line-height: 1.6;font-size: 0.95rem;">Refactored for
+                                            Odoo 19. Added Azure Blob, Google Cloud Storage &amp; WebDAV destinations,
+                                            S3-compatible endpoints, Backup Now, backup history, last-run status,
+                                            notify-on-failure, download backup and multi-database backups.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="release-item h-100"
+                                 style="position: relative;padding: 30px;border: 2px solid #71639e24;border-radius: 15px;">
+                                <div class="release-header d-flex align-items-center flex-wrap gap-3"
+                                     style="margin-bottom: 0.75rem;">
+                                    <div class="version" style="font-size: 1.25rem;font-weight: 700;color: #1a202c;">
+                                        Release 19.0.1.0.0
+                                    </div>
+                                    <div style="padding: 0.25rem 0.75rem;border-radius: 20px;font-size: 0.75rem;font-weight: 600;text-transform: uppercase;letter-spacing: 0.5px;background-color: #9ae6b4;color: #2d7d32;border: 2px solid #68d391;"
+                                         class="add">Add
+                                    </div>
+                                    <div class="date"
+                                         style="color: #64748b;font-size: 0.875rem;font-weight: 500;gap: 0.5rem;">
+                                        <img src="./assets/calendar.png" alt="" width="16" height="16"
+                                             style="margin-right: 5px;">
+                                        Initial Release
+                                    </div>
+                                </div>
+                                <div class="feature-list">
+                                    <div class="feature-item p-3"
+                                         style="border-radius: 5px;display: flex;align-items: center;padding: 25px;background-color: #f5f5f5e7;border-radius: 10px;text-align: left;">
+                                        <div class="feature-text"
+                                             style="color: #6b7280;line-height: 1.6;font-size: 0.95rem;">Automatic
+                                            database backup to local, remote and cloud destinations.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== Related Modules ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div class="highlights-section">
+        <h2 class="mainhead text-center" style="font-size: 2rem;font-weight: 700;color: black;">Related
+            <span>Modules</span>
+        </h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <a href="https://apps.odoo.com/apps/modules/19.0/base_accounting_kit" style="text-decoration: none;">
+                    <div class="highlight-card h-100 p-4"
+                         style="background-color: white;backdrop-filter: blur(20px);border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                        <div class="card-image"
+                             style="border: 2px solid #71639e1c;margin-bottom: 1rem;border-radius: 10px;overflow: hidden;">
+                            <img src="./assets/modules/1.gif" alt="" style="width: 100%;border-radius: 10px;">
+                        </div>
+                        <h3 class="card-title"
+                            style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo 19 Full
+                            Accounting Kit</h3>
+                        <p class="card-description"
+                           style="font-size: 16px;color: #6b7280;margin-bottom: 0;line-height: 1.6;">Full accounting
+                            features for Odoo 19 Community &mdash; reports, assets, PDC and more.</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4 mb-4">
+                <a href="https://apps.odoo.com/apps/modules/19.0/hide_menu_user" style="text-decoration: none;">
+                    <div class="highlight-card h-100 p-4"
+                         style="background-color: white;backdrop-filter: blur(20px);border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                        <div class="card-image"
+                             style="border: 2px solid #71639e1c;margin-bottom: 1rem;border-radius: 10px;overflow: hidden;">
+                            <img src="./assets/modules/5.jpg" alt="" style="width: 100%;border-radius: 10px;">
+                        </div>
+                        <h3 class="card-title"
+                            style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Hide Any
+                            Menu User Wise</h3>
+                        <p class="card-description"
+                           style="font-size: 16px;color: #6b7280;margin-bottom: 0;line-height: 1.6;">Hide or restrict
+                            any menu item on a per-user or per-group basis in Odoo 19.</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4 mb-4">
+                <a href="https://apps.odoo.com/apps/modules/19.0/odoo_dynamic_dashboard" style="text-decoration: none;">
+                    <div class="highlight-card h-100 p-4"
+                         style="background-color: white;backdrop-filter: blur(20px);border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                        <div class="card-image"
+                             style="border: 2px solid #71639e1c;margin-bottom: 1rem;border-radius: 10px;overflow: hidden;">
+                            <img src="./assets/modules/6.jpg" alt="" style="width: 100%;border-radius: 10px;">
+                        </div>
+                        <h3 class="card-title"
+                            style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo Dynamic
+                            Dashboard</h3>
+                        <p class="card-description"
+                           style="font-size: 16px;color: #6b7280;margin-bottom: 0;line-height: 1.6;">Create dynamic,
+                            drag-and-drop dashboards with charts and tiles in Odoo 19.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Our Services ===== -->
+<div class="container-fluid cmpad py-2 py-md-5">
+    <div class="highlights-section">
+        <h2 class="mainhead text-center" style="font-size: 2rem;font-weight: 700;color: black;">Our
+            <span>Services</span>
+        </h2>
+        <div class="row">
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/setting.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Customization</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/imple.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Implementation</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/support.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Support</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/transfer.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Migration</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/idea.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Integration</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/chat.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Consultancy</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/chart.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Odoo
+                        Licensing</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="highlight-card h-100 high d-flex flex-column justify-content-center align-items-center text-center"
+                     style="background-color: #8d76d51f;border-radius: 10px;padding: 32px;border: 2px solid #71639e1a;position: relative;overflow: hidden;">
+                    <div class="card-icon d-flex align-items-center justify-content-center gap-2"
+                         style="width: 60px;height: 60px;border-radius: 10px;margin-bottom: 24px;position: relative;overflow: hidden;background-color: #71639e;">
+                        <img src="./assets/people.png" alt="" width="30" height="30">
+                    </div>
+                    <h3 class="card-title"
+                        style="font-size: 20px;font-weight: 600;color: black;letter-spacing: -0.025em;">Hire Odoo
+                        Developer</h3>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-sm-12 my-5 d-flex justify-content-center align-items-center">
-            <img src="assets/misc/logo.png" width="144" height="31"
-                 style="width:144px; height: 31px; margin-top: 40px;"/>
-        </div>
-    </div>
 </div>
-<!-- END OF SUPPORT -->
+
+
+</body>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+</html>
