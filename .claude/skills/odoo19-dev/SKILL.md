@@ -137,14 +137,27 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **Albaranes de alquiler activos**: el grupo `sale_stock_renting.group_rental_stock_picking`
   está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
   alquileres generan albaranes reales por la ruta `route_rental`.
-- **Módulos propios de Enteza instalados** (verificado por RPC el 2026-08-03):
+- **Módulos propios de Enteza instalados** (verificado por RPC el 2026-08-04):
   `enteza_calendario_eventos` (`19.0.1.2.0`, vista calendario nativa pivotada en
-  `event_date`), `enteza_panel_eventos` (`19.0.2.0.0`, panel OWL de tres bloques con los tres
-  días del pedido, filtro de material, sobreventa y parte del día en PDF) y
-  **`enteza_prestamo_intercompania`** (`19.0.7.0.0`). Conviven sin pisarse. Un intento
-  anterior de subir el módulo de préstamo falló por un `<group expand=…>` en la vista de
-  búsqueda: ver `convenciones-modulo.md` y validar siempre con `scripts/validar_vistas.py`
-  antes de desplegar.
+  `event_date`), `enteza_panel_eventos` (`19.0.4.0.0` instalado; hay `19.0.5.0.0` en el
+  repositorio sin desplegar — filtro de material a solo Bienes/alquilables y fuente más
+  compacta) y **`enteza_prestamo_intercompania`** (`19.0.10.0.2` instalado; `19.0.10.0.3` en
+  el repositorio sin desplegar). `enteza_panel_eventos` **depende de**
+  `enteza_prestamo_intercompania` desde su `19.0.4.0.0` (columna «Prestados» del bloque de
+  material): no se puede desinstalar el segundo sin romper el primero. Un intento anterior de
+  subir el módulo de préstamo falló por un `<group expand=…>` en la vista de búsqueda: ver
+  `convenciones-modulo.md` y validar siempre con `scripts/validar_vistas.py` antes de
+  desplegar — ese mismo fichero tiene los gotchas que ese validador NO detecta (`@string`
+  como selector de xpath, campos nuevos en `res.company` sin `prefetch=False`).
+- **`rent_ok` no basta para saber si una línea es material físico.** De 1.060 productos con
+  `rent_ok=True` en `enteza26`, 6 son `type == 'service'` (fianza, anticipo de cliente,
+  portes, alquiler de ambiente, precio por plaza, hasta una furgoneta). Para agregados de
+  "material de alquiler" filtrar **`type == 'consu'` (Bienes) Y `rent_ok`**. Detalle en
+  `references/alquiler-en-19.md`.
+- **Actualizar un módulo por la interfaz puede decir que ha ido bien sin haber aplicado
+  nada.** Verificar siempre por RPC (`latest_version` frente al `version` del manifiesto), y
+  si hay dudas, lanzar la actualización directamente por RPC — ver
+  `references/instancia-y-conexion.md`.
 - **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
   `sale_renting.rental_order_view_calendar` es una herencia `primary` de
   `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,

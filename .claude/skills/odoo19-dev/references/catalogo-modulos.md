@@ -1,6 +1,7 @@
 # Catálogo de módulos del repositorio
 
-Estado verificado contra `enteza26` el **2026-08-01**. Para refrescarlo:
+Estado verificado contra `enteza26` el **2026-08-01**, y los tres módulos propios de Enteza
+reverificados el **2026-08-04**. Para refrescarlo:
 
 ```bash
 python .claude/skills/odoo19-dev/scripts/odoo19.py search ir.module.module \
@@ -28,11 +29,14 @@ Estos son los que solapan con desarrollos nuevos. Aquí es donde se duplica trab
 | `bi_warehouse_product_availability_in_so` | uninstalled | Disponibilidad por almacén en el pedido de venta |
 | `eg_warehouse_restriction` | uninstalled | Restricción de almacenes por usuario |
 | `enteza_calendario_eventos` | **installed** (`19.0.1.2.0`) | Vista calendario nativa pivotada en `event_date`, con el nombre del cliente como etiqueta |
-| `enteza_panel_eventos` | **installed** (`19.0.1.0.0`) | Panel OWL de tres bloques: calendario del mes, material del día y pedidos del día |
-| `enteza_prestamo_intercompania` | uninstalled | Préstamo de material entre Vimaple y Stileum (fase 1: motor de cálculo). **No instalado** |
+| `enteza_panel_eventos` | **installed** (`19.0.4.0.0`; hay `19.0.5.0.0` en el repo sin desplegar) | Panel OWL de tres bloques: calendario del mes, material del día (columna «Prestados», solo Bienes/alquilables) y pedidos del día. **Depende de** `enteza_prestamo_intercompania` desde su `19.0.4.0.0` |
+| `enteza_prestamo_intercompania` | **installed** (`19.0.10.0.2`; hay `19.0.10.0.3` en el repo sin desplegar) | Préstamo de material entre Vimaple y Stileum: las cinco fases del PRP desplegadas — motor de disponibilidad, documento con ciclo de vida, widget de aviso + diálogo de confirmación, albaranes vía tránsito, devolución inteligente, casos límite. Día de traslado configurable por compañía en Ajustes → Ventas → Alquiler |
 
-Los dos primeros **conviven sin problema**: uno es una vista calendario nativa y el otro una
-pantalla propia. No comparten código.
+`enteza_calendario_eventos` y `enteza_panel_eventos` **conviven sin problema**: uno es una
+vista calendario nativa y el otro una pantalla propia, no comparten código. `enteza_panel_eventos`
+y `enteza_prestamo_intercompania` sí están enlazados: el primero depende del segundo desde su
+`19.0.4.0.0` (lee `enteza.stock.loan.line` para la columna «Prestados»), así que no se puede
+desinstalar `enteza_prestamo_intercompania` sin desinstalar también `enteza_panel_eventos`.
 
 ### Muertos, pero engañan por el nombre
 
