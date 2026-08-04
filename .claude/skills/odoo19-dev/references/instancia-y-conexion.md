@@ -138,6 +138,29 @@ Para saber si un `uninstalled` es "nunca se intentó" o "se intentó y falló", 
 instalación por RPC**: `button_immediate_install` devuelve el traceback completo, que la
 interfaz a veces se traga.
 
+### 🔴 El botón "Actualizar" también puede dar por buena una actualización que no aplicó nada
+
+Medido el 2026-08-04 en `enteza26`, con un campo nuevo en `res.company`
+(`enteza_prestamo_intercompania`). El botón dio dos errores reales (una lectura de
+`res.company` que rompía por una columna que aún no existía, y un xpath con `@string` como
+selector), se arreglaron los dos, y a la **tercera** el usuario pulsó Actualizar, no vio
+ningún error... y por RPC la columna **seguía sin existir**, `latest_version` no se había
+movido y ninguna vista nueva del módulo estaba en `ir.model.data`. Es decir: la interfaz dio
+por buena una actualización que no había llegado a ejecutar `_auto_init()` ni `load_data()`.
+
+**La única forma fiable de saber si de verdad se aplicó es no fiarse del aviso verde y
+comprobarlo por RPC** (`latest_version` frente al `version` del manifiesto, o si las vistas
+nuevas están en `ir.model.data`, como en la tabla de arriba). Si no se aplicó y la interfaz
+no dice por qué, **lanzar la actualización directamente por RPC** resuelve las dos cosas a la
+vez — la ejecuta de verdad y, si algo falla, da el traceback completo:
+
+```bash
+python ... exec ir.module.module button_immediate_upgrade '[[ID_DEL_MODULO]]' --execute
+```
+
+No hace falta pedirle al cliente que reintente el botón una cuarta vez a ciegas: esto es más
+rápido y más informativo que cualquier número de clics en la interfaz.
+
 ## El otro proyecto
 
 La migración 15→19 vive en `E:\apps\AI\MigrarOdoo`, con su propio skill `odoo-ops`: specs
