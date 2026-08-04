@@ -44,11 +44,32 @@ Igual que el bloque DISPONIBILIDAD de la aplicación anterior:
 - **Filtro por descripción**, que busca también en la clasificación y **no distingue tildes ni
   mayúsculas**: `mantel` encuentra `MANTELERÍA`.
 - **Consumos**: todo el material comprometido ese día.
-- **Sobre venta**: solo los artículos con **más unidades alquiladas que existencias**. Es la
+- **Sobre venta**: solo los artículos de los que realmente falta algo, **`Faltan > 0`**. Es la
   lista de lo que hay que comprar o subcontratar para cumplir con lo ya vendido.
 - **Pinchar un artículo filtra los pedidos de abajo** a los que lo llevan, y añade una columna
   con las unidades que lleva cada uno; volver a pincharlo quita el filtro. Se hace en el
   navegador, sin ir al servidor: cada pedido ya trae las cantidades de sus artículos.
+
+### Prestados y Faltan (`19.0.4.0.0`)
+
+`Faltan = Total - Existencias - Prestados`. La columna **Prestados** suma lo que
+`enteza_prestamo_intercompania` tiene **reservado, aprobado o en tránsito** hacia este almacén
+para ese día: material que la otra compañía ya ha comprometido pero que todavía no ha entrado
+físicamente aquí.
+
+No se cuenta el estado `lent` (ya entregado): a partir de ahí el material ya es stock físico
+propio y ya lo está contando `Existencias`; sumarlo también en `Prestados` lo duplicaría. Y no
+se cuenta `draft` porque, sin reservar, no compromete nada — cualquiera podría vendérselo a
+otro pedido antes.
+
+Antes de esta versión, `Faltan`/`Sobre venta` comparaba solo `Total` contra `Existencias`, así
+que un comercial podía ver una sobreventa que en realidad ya estaba resuelta por un préstamo
+en camino de la otra sociedad. Ahora la cifra es la que de verdad le puede faltar.
+
+Depende de `enteza_prestamo_intercompania` por esto: `models/sale_order.py`,
+`_enteza_panel_prestado()`, que lee `enteza.stock.loan.line` con `sudo()` porque una compañía
+tiene que poder ver que la otra le va a prestar material aunque la regla de registro le oculte
+el documento del préstamo en sí.
 
 ### Las existencias son de un almacén, no de la empresa
 
@@ -92,11 +113,13 @@ Confirmado = `state == 'sale'`. En `enteza26` hay 3 presupuestos de alquiler y 1
 
 ## El parte del día
 
-Botón **Parte del día** → PDF con el material agrupado (con casilla para ir marcando al
-cargar) y los pedidos. **Sale lo que se está viendo**: si la vista activa es *Sobre venta*, el
-papel es directamente la lista de compras; si está *Solo confirmados*, el papel no lleva
-presupuestos. El PDF dice siempre cuál de los dos casos es, porque quien lo lee en el almacén
-no tiene la pantalla delante para deducirlo, y los presupuestos van marcados con **(P)**.
+Botón **Parte del día** → PDF con los **pedidos primero y el material después** (`19.0.4.0.0`;
+antes era al revés), y **sin importes**: el papel es para el almacén, que carga unidades, no
+euros — el importe se queda en pantalla. El material lleva casilla para ir marcando al cargar.
+**Sale lo que se está viendo**: si la vista activa es *Sobre venta*, el papel es directamente la
+lista de compras; si está *Solo confirmados*, el papel no lleva presupuestos. El PDF dice
+siempre cuál de los dos casos es, porque quien lo lee en el almacén no tiene la pantalla
+delante para deducirlo, y los presupuestos van marcados con **(P)**.
 
 ## Cómo está hecho
 
@@ -170,6 +193,11 @@ pedidos, **1.157 son de Vimaple y 2 de Stileum**.
 Lo que sí importa de la multi-compañía es que **las existencias van por almacén**, y cada
 almacén es de una compañía (`SEV` de Vimaple, `JER` de Stileum). Ver el bloque de material.
 
+Y desde la `19.0.4.0.0`, que la columna **Prestados** cruza compañías a propósito: lee con
+`sudo()` los préstamos de `enteza_prestamo_intercompania` para que Vimaple vea que Stileum le
+va a prestar algo aunque la regla de registro de ese módulo le oculte el documento del
+préstamo en sí.
+
 ## Instalación
 
 Despliegue por `git pull` (Xtendoo sincroniza la rama `19.0`):
@@ -185,7 +213,8 @@ Despliegue por `git pull` (Xtendoo sincroniza la rama `19.0`):
 ⚠️ **Validado por sintaxis y NO ejecutado.** No hay instancia de pruebas ni acceso a `odoo-bin`.
 La versión `19.0.1.0.0` sí está probada en pantalla; **nada de lo añadido después se ha podido
 cargar ni una vez** — ni los tres modos, el filtro de material, la sobreventa y el parte en PDF
-de la `19.0.2.0.0`, ni las existencias por almacén y los presupuestos de la `19.0.3.0.0`.
+de la `19.0.2.0.0`, ni las existencias por almacén y los presupuestos de la `19.0.3.0.0`, ni la
+columna «Prestados» ni el parte reordenado de la `19.0.4.0.0`.
 
 Lo que sí está **comprobado contra `enteza26` por RPC** son los datos en los que se apoyan las
 decisiones: el reparto 80/20 del producto 972 entre `SEV/Stock` y `JER/Stock`, que la clave de

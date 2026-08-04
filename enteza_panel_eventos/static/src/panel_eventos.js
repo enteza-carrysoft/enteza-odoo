@@ -301,7 +301,7 @@ export class PanelEventos extends Component {
     }
 
     get columnasMaterial() {
-        return this.mostrarAlmacen ? 6 : 5;
+        return this.mostrarAlmacen ? 7 : 6;
     }
 
     seleccionarArticulo(clave) {

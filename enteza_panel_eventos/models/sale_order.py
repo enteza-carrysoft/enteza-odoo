@@ -160,7 +160,7 @@ class SaleOrder(models.Model):
         modo = self._enteza_panel_modo(modo)
         solo_confirmados = bool(solo_confirmados)
         pedidos = self._enteza_panel_pedidos(dia, modo, solo_confirmados)
-        articulos = pedidos._enteza_panel_datos_articulos()
+        articulos = pedidos._enteza_panel_datos_articulos(dia)
         return {
             'pedidos': pedidos._enteza_panel_datos_pedidos(),
             'articulos': articulos,
@@ -289,7 +289,7 @@ class SaleOrder(models.Model):
             })
         return filas
 
-    def _enteza_panel_datos_articulos(self):
+    def _enteza_panel_datos_articulos(self, dia=None):
         """Líneas de todos los pedidos del día, agrupadas por almacén y artículo.
 
         Se excluyen las líneas de sección y de nota (`display_type`), que no son material.
@@ -299,9 +299,14 @@ class SaleOrder(models.Model):
         Sevilla. Medido en `enteza26`: el producto 972 tiene 80 unidades en `SEV/Stock`
         (Vimaple) y 20 en `JER/Stock` (Stileum), y `qty_available` sin acotar devuelve 100.
 
-        Cada fila trae `sobreventa`: ese día compromete más unidades de las que hay en ese
-        almacén, así que ese material hay que comprarlo o subcontratarlo. La regla es la misma
-        que usaba la aplicación anterior (unidades del día contra existencias), y por eso
+        `dia` (opcional, `'AAAA-MM-DD'`) es lo que necesita `_enteza_panel_prestado` para
+        acotar en el tiempo lo que la otra compañía tiene comprometido prestar. Sin `dia` no
+        hay columna «Prestados»: hoy no ocurre porque los dos llamadores (`enteza_panel_dia`
+        y el informe) siempre lo tienen.
+
+        Cada fila trae `faltan` y `sobreventa`: `unidades - existencias - prestado`, y si ese
+        resultado es positivo. Es lo que realmente le puede faltar al comercial para el
+        evento, ya descontado lo que va a llegar prestado de la otra compañía. Por eso
         **no descuenta el material que está fuera por alquileres de días contiguos**: un
         alquiler del día 1 al 3 no resta en el día 2.
         """
@@ -314,10 +319,13 @@ class SaleOrder(models.Model):
             acumulado[(linea.order_id.warehouse_id, linea.product_id)] += linea.product_uom_qty
 
         existencias = self._enteza_panel_existencias(acumulado)
+        prestado = self._enteza_panel_prestado(acumulado, dia) if dia else {}
 
         filas = []
         for (almacen, producto), unidades in acumulado.items():
             disponible = existencias.get((almacen.id, producto.id), 0.0)
+            prestando = prestado.get((almacen.id, producto.id), 0.0)
+            faltan = unidades - disponible - prestando
             filas.append({
                 # Clave estable para el `t-key` del JS y para saber qué fila está pinchada:
                 # el artículo solo identifica una fila junto con su almacén.
@@ -332,13 +340,61 @@ class SaleOrder(models.Model):
                 # fallo del panel: apenas hay `stock.quant` con cantidad. Mientras siga así,
                 # «Sobre venta» marcará casi todo.
                 'existencias': disponible,
+                # Reservado, aprobado o en tránsito en `enteza_prestamo_intercompania`:
+                # comprometido por la otra compañía pero que TODAVÍA no ha entrado en este
+                # almacén. En cuanto entra (estado `lent`) ya es stock físico propio y ya lo
+                # cuenta `existencias`; sumarlo también aquí lo duplicaría.
+                'prestado': prestando,
+                'faltan': faltan,
                 'sobreventa': float_compare(
-                    unidades, disponible,
+                    faltan, 0.0,
                     precision_rounding=producto.uom_id.rounding or 0.01,
                 ) > 0,
                 'uom': producto.uom_id.display_name or '',
             })
         return sorted(filas, key=lambda fila: (fila['almacen'], fila['articulo']))
+
+    @api.model
+    def _enteza_panel_prestado(self, acumulado, dia):
+        """Unidades que la otra compañía tiene comprometido prestarnos ese día, por
+        `(almacén, producto)`.
+
+        Solo cuenta lo que la prestamista tiene **reservado, aprobado o en tránsito**
+        (`enteza.stock.loan`): comprometido, pero que aún no ha entrado en este almacén. En
+        cuanto el préstamo pasa a `lent` el material ya es stock físico propio y ya lo cuenta
+        `_enteza_panel_existencias`; sumarlo también aquí lo contaría dos veces.
+
+        Se filtra por el día igual que las existencias filtran por almacén: un préstamo cuyo
+        intervalo no toca este día no es material que vaya a llegar para este evento.
+        """
+        jornada = fields.Date.to_date(dia)
+        inicio = self._enteza_panel_a_utc(jornada)
+        fin = self._enteza_panel_a_utc(jornada + timedelta(days=1))
+
+        almacenes = self.env['stock.warehouse']
+        productos = self.env['product.product']
+        for almacen, producto in acumulado:
+            almacenes |= almacen
+            productos |= producto
+        if not almacenes or not productos:
+            return {}
+
+        # `sudo()`: una compañía tiene que ver que la otra le va a prestar material aunque la
+        # regla de registro le oculte el documento del préstamo en sí — igual que
+        # `_prestado_a_terceros` en `enteza_prestamo_intercompania`.
+        lineas = self.env['enteza.stock.loan.line'].sudo().search([
+            ('product_id', 'in', productos.ids),
+            ('loan_id.warehouse_dest_id', 'in', almacenes.ids),
+            ('loan_id.state', 'in', ('reserved', 'approved', 'in_transit')),
+            ('date_from', '<', fin),
+            ('date_to', '>', inicio),
+        ])
+
+        prestado = defaultdict(float)
+        for linea in lineas:
+            clave = (linea.loan_id.warehouse_dest_id.id, linea.product_id.id)
+            prestado[clave] += linea._qty_comprometida()
+        return prestado
 
     @api.model
     def _enteza_panel_existencias(self, acumulado):

@@ -159,6 +159,7 @@
                                 <th t-if="mostrarAlmacen">Almacén</th>
                                 <th class="text-end">Total</th>
                                 <th class="text-end">Existencias</th>
+                                <th class="text-end">Prestados</th>
                                 <th class="text-end">Faltan</th>
                             </tr>
                         </thead>
@@ -177,9 +178,9 @@
                                 <td t-if="mostrarAlmacen" class="text-muted" t-esc="articulo.almacen"/>
                                 <td class="text-end fw-bold" t-esc="articulo.unidades"/>
                                 <td class="text-end" t-esc="articulo.existencias"/>
+                                <td class="text-end" t-esc="articulo.prestado"/>
                                 <td class="text-end fw-bold">
-                                    <t t-if="articulo.sobreventa"
-                                       t-esc="articulo.unidades - articulo.existencias"/>
+                                    <t t-if="articulo.sobreventa" t-esc="articulo.faltan"/>
                                 </td>
                             </tr>
                             <tr t-if="!articulosVisibles.length">

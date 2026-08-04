@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.tools import format_date, formatLang
+from odoo.tools import format_date
 
 # Cada modo del panel imprime el mismo parte con otro título: lo que cambia es qué pedidos
 # entran, y eso ya lo decidió `sale.order.enteza_panel_imprimir` al elegir los docids.
@@ -45,7 +45,7 @@ class ParteDia(models.AbstractModel):
 
         # Se reutilizan los mismos formateadores que alimentan el panel en pantalla: el
         # papel y la pantalla no deben poder discrepar.
-        articulos = pedidos._enteza_panel_datos_articulos()
+        articulos = pedidos._enteza_panel_datos_articulos(dia)
         if solo_sobreventa:
             articulos = [articulo for articulo in articulos if articulo['sobreventa']]
 
@@ -70,9 +70,4 @@ class ParteDia(models.AbstractModel):
             'mostrar_almacen': len(almacenes) > 1,
             'pedidos': pedidos._enteza_panel_datos_pedidos(),
             'total_unidades': sum(articulo['unidades'] for articulo in articulos),
-            'total_importe': formatLang(
-                self.env,
-                sum(pedidos.mapped('amount_total')),
-                currency_obj=self.env.company.currency_id,
-            ),
         }

@@ -51,49 +51,6 @@
                         </t>
                     </p>
 
-                    <h4 class="mt-4">Material</h4>
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th style="width: 2rem;"/>
-                                <th>Descripción</th>
-                                <th>Clasificación</th>
-                                <th t-if="mostrar_almacen">Almacén</th>
-                                <th class="text-end">Total</th>
-                                <th class="text-end">Existencias</th>
-                                <th class="text-end">Faltan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr t-foreach="articulos" t-as="articulo" t-key="articulo['clave']">
-                                <!-- Casilla en blanco: el parte se va marcando al cargar. -->
-                                <td style="border: 1px solid #000; height: 1rem;"/>
-                                <td t-out="articulo['articulo']"/>
-                                <td t-out="articulo['categoria']"/>
-                                <td t-if="mostrar_almacen" t-out="articulo['almacen']"/>
-                                <td class="text-end fw-bold" t-out="articulo['unidades']"/>
-                                <td class="text-end" t-out="articulo['existencias']"/>
-                                <td class="text-end">
-                                    <span t-if="articulo['sobreventa']"
-                                          t-out="articulo['unidades'] - articulo['existencias']"/>
-                                </td>
-                            </tr>
-                            <tr t-if="not articulos">
-                                <td colspan="7" class="text-center">
-                                    Sin material para este día.
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot t-if="articulos">
-                            <tr>
-                                <td t-att-colspan="mostrar_almacen and 4 or 3"
-                                    class="text-end fw-bold">Total unidades</td>
-                                <td class="text-end fw-bold" t-out="total_unidades"/>
-                                <td colspan="2"/>
-                            </tr>
-                        </tfoot>
-                    </table>
-
                     <h4 class="mt-4">Pedidos</h4>
                     <table class="table table-sm">
                         <thead>
@@ -106,7 +63,6 @@
                                 <th>Evento</th>
                                 <th>Inicio</th>
                                 <th>Fin</th>
-                                <th class="text-end">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,14 +79,50 @@
                                 <td t-out="pedido['evento']"/>
                                 <td t-out="pedido['inicio']"/>
                                 <td t-out="pedido['fin']"/>
-                                <td class="text-end" t-out="pedido['importe']"/>
                             </tr>
                         </tbody>
-                        <tfoot>
+                    </table>
+
+                    <h4 class="mt-4">Material</h4>
+                    <table class="table table-sm">
+                        <thead>
                             <tr>
-                                <td t-att-colspan="mostrar_almacen and 8 or 7"
-                                    class="text-end fw-bold">Total</td>
-                                <td class="text-end fw-bold" t-out="total_importe"/>
+                                <th style="width: 2rem;"/>
+                                <th>Descripción</th>
+                                <th>Clasificación</th>
+                                <th t-if="mostrar_almacen">Almacén</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Existencias</th>
+                                <th class="text-end">Prestados</th>
+                                <th class="text-end">Faltan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="articulos" t-as="articulo" t-key="articulo['clave']">
+                                <!-- Casilla en blanco: el parte se va marcando al cargar. -->
+                                <td style="border: 1px solid #000; height: 1rem;"/>
+                                <td t-out="articulo['articulo']"/>
+                                <td t-out="articulo['categoria']"/>
+                                <td t-if="mostrar_almacen" t-out="articulo['almacen']"/>
+                                <td class="text-end fw-bold" t-out="articulo['unidades']"/>
+                                <td class="text-end" t-out="articulo['existencias']"/>
+                                <td class="text-end" t-out="articulo['prestado']"/>
+                                <td class="text-end">
+                                    <span t-if="articulo['sobreventa']" t-out="articulo['faltan']"/>
+                                </td>
+                            </tr>
+                            <tr t-if="not articulos">
+                                <td t-att-colspan="mostrar_almacen and 8 or 7" class="text-center">
+                                    Sin material para este día.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot t-if="articulos">
+                            <tr>
+                                <td t-att-colspan="mostrar_almacen and 4 or 3"
+                                    class="text-end fw-bold">Total unidades</td>
+                                <td class="text-end fw-bold" t-out="total_unidades"/>
+                                <td colspan="3"/>
                             </tr>
                         </tfoot>
                     </table>
