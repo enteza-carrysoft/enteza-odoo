@@ -292,7 +292,12 @@ class SaleOrder(models.Model):
     def _enteza_panel_datos_articulos(self, dia=None):
         """Líneas de todos los pedidos del día, agrupadas por almacén y artículo.
 
-        Se excluyen las líneas de sección y de nota (`display_type`), que no son material.
+        Se excluyen las líneas de sección y de nota (`display_type`), que no son material. Y
+        se excluye lo que no sea **Bienes y alquilable** (`type == 'consu'`, `rent_ok`),
+        petición del cliente del 2026-08-04: en `enteza26` hay 6 artículos con `rent_ok` pero
+        `type == 'service'` —fianza, anticipo de cliente, descarga complicada, alquiler de
+        ambiente, precio por plaza, hasta una furgoneta— que no son material que se cargue en
+        un camión y ensuciaban el bloque.
 
         **Se agrupa por almacén, no solo por artículo**, porque las existencias son de un
         almacén concreto: una sobreventa en Jerez no se resuelve con material que está en
@@ -312,6 +317,7 @@ class SaleOrder(models.Model):
         """
         lineas = self.mapped('order_line').filtered(
             lambda linea: not linea.display_type and linea.product_id
+            and linea.product_id.type == 'consu' and linea.product_id.rent_ok
         )
 
         acumulado = defaultdict(float)

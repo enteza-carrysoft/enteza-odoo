@@ -101,6 +101,20 @@
         cursor: pointer;
     }
 
+    // Bloque de material: fuente y alto de fila más compactos que el resto del panel, para
+    // que quepan más artículos sin scroll — es la tabla que más filas suele tener de las
+    // tres. `table-sm` de Bootstrap ya recorta el padding por defecto; esto lo recorta más.
+    .o_enteza_panel_material table {
+        font-size: 0.8rem;
+
+        th,
+        td {
+            padding-top: 0.15rem;
+            padding-bottom: 0.15rem;
+            line-height: 1.15;
+        }
+    }
+
     // Sobreventa: hay comprometido más material del que hay en el almacén. Aquí sí toca rojo,
     // porque es lo único del panel que obliga a hacer algo (comprar o subcontratar).
     .o_enteza_sobreventa td {

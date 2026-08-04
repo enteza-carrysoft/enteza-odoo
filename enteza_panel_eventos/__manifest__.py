@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Panel de eventos del día',
-    'version': '19.0.4.0.0',
+    'version': '19.0.5.0.0',
     'category': 'Sales/Rental',
     'summary': 'Panel con calendario, pedidos del día y material necesario en una sola pantalla',
     'description': """
@@ -11,11 +11,11 @@ Reproduce en Odoo la pantalla de control diario de la aplicación de gestión qu
 antes: tres bloques sincronizados en una sola pantalla.
 
 - **Calendario mensual** a la izquierda, con los días coloreados según la carga de trabajo.
-- **Material del día** a la derecha: los artículos de todos los pedidos de ese día, agrupados
-  por **almacén y artículo** y sumando unidades, con filtro por descripción y dos vistas —
-  *Consumos* (todo) y *Sobre venta* (solo el material que realmente falta, ya descontado lo
-  que la otra compañía tiene comprometido prestar). Al pinchar un artículo, los pedidos de
-  abajo se filtran a los que lo llevan, con las unidades de cada uno.
+- **Material del día** a la derecha: los artículos **Bienes y alquilables** de todos los
+  pedidos de ese día, agrupados por **almacén y artículo** y sumando unidades, con filtro por
+  descripción y dos vistas — *Consumos* (todo) y *Sobre venta* (solo el material que realmente
+  falta, ya descontado lo que la otra compañía tiene comprometido prestar). Al pinchar un
+  artículo, los pedidos de abajo se filtran a los que lo llevan, con las unidades de cada uno.
 - **Pedidos del día** abajo, con cliente, lugar de entrega, comercial, almacén, fechas de
   inicio y fin del alquiler, estado e importe.
 

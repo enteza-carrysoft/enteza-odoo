@@ -50,6 +50,23 @@ Igual que el bloque DISPONIBILIDAD de la aplicación anterior:
   con las unidades que lleva cada uno; volver a pincharlo quita el filtro. Se hace en el
   navegador, sin ir al servidor: cada pedido ya trae las cantidades de sus artículos.
 
+### Solo Bienes y alquilables (`19.0.5.0.0`)
+
+Petición del cliente, 2026-08-04: el bloque de material solo cuenta líneas de artículos
+**`type == 'consu'`** (Bienes) **y `rent_ok`** (alquilable). En `enteza26` hay 6 artículos con
+`rent_ok` pero `type == 'service'` — fianza, anticipo de cliente, descarga complicada en
+Sevilla, alquiler de ambiente, precio por plaza y hasta una furgoneta de reparto — que no son
+material que se cargue en un camión y ensuciaban el bloque contando como si lo fueran. El
+filtro vive en `_enteza_panel_datos_articulos()`, así que aplica igual en pantalla y en el
+parte del día: los dos leen de la misma función.
+
+### Fuente más pequeña en el bloque de material (`19.0.5.0.0`)
+
+El bloque de material es el que suele tener más filas de los tres, y con la fuente y el alto
+de línea por defecto obligaba a hacer scroll para ver el día entero. `panel_eventos.scss`
+recorta el tamaño de fuente y el padding vertical de las celdas **solo en este bloque**
+(`.o_enteza_panel_material table`); el de pedidos se queda como estaba.
+
 ### Prestados y Faltan (`19.0.4.0.0`)
 
 `Faltan = Total - Existencias - Prestados`. La columna **Prestados** suma lo que
@@ -214,7 +231,8 @@ Despliegue por `git pull` (Xtendoo sincroniza la rama `19.0`):
 La versión `19.0.1.0.0` sí está probada en pantalla; **nada de lo añadido después se ha podido
 cargar ni una vez** — ni los tres modos, el filtro de material, la sobreventa y el parte en PDF
 de la `19.0.2.0.0`, ni las existencias por almacén y los presupuestos de la `19.0.3.0.0`, ni la
-columna «Prestados» ni el parte reordenado de la `19.0.4.0.0`.
+columna «Prestados» ni el parte reordenado de la `19.0.4.0.0`, ni el filtro de Bienes y
+alquilables ni la fuente más pequeña del bloque de material de la `19.0.5.0.0`.
 
 Lo que sí está **comprobado contra `enteza26` por RPC** son los datos en los que se apoyan las
 decisiones: el reparto 80/20 del producto 972 entre `SEV/Stock` y `JER/Stock`, que la clave de
