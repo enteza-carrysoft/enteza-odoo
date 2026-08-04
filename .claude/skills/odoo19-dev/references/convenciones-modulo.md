@@ -97,6 +97,29 @@ Lo que sí sigue siendo válido dentro de un dominio de filtro, y parece sospech
 es: `context_today()`, `allowed_company_ids`, `current_date`, `uid`, `time`, `datetime`.
 Están en la lista blanca `IGNORED_IN_EXPRESSION` de `view_validation.py`.
 
+#### Un xpath no puede seleccionar por `@string`
+
+🔴 **Rompe la actualización del módulo entero**, no solo la vista, y `validar_vistas.py` **no
+lo detecta**: es una regla de herencia de vistas, no de esquema RELAX NG, así que pasa la
+validación local y solo revienta contra el servidor real. Comprobado el 2026-08-04
+actualizando `enteza_prestamo_intercompania` en `enteza26`:
+
+```xml
+<!-- MAL: el servidor lo rechaza con «View inheritance may not use attribute 'string' as a
+     selector», y el `git pull` + Actualizar entero se para ahí -->
+<xpath expr="//setting[@string='Rental Transfers']" position="after">
+
+<!-- BIEN: selecciona por algo que no sea `string` — un `name`, o sube al padre desde un
+     campo que sí lo tenga -->
+<xpath expr="//field[@name='group_rental_stock_picking']/parent::setting" position="after">
+```
+
+Tiene sentido una vez se sabe: `string` es texto traducible, y apoyar una herencia en un
+valor que cambia con el idioma del usuario sería frágil. Pero el error no avisa en local —
+para eso haría falta un servidor Odoo 19 real, que aquí no hay—, así que **la única forma de
+pillarlo es no usar `@string` como selector nunca**, ni siquiera en un `<setting>` de
+`res.config.settings`, donde parece el único candidato natural.
+
 #### Validar las vistas antes de desplegar
 
 Esa comprobación por esquema **se puede reproducir en local**, que es lo único de la

@@ -13,13 +13,21 @@
 
         El xpath se verificó con `lxml` contra el `arch_db` real de la instancia: resuelve a
         un único nodo, el último `<setting>` del bloque de alquiler.
+
+        🔴 No selecciona por `@string` (19.0.10.0.2): Odoo 19 lo rechaza con «View
+        inheritance may not use attribute 'string' as a selector» — reventó al actualizar de
+        verdad en `enteza26`, algo que no se puede reproducir con `validar_vistas.py` porque
+        esa comprobación es solo de esquema, no de esta regla de herencia. Se selecciona por
+        el campo que ya hay dentro (`group_rental_stock_picking`, estable, no traducible) y
+        se sube al `<setting>` que lo envuelve con `parent::`.
     -->
     <record id="res_config_settings_view_form" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.enteza.prestamo</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="sale_stock_renting.res_config_settings_inherit_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//setting[@string='Rental Transfers']" position="after">
+            <xpath expr="//field[@name='group_rental_stock_picking']/parent::setting"
+                   position="after">
                 <setting string="Día de traslado entre compañías"
                          help="Cuando esta compañía presta material de alquiler a otra del grupo, el día de la semana en que sale el traslado — siempre el más cercano anterior al evento, nunca el mismo día">
                     <field name="enteza_dia_traslado_semana"/>
