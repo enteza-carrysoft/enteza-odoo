@@ -142,6 +142,50 @@ class EntezaDisponibilidad(models.AbstractModel):
         return resultado
 
     # ------------------------------------------------------------------
+    # Disponible en el buscador de producto de la línea (§ petición cliente 2026-08-04)
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _enteza_contexto_periodo(self):
+        """Periodo y almacén de alquiler que el buscador de producto manda por contexto.
+
+        Los manda la vista de la línea de pedido (`views/sale_order_product_search_views.xml`)
+        como `enteza_rental_start`, `enteza_rental_end` y `enteza_rental_warehouse_id`. Sin
+        los tres a la vez no hay pregunta que hacer: puede ser un pedido normal sin fechas de
+        alquiler, o el almacén todavía sin elegir en la cabecera.
+
+        Devuelve `(desde, hasta, almacen)`, con `almacen` vacío si falta cualquiera de los
+        tres — es lo único que hace falta comprobar en el llamador.
+        """
+        contexto = self.env.context
+        desde = contexto.get('enteza_rental_start')
+        hasta = contexto.get('enteza_rental_end')
+        almacen_id = contexto.get('enteza_rental_warehouse_id')
+        vacio = (False, False, self.env['stock.warehouse'])
+        if not (desde and hasta and almacen_id):
+            return vacio
+        almacen = self.env['stock.warehouse'].browse(almacen_id).exists()
+        if not almacen:
+            return vacio
+        return fields.Datetime.to_datetime(desde), fields.Datetime.to_datetime(hasta), almacen
+
+    @api.model
+    def _enteza_texto_disponible(self, nombre, cantidad, uom):
+        """«Nombre — Disponible: X Uds», para pegar al nombre que ve el buscador.
+
+        Acotado a cero: aquí interesa cuánto hay, no cuánto falta —eso ya lo dice el icono
+        rojo de la línea en cuanto el producto está elegido (`enteza_falta`)—, y un negativo
+        en el desplegable, antes de que el comercial haya escrito ninguna cantidad, no
+        significaría nada para él.
+        """
+        return _(
+            '%(nombre)s — Disponible: %(cantidad)s %(uom)s',
+            nombre=nombre,
+            cantidad='%g' % max(cantidad, 0.0),
+            uom=uom,
+        )
+
+    # ------------------------------------------------------------------
     # API interna — recordsets y datetime
     # ------------------------------------------------------------------
 

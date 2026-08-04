@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        Añade el periodo y el almacén de alquiler al contexto del buscador de producto de la
+        línea de pedido. `models/product_product.py` y `models/product_template.py` lo leen
+        (`enteza.disponibilidad._enteza_contexto_periodo`) para pegar «— Disponible: X Uds»
+        al nombre que se ve en el desplegable al escribir en «Añadir un producto» (petición
+        del cliente, 2026-08-04).
+
+        Se hereda `sale.view_order_form`, la vista BASE, y no una de `sale_renting` /
+        `sale_stock_renting`: comprobado por RPC contra `enteza26`, en la 19 ninguna vista de
+        alquiler toca ya el contexto de `product_id` / `product_template_id`.
+        `sale_renting.rental_order_primary_form_view` está vacía a propósito («empty on
+        purpose, can be dropped once sale_stock_renting override is dropped» — literal en su
+        `arch_db`) y `sale_stock_renting.view_order_form` solo toca
+        `qty_delivered`/`qty_returned`. El enganche que existía en la 18 EE para este
+        contexto (`rental_products`, `quantity`...) no sobrevivió a la 19.
+
+        Un pedido normal, sin fechas de alquiler, no se entera: `parent.rental_start_date`
+        llega vacío, `_enteza_contexto_periodo` lo detecta y no toca el nombre de nada.
+
+        🔴 Hay que reproducir el `context` ENTERO de cada campo, no solo añadir claves: un
+        xpath de `position="attributes"` sobre `context` REEMPLAZA el atributo, no lo amplía.
+        El contenido de partida está copiado tal cual de `sale.view_order_form` en la 19,
+        leído por RPC (`ir.ui.view.arch_db`, id 1515) y no del código de la 18: para vistas sí
+        se puede leer la 19 directamente, a diferencia del Python de Enterprise.
+    -->
+    <record id="view_order_form_buscador_disponible" model="ir.ui.view">
+        <field name="name">sale.order.form.enteza.buscador.disponible</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']"
+                   position="attributes">
+                <attribute name="context">{
+                    'default_list_price': price_unit,
+                    'default_uom_id': product_uom_id,
+                    'partner_id': parent.partner_id,
+                    'enteza_rental_start': parent.rental_start_date,
+                    'enteza_rental_end': parent.rental_return_date,
+                    'enteza_rental_warehouse_id': parent.warehouse_id,
+                }</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_id']"
+                   position="attributes">
+                <attribute name="context">{
+                    'default_lst_price': price_unit,
+                    'default_uom_id': product_uom_id,
+                    'partner_id': parent.partner_id,
+                    'enteza_rental_start': parent.rental_start_date,
+                    'enteza_rental_end': parent.rental_return_date,
+                    'enteza_rental_warehouse_id': parent.warehouse_id,
+                }</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Préstamo de material entre compañías',
-    'version': '19.0.7.0.0',
+    'version': '19.0.9.0.0',
     'category': 'Inventory/Inventory',
     'summary': 'Préstamo de material de alquiler entre las compañías del grupo',
     'description': """
@@ -32,13 +32,18 @@ No factura ni genera asientos contables (ver README, «Punto de enganche para fa
     # Sin `account` a propósito: la facturación va desacoplada (PRP D4). El campo `move_id`
     # apunta a `account.move`, que está garantizado porque `sale` depende de él vía
     # `account_payment`.
-    'depends': ['stock', 'sale_renting', 'sale_stock', 'sale_stock_renting'],
+    #
+    # `sale` explícito desde la `19.0.9.0.0`: la vista del buscador de producto hereda
+    # `sale.view_order_form` directamente. Ya llegaba transitivo por `sale_renting`/
+    # `sale_stock`, pero una vista que referencia su xml_id lo deja explícito.
+    'depends': ['stock', 'sale', 'sale_renting', 'sale_stock', 'sale_stock_renting'],
     'data': [
         'security/prestamo_security.xml',
         'security/ir.model.access.csv',
         'data/prestamo_data.xml',
         'views/enteza_stock_loan_views.xml',
         'views/enteza_stock_deficit_views.xml',
+        'views/sale_order_product_search_views.xml',
         'wizard/enteza_prestamo_confirm_views.xml',
         'wizard/enteza_prestamo_devolucion_views.xml',
     ],

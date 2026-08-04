@@ -202,6 +202,11 @@ class TestWidgetPrestamo(TransactionCase):
         linea.invalidate_recordset(['enteza_falta'])
 
         self.assertEqual(linea.enteza_falta, 0)
+        # El préstamo cubre ESTA línea (llega de fuera), no descuenta del almacén PROPIO:
+        # `virtual_available_at_date` solo se corrige cuando el almacén de la línea es quien
+        # PRESTA a otro, no cuando recibe. Sigue en 80 aunque `enteza_falta` ya esté a 0 — es
+        # justo lo que la prueba de más abajo usa para explicar por qué no sirve de atajo.
+        self.assertEqual(linea.virtual_available_at_date, 80)
 
     def test_un_prestamo_en_borrador_no_tapa_nada(self):
         """Una propuesta sin reservar no compromete material: no puede tapar el aviso."""
@@ -230,16 +235,17 @@ class TestWidgetPrestamo(TransactionCase):
         self.assertEqual(linea.enteza_falta, 15)
 
     # ------------------------------------------------------------------
-    # 🔴 Por qué no se usa el campo nativo como atajo
+    # El propio disponible nativo también se corrige (bug de cliente, 2026-08-04)
     # ------------------------------------------------------------------
 
-    def test_un_prestamo_comprometido_genera_deficit_que_el_nativo_no_ve(self):
-        """El nativo no descuenta los préstamos, así que no sirve de prefiltro.
+    def test_prestamo_comprometido_se_descuenta_del_disponible_nativo(self):
+        """`virtual_available_at_date` ya no ignora lo que este almacén tiene prometido.
 
-        Es la prueba que justifica el coste de recalcular con el motor propio en cada línea.
-        Si algún día alguien "optimiza" el compute usando `virtual_available_at_date` para
-        decidir si hay déficit, esta prueba es la que lo tiene que parar: el nativo dirá que
-        hay 900 libres mientras 850 están comprometidas para prestar.
+        Hasta esta corrección, el popover nativo («Disponible para alquilar») no se enteraba
+        de que el almacén ya había comprometido material para prestarlo a otra compañía: un
+        comercial que montaba un pedido NUEVO en Stileum, después de que Stileum le prestara
+        a Vimaple, seguía viendo el disponible de siempre. `_compute_qty_at_date` (este
+        módulo) corrige el campo justo después del cálculo nativo, con el mismo suelo en cero.
         """
         self._dar_stock(900, self.almacen)
         self.env['enteza.stock.loan'].create({
@@ -260,7 +266,72 @@ class TestWidgetPrestamo(TransactionCase):
 
         linea = self._linea(100)
 
-        # El nativo ignora el préstamo y no ve problema...
-        self.assertGreaterEqual(linea.virtual_available_at_date, 100)
-        # ...pero de las 900 solo quedan 50 libres de verdad.
+        # De las 900, 850 están prometidas a la otra compañía: el nativo ahora lo sabe y
+        # enseña las 50 que quedan de verdad, no las 900.
+        self.assertEqual(linea.virtual_available_at_date, 50)
+        self.assertEqual(linea.free_qty_today, 50)
         self.assertEqual(linea.enteza_falta, 50)
+
+    def test_prestamo_en_borrador_no_se_descuenta_del_nativo(self):
+        """Una propuesta sin reservar tampoco compromete nada de cara al widget nativo."""
+        self._dar_stock(900, self.almacen)
+        self.env['enteza.stock.loan'].create({
+            'name': 'PRE/TEST/WIDGET-DRAFT',
+            'company_id': self.propia.id,
+            'company_dest_id': self.otra.id,
+            'warehouse_src_id': self.almacen.id,
+            'warehouse_dest_id': self.almacen_otra.id,
+            'state': 'draft',
+            'line_ids': [Command.create({
+                'product_id': self.producto.id,
+                'product_uom_id': self.producto.uom_id.id,
+                'qty_proposed': 850,
+                'date_from': self.desde,
+                'date_to': self.hasta,
+            })],
+        })
+
+        linea = self._linea(100)
+
+        self.assertEqual(linea.virtual_available_at_date, 900)
+        self.assertEqual(linea.enteza_falta, 0)
+
+    # ------------------------------------------------------------------
+    # 🔴 Por qué `enteza_falta` sigue sin usar el campo nativo como atajo
+    # ------------------------------------------------------------------
+
+    def test_el_nativo_corregido_no_basta_como_atajo_para_enteza_falta(self):
+        """Corregir `virtual_available_at_date` no lo vuelve intercambiable con `enteza_falta`.
+
+        Son dos correcciones distintas sobre el mismo nativo: esta (`_compute_qty_at_date`)
+        descuenta lo que el almacén de la línea PRESTA a otros; `enteza_falta` además suma lo
+        que un préstamo ENTRANTE cubre para esta línea en concreto
+        (`_enteza_cubierto_por_prestamo`). Aquí el almacén propio solo tiene 80 y la línea
+        pide 95: el nativo, ya corregido, se queda en 80 porque no sabe nada del préstamo que
+        llega de fuera. Si `enteza_falta` se calculara a partir de él, seguiría marcando 15
+        de menos con el pedido ya cubierto del todo.
+        """
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(20, self.almacen_otra)
+        linea = self._linea(95)
+
+        self.env['enteza.stock.loan'].create({
+            'name': 'PRE/TEST/ATAJO',
+            'company_id': self.otra.id,
+            'company_dest_id': self.propia.id,
+            'warehouse_src_id': self.almacen_otra.id,
+            'warehouse_dest_id': self.almacen.id,
+            'state': 'reserved',
+            'line_ids': [Command.create({
+                'product_id': self.producto.id,
+                'product_uom_id': self.producto.uom_id.id,
+                'qty_reserved': 15,
+                'sale_line_id': linea.id,
+                'date_from': self.desde,
+                'date_to': self.hasta,
+            })],
+        })
+        linea.invalidate_recordset(['enteza_falta', 'virtual_available_at_date'])
+
+        self.assertEqual(linea.virtual_available_at_date, 80)
+        self.assertEqual(linea.enteza_falta, 0)

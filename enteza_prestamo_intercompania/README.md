@@ -19,6 +19,74 @@ entregas siguientes de esta misma fase, en este orden:
 
 Con esto la **fase 2 está completa**: el material se mueve de verdad de una sociedad a otra.
 
+## Disponibilidad en el buscador de producto (`19.0.9.0.0`)
+
+Petición del cliente, 2026-08-04: al pulsar **«Añadir un producto»** en un pedido de
+alquiler y escribir, el desplegable dice cuántas unidades hay libres para el periodo del
+pedido, pegado al final del nombre — sin tener que montar la línea primero para verlo en el
+popover nativo:
+
+```
+Silla plegable — Disponible: 42 Units
+Mesa redonda 150 — Disponible: 0 Units
+```
+
+**Reutiliza el mismo motor que todo lo demás** (`enteza.disponibilidad.disponible()`), así
+que el número ya viene descontado de lo comprometido en préstamos — igual que `enteza_falta`
+y que la corrección de `virtual_available_at_date` de la `19.0.8.0.0`. Los tres no pueden
+discrepar porque salen del mismo sitio.
+
+**Cómo llega el periodo hasta ahí**: `views/sale_order_product_search_views.xml` añade
+`enteza_rental_start`, `enteza_rental_end` y `enteza_rental_warehouse_id` al contexto de
+`product_id`/`product_template_id` en la línea de pedido. Ninguna vista de alquiler de la 19
+tocaba ya ese contexto —comprobado por RPC contra `enteza26`,
+`sale_renting.rental_order_primary_form_view` está vacía a propósito y
+`sale_stock_renting.view_order_form` solo toca otros dos campos—, así que hereda directamente
+`sale.view_order_form`, la vista base. `models/product_product.py` y
+`models/product_template.py` lo leen (`enteza.disponibilidad._enteza_contexto_periodo`) y
+pegan el texto en `_compute_display_name()`, que es el método que
+`web_name_search` (`addons/web/models/models.py`) usa tal cual para el desplegable —
+confirmado leyendo el código de la 19, community y público.
+
+Solo se toca cuando el contexto trae el periodo completo: un pedido normal, sin fechas de
+alquiler, no ve nada distinto. Y solo para plantillas de **una única variante** — con varias,
+«disponible» no significa nada sin saber cuál, y el desplegable no ha dejado elegirla todavía.
+
+## El disponible nativo también descuenta lo prestado (`19.0.8.0.0`)
+
+**Bug detectado en pruebas con el cliente, 2026-08-04.** Escenario: Vimaple confirma un
+pedido que su almacén no puede cubrir del todo; el diálogo de préstamo propone que Stileum
+preste lo que falta, el comercial acepta y el préstamo queda `reserved` (§ más abajo,
+"El diálogo de confirmación"). Hasta aquí todo bien: la disponibilidad de Stileum, calculada
+por `enteza.disponibilidad`, ya descontaba lo prestado (`_prestado_a_terceros`), tal y como
+está descrito en este documento desde la fase 1.
+
+El fallo estaba en un sitio que este módulo **nunca tocaba a propósito**: si después alguien
+monta un pedido NUEVO en Stileum, para ese mismo artículo y esas mismas fechas, el popover
+NATIVO de Odoo («Disponible para alquilar X Uds») seguía enseñando el disponible de
+siempre, como si el préstamo no existiera. El icono rojo de `enteza_falta` sí avisaba
+correctamente si el pedido nuevo se pasaba de lo que quedaba libre — ese cálculo siempre fue
+independiente y correcto —, pero el número base que el comercial ve al escribir la cantidad
+no pasaba por `enteza.disponibilidad`, así que parecía haber más stock del que realmente
+quedaba.
+
+La razón de no haberlo tocado antes está en `sale_order_line.py`: no usar el nativo como
+**atajo** para calcular `enteza_falta` (sigue siendo así, y sigue haciendo falta: ver más
+abajo). Pero eso es distinto de dejar el NÚMERO que el nativo enseña sin corregir, que es lo
+que se arregla aquí.
+
+**La corrección**: `SaleOrderLine._compute_qty_at_date()`, que sobrescribe el método de
+`sale_stock_renting` — llama a `super()` (la fórmula nativa completa, verificada contra el
+código de la 18 EE) y le resta `_prestado_a_terceros` del mismo motor, con el mismo suelo en
+cero que ya aplica el nativo. Toca `virtual_available_at_date` y `free_qty_today`, que son
+los dos campos que lee el popover en presupuesto (confirmado leyendo
+`sale_stock/static/src/widgets/qty_at_date_widget.xml` de la 19, Community y público).
+
+No sustituye al icono ni al diálogo: `enteza_falta` sigue haciendo falta para decir QUIÉN
+puede prestar y para abrir el diálogo de confirmación, porque además tiene en cuenta los
+préstamos que **llegan** a esta línea (`_enteza_cubierto_por_prestamo`), algo que el nativo,
+aunque ya corregido, no sabe.
+
 ## El aviso de préstamo (`19.0.2.3.0`)
 
 Primera mitad de la entrega 2. Cuando el almacén propio no llega, **el icono de
@@ -643,6 +711,18 @@ instancia, sin instalar) y engancharlo en `_post_loan_hook`, **no reescribir el 
 `tests/test_disponibilidad.py` cubre la parte propia (resta del material prestado, estados
 que comprometen, ámbito por almacén, déficit) y que la delegación está bien enganchada. La
 aritmética de `_get_unavailable_qty` ya la prueba Odoo y no se duplica.
+
+`tests/test_widget_prestamo.py` cubre además, desde la `19.0.8.0.0`, que
+`virtual_available_at_date`/`free_qty_today` (el disponible que enseña el popover nativo) se
+corrigen cuando el almacén de la línea tiene material prestado, y que un préstamo en
+`draft` no los toca. La prueba `test_el_nativo_corregido_no_basta_como_atajo_para_enteza_falta`
+deja constancia de por qué, aun corregido, el nativo sigue sin poder sustituir a
+`enteza_falta`: no sabe nada de los préstamos que **llegan** a una línea.
+
+`tests/test_buscador_producto.py` cubre, desde la `19.0.9.0.0`, el texto que se pega al
+`display_name` de `product.product`/`product.template` en el buscador: con y sin contexto de
+alquiler, sin existencias, con varias variantes (no se toca) y que descuenta lo prestado a
+otra compañía igual que los dos anteriores.
 
 ⚠️ **Sin ejecutar.** No hay instancia de pruebas ni acceso a `odoo-bin --test-enable`. Están
 validadas por sintaxis, no por ejecución.

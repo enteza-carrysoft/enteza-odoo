@@ -22,6 +22,26 @@ Por eso NO se usa `virtual_available_at_date` como atajo para saber si hay défi
 sería gratis: el nativo no descuenta los préstamos ya comprometidos, así que diría que hay 80
 libres cuando 30 están reservadas para la otra compañía. Un prefiltro optimista **esconde
 déficits reales**, que es exactamente el fallo que este módulo existe para impedir.
+
+🔴 El propio `virtual_available_at_date` también miente (bug detectado en pruebas con cliente,
+2026-08-04)
+--------------------------------------------------------------------------------------------
+Lo de arriba es sobre el CÁLCULO propio (`enteza_falta`), que siempre fue correcto. El
+problema es otro: el número que el comercial VE en el popover nativo — «Disponible para
+alquilar X Uds» — es justo ese `virtual_available_at_date`, y **nunca se tocaba**. Así que si
+Stileum le presta 15 a Vimaple (`reserved`), un comercial que monta un pedido NUEVO en Stileum
+para ese mismo artículo y esas fechas seguía viendo el disponible de siempre, sin las 15 ya
+prestadas: el icono rojo de `enteza_falta` avisaba bien si el nuevo pedido se pasaba, pero el
+número base que lo alimentaba visualmente estaba inflado.
+
+`_compute_qty_at_date()` de más abajo corrige esto: llama a `super()` (el cálculo nativo
+íntegro, fórmula en `sale_stock_renting`) y le resta `_prestado_a_terceros` del motor, con el
+mismo suelo en cero que ya aplica el nativo. Es la MISMA fuente que `enteza_falta`, así que
+los dos números — el disponible que se ve y el aviso de préstamo — no pueden discrepar.
+
+No sustituye a `enteza_falta`: ese sigue haciendo falta para decir QUIÉN presta y para el
+diálogo de confirmación. Esto solo corrige el número que el nativo ya mostraba, que hasta
+ahora era el único dato de la pantalla que no pasaba por `enteza.disponibilidad`.
 """
 
 import logging
@@ -98,6 +118,64 @@ class SaleOrderLine(models.Model):
                 compania=almacen_origen.company_id.display_name,
                 almacen=almacen_origen.display_name,
             )
+
+    @api.depends(
+        # Los mismos de `sale_stock_renting` (`reservation_begin`, `return_date`,
+        # `product_id`) más el almacén: es el que decide qué compañía es la prestamista y
+        # `_prestado_a_terceros` cambia si el pedido se pasa a otro almacén.
+        'reservation_begin', 'return_date', 'product_id', 'order_id.warehouse_id',
+    )
+    def _compute_qty_at_date(self):
+        """Descuenta del disponible NATIVO lo que este almacén ya tiene prestado.
+
+        Bug detectado en pruebas con cliente el 2026-08-04: Vimaple confirma un pedido que
+        Stileum le cubre con un préstamo `reserved`; al montar DESPUÉS un pedido nuevo en
+        Stileum para el mismo artículo y las mismas fechas, el popover «Disponible para
+        alquilar» seguía enseñando el disponible de siempre, sin las unidades ya prometidas a
+        Vimaple. Ver la cabecera del fichero para el porqué completo.
+
+        Se llama a `super()` primero — la fórmula nativa completa de
+        `RentalOrderLine._compute_qty_at_date`, verificada contra el código de la 18 EE
+        (`sale_stock_renting/models/sale_order_line.py`, no confirmable por RPC al ser
+        privada) y contra los campos de la 19 por RPC (`virtual_available_at_date`,
+        `free_qty_today`, no almacenados) — y se corrige el resultado encima, nunca al
+        revés: así una línea normal, sin préstamos de por medio, se comporta exactamente
+        como el nativo.
+
+        Se tocan los DOS campos que lee el popover en presupuesto (`draft`/`sent`):
+        `virtual_available_at_date` y `free_qty_today`, confirmado leyendo
+        `sale_stock/static/src/widgets/qty_at_date_widget.xml` de la 19 (módulo Community,
+        público). El nativo ya los deja iguales entre sí para una línea de alquiler
+        (`RentalOrderLine._compute_qty_at_date` los fija los dos al mismo
+        `virtual_available_at_date`), así que se corrigen igual.
+        """
+        super()._compute_qty_at_date()
+        motor = self.env['enteza.disponibilidad']
+        for linea in self:
+            almacen = linea.order_id.warehouse_id
+            if not (linea.is_rental and linea.product_id.is_storable and almacen
+                    and linea.start_date and linea.return_date):
+                # Mismo criterio que el nativo y que `_compute_enteza_prestamo`: sin fechas
+                # o almacén no hay préstamo que pueda estar pesando sobre esta línea.
+                continue
+
+            # `_prestado_a_terceros` y no `disponible()`: ya se tiene el «rentable -
+            # alquilado» nativo recién calculado por el `super()` de arriba, y volver a
+            # pedírselo al motor sería repetir la misma cuenta dos veces para llegar al
+            # mismo sitio.
+            prestado = motor._prestado_a_terceros(
+                linea.product_id, almacen, linea.start_date, linea.return_date,
+            )
+            if not prestado:
+                continue
+
+            # Mismo suelo en cero que aplica el nativo (`max(rentable - alquilado, 0)`):
+            # `max(max(a, 0) - b, 0) == max(a - b, 0)` para `b >= 0`, así que restar aquí
+            # DESPUÉS del suelo nativo da el mismo número que si el préstamo se hubiera
+            # descontado dentro de la fórmula desde el principio.
+            corregido = max(linea.virtual_available_at_date - prestado, 0.0)
+            linea.virtual_available_at_date = corregido
+            linea.free_qty_today = corregido
 
     def write(self, vals):
         """Reducir la cantidad de una línea confirmada libera su parte del préstamo (§7.0.2).
