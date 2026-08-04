@@ -35,7 +35,5 @@ class ProductProduct(models.Model):
         disponible = motor.disponible(productos, almacen, desde, hasta)
         for producto in productos:
             producto.display_name = motor._enteza_texto_disponible(
-                producto.display_name,
-                disponible.get(producto.id, 0.0),
-                producto.uom_id.display_name,
+                producto.display_name, disponible.get(producto.id, 0.0),
             )

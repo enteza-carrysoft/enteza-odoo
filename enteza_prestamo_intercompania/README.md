@@ -59,7 +59,7 @@ todos los eventos de esa semana. Cubierto en
 retirado. No hace falta migrar nada: no había datos que depender de ese valor más allá del
 propio cálculo, que se recalcula cada vez.
 
-## Disponibilidad en el buscador de producto (`19.0.9.0.0`)
+## Disponibilidad en el buscador de producto (`19.0.9.0.0`, texto recortado en `19.0.10.0.3`)
 
 Petición del cliente, 2026-08-04: al pulsar **«Añadir un producto»** en un pedido de
 alquiler y escribir, el desplegable dice cuántas unidades hay libres para el periodo del
@@ -67,9 +67,14 @@ pedido, pegado al final del nombre — sin tener que montar la línea primero pa
 popover nativo:
 
 ```
-Silla plegable — Disponible: 42 Units
-Mesa redonda 150 — Disponible: 0 Units
+Silla plegable - 42 uds.
+Mesa redonda 150 - 0 uds.
 ```
+
+El texto se recortó el mismo día: la primera versión decía «— Disponible: X Uds», con la
+unidad de medida del producto detrás, y en la lista desplegable —con el nombre del artículo
+delante— se salía del ancho de la columna casi siempre. `enteza.disponibilidad._enteza_texto_disponible()`
+es el único sitio que lo construye.
 
 **Reutiliza el mismo motor que todo lo demás** (`enteza.disponibilidad.disponible()`), así
 que el número ya viene descontado de lo comprometido en préstamos — igual que `enteza_falta`

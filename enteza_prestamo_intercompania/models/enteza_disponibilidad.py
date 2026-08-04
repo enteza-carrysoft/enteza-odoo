@@ -170,8 +170,13 @@ class EntezaDisponibilidad(models.AbstractModel):
         return fields.Datetime.to_datetime(desde), fields.Datetime.to_datetime(hasta), almacen
 
     @api.model
-    def _enteza_texto_disponible(self, nombre, cantidad, uom):
-        """«Nombre — Disponible: X Uds», para pegar al nombre que ve el buscador.
+    def _enteza_texto_disponible(self, nombre, cantidad):
+        """«Nombre - X uds.», para pegar al nombre que ve el buscador.
+
+        Recortado a propósito (19.0.10.0.3): la primera versión decía «— Disponible: X Uds»
+        completo, y con la unidad de medida del producto detrás; en la lista desplegable, con
+        el nombre del artículo delante, se salía del ancho de la columna casi siempre. Esto es
+        lo mínimo que responde a la pregunta sin desbordar.
 
         Acotado a cero: aquí interesa cuánto hay, no cuánto falta —eso ya lo dice el icono
         rojo de la línea en cuanto el producto está elegido (`enteza_falta`)—, y un negativo
@@ -179,10 +184,9 @@ class EntezaDisponibilidad(models.AbstractModel):
         significaría nada para él.
         """
         return _(
-            '%(nombre)s — Disponible: %(cantidad)s %(uom)s',
+            '%(nombre)s - %(cantidad)s uds.',
             nombre=nombre,
             cantidad='%g' % max(cantidad, 0.0),
-            uom=uom,
         )
 
     # ------------------------------------------------------------------

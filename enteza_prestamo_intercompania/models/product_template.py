@@ -31,7 +31,5 @@ class ProductTemplate(models.Model):
         for plantilla in con_variante_unica:
             variante = plantilla.product_variant_ids
             plantilla.display_name = motor._enteza_texto_disponible(
-                plantilla.display_name,
-                disponible.get(variante.id, 0.0),
-                variante.uom_id.display_name,
+                plantilla.display_name, disponible.get(variante.id, 0.0),
             )

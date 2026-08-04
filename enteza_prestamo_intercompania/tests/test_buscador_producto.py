@@ -1,10 +1,13 @@
 """Pruebas de la disponibilidad en el buscador de producto (petición cliente, 2026-08-04).
 
 `product.product`/`product.template._compute_display_name` (`models/product_product.py`,
-`models/product_template.py`) pegan «— Disponible: X Uds» al nombre que ve el desplegable de
-«Añadir un producto», cuando el contexto trae el periodo y el almacén del pedido de alquiler
+`models/product_template.py`) pegan «- X uds.» al nombre que ve el desplegable de «Añadir un
+producto», cuando el contexto trae el periodo y el almacén del pedido de alquiler
 (`enteza.disponibilidad._enteza_contexto_periodo`). Sin ese contexto —cualquier búsqueda que
 no sea la de la línea de un pedido de alquiler— el nombre no se toca.
+
+El texto se recortó en la `19.0.10.0.3`: la primera versión, «— Disponible: X Uds» con la
+unidad de medida detrás, se salía del ancho de la columna del desplegable casi siempre.
 
 Se prueba llamando a `display_name` con el contexto que la vista manda, no montando la vista
 de verdad: eso lo cubre la comprobación por xpath contra `enteza26` (ver el comentario en
@@ -81,23 +84,17 @@ class TestBuscadorProducto(TransactionCase):
     def test_producto_muestra_disponible(self):
         self._dar_stock(80)
         producto = self.producto.with_context(**self._contexto())
-        self.assertEqual(
-            producto.display_name, 'Silla plegable (test) — Disponible: 80 Units',
-        )
+        self.assertEqual(producto.display_name, 'Silla plegable (test) - 80 uds.')
 
     def test_plantilla_con_variante_unica_muestra_disponible(self):
         """`product_template_id` es el campo que usa el buscador por defecto."""
         self._dar_stock(80)
         plantilla = self.producto.product_tmpl_id.with_context(**self._contexto())
-        self.assertEqual(
-            plantilla.display_name, 'Silla plegable (test) — Disponible: 80 Units',
-        )
+        self.assertEqual(plantilla.display_name, 'Silla plegable (test) - 80 uds.')
 
     def test_sin_existencias_muestra_cero(self):
         producto = self.producto.with_context(**self._contexto())
-        self.assertEqual(
-            producto.display_name, 'Silla plegable (test) — Disponible: 0 Units',
-        )
+        self.assertEqual(producto.display_name, 'Silla plegable (test) - 0 uds.')
 
     # ------------------------------------------------------------------
     # Mismo motor que `enteza_falta`: ya descuenta lo prestado
@@ -131,9 +128,7 @@ class TestBuscadorProducto(TransactionCase):
         })
 
         producto = self.producto.with_context(**self._contexto())
-        self.assertEqual(
-            producto.display_name, 'Silla plegable (test) — Disponible: 50 Units',
-        )
+        self.assertEqual(producto.display_name, 'Silla plegable (test) - 50 uds.')
 
     # ------------------------------------------------------------------
     # Casos que se dejan sin tocar a propósito
