@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        Día de traslado entre compañías, en el mismo bloque de Ajustes donde vive el resto de
+        la configuración de alquiler («Default Padding Time», «Rental Transfers»).
+
+        Se hereda `sale_stock_renting.res_config_settings_inherit_view_form` y no la vista
+        base de Ajustes: es donde ya vive `padding_time`, comprobado leyendo su `arch_db` por
+        RPC contra `enteza26` (id 1834). Colgarlo del mismo sitio que el resto de parámetros
+        de alquiler es más fácil de encontrar para quien configura esto que una página propia,
+        y evita añadir una dependencia solo para eso.
+
+        El xpath se verificó con `lxml` contra el `arch_db` real de la instancia: resuelve a
+        un único nodo, el último `<setting>` del bloque de alquiler.
+    -->
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.enteza.prestamo</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="sale_stock_renting.res_config_settings_inherit_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@string='Rental Transfers']" position="after">
+                <setting string="Día de traslado entre compañías"
+                         help="Cuando esta compañía presta material de alquiler a otra del grupo, el día de la semana en que sale el traslado — siempre el más cercano anterior al evento, nunca el mismo día">
+                    <field name="enteza_dia_traslado_semana"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -134,10 +134,11 @@ class TestConfirmacionConPrestamo(TransactionCase):
         self.assertEqual(prestamo.line_ids.sale_line_id, pedido.order_line)
         # `date_reserved` es el criterio de prioridad: sin él se pierde quién pilló antes.
         self.assertTrue(prestamo.date_reserved)
-        # Traslado programado tres días antes del inicio del alquiler (parámetro).
+        # Traslado programado el día de la semana que fija la prestamista, antes del inicio
+        # del alquiler.
         self.assertEqual(
             prestamo.date_transfer,
-            (self.desde - timedelta(days=3)).date(),
+            self.env['enteza.stock.loan']._fecha_traslado_de(self.desde, self.otra),
         )
 
     def test_tras_reservar_la_linea_deja_de_avisar(self):
@@ -263,18 +264,44 @@ class TestConfirmacionConPrestamo(TransactionCase):
             {self.producto, self.producto_b},
         )
 
-    def test_fechas_de_traslado_distintas_son_viajes_distintos(self):
-        """Un evento del sábado y otro del domingo no caben en el mismo porte."""
+    def test_eventos_de_la_misma_semana_comparten_porte(self):
+        """Desde la 19.0.10.0.0 el traslado es semanal: un día de diferencia ya no basta.
+
+        Antes, con "N días antes" fijo, un evento del sábado y otro del domingo (un día de
+        diferencia) caían en portes distintos. Con el día de la semana fijo, los dos usan el
+        mismo traslado si ninguno cae después del día configurado: es justamente lo que hace
+        que un solo viaje sirva a varios eventos de la misma semana, que es el motivo por el
+        que el préstamo se diseñó como "un viaje, no un pedido" (ver más abajo).
+        """
         self._dar_stock(80, self.almacen)
         self._dar_stock(100, self.almacen_otra)
         self._dar_stock(50, self.almacen_otra, self.producto_b)
 
         self._confirmar_con_prestamo(self._pedido(95))
-        otro_dia = self._pedido(
+        un_dia_despues = self._pedido(
             10, producto=self.producto_b,
             desde=self.desde + timedelta(days=1), hasta=self.hasta + timedelta(days=1),
         )
-        self._confirmar_con_prestamo(otro_dia)
+        self._confirmar_con_prestamo(un_dia_despues)
+
+        prestamos = self.env['enteza.stock.loan'].search([])
+        self.assertEqual(len(prestamos), 1, 'Un día de diferencia sigue siendo el mismo porte')
+
+    def test_fechas_de_traslado_distintas_son_viajes_distintos(self):
+        """Un evento y otro de la semana siguiente no caben en el mismo porte."""
+        self._dar_stock(80, self.almacen)
+        self._dar_stock(100, self.almacen_otra)
+        self._dar_stock(50, self.almacen_otra, self.producto_b)
+
+        self._confirmar_con_prestamo(self._pedido(95))
+        # +8 días cruza SIEMPRE al menos una vez el día de traslado configurado, sea cual
+        # sea: es la separación mínima que garantiza un porte distinto sin depender de en
+        # qué día de la semana caiga `self.desde` cuando se ejecute la prueba.
+        semana_siguiente = self._pedido(
+            10, producto=self.producto_b,
+            desde=self.desde + timedelta(days=8), hasta=self.hasta + timedelta(days=8),
+        )
+        self._confirmar_con_prestamo(semana_siguiente)
 
         prestamos = self.env['enteza.stock.loan'].search([])
         self.assertEqual(len(prestamos), 2)

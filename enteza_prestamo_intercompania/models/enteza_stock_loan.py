@@ -467,33 +467,51 @@ class EntezaStockLoan(models.Model):
             ))
 
     @api.model
-    def _fecha_traslado_de(self, inicio):
-        """Fecha del traslado de ida = inicio del alquiler − días de antelación.
+    def _fecha_traslado_de(self, inicio, compania):
+        """Fecha del traslado de ida: el día de la semana fijo de `compania`, antes del evento.
 
-        Los días son un parámetro único para todas las rutas (`[PENDIENTE-3]`, decidido el
-        2026-08-01). Si algún día dependen del par de almacenes, este es el sitio donde
-        cambiarlo: **nadie más calcula esta fecha**.
+        Hasta la `19.0.10.0.0` era «N días antes» (`[PENDIENTE-3]`, decidido el 2026-08-01,
+        un único parámetro para todas las rutas). El cliente ha pedido cambiarlo por un día
+        de la semana fijo — con la temporada concentrada en fines de semana, encaja mejor con
+        la logística real un «los traslados a Jerez salen los martes» que contar días desde
+        cada evento. Se configura por compañía en Ajustes → Ventas → Alquiler
+        (`res.company.enteza_dia_traslado_semana`), porque cada prestamista puede tener su
+        propio día de reparto.
+
+        `compania` es la PRESTAMISTA (`warehouse_src_id.company_id`), no la que recibe: es
+        su almacén el que organiza el viaje de salida.
+
+        Es **siempre anterior** al evento, nunca el mismo día: si la fecha de inicio cae
+        justo en el día configurado, el traslado es el de la semana ANTERIOR. Es lo que pidió
+        el cliente («antes del día del evento») y además evita el caso raro de un traslado
+        programado el mismo día que empieza el alquiler.
 
         Es `@api.model` porque quien decide si una necesidad nueva cabe en un préstamo ya
         abierto necesita la fecha ANTES de tener el préstamo (§7.2): la agrupación es por
         fecha de traslado exacta, así que calcularla en otro sitio con otra fórmula rompería
         el criterio sin que se note.
         """
-        dias = self._parametro('dias_antelacion_traslado', 3)
         # 🔴 A la zona horaria del usuario antes de quedarse con el día (§12, caso 8). Los
         # `Datetime` de Odoo son UTC, y un alquiler que empieza a las 00:30 del sábado en
         # España está guardado como las 22:30 del viernes: quedarse con la fecha en crudo
-        # programaría el traslado un día antes de lo que ve el almacén.
+        # programaría el traslado contando desde el día equivocado.
         inicio = fields.Datetime.to_datetime(inicio)
         local = fields.Datetime.context_timestamp(self, inicio).date()
-        return local - timedelta(days=dias)
+
+        dia_configurado = int(compania.enteza_dia_traslado_semana or '2')
+        dias_atras = (local.weekday() - dia_configurado) % 7
+        if dias_atras == 0:
+            # El evento cae justo en el día configurado: no es «antes», hay que ir a la
+            # semana anterior.
+            dias_atras = 7
+        return local - timedelta(days=dias_atras)
 
     def _fecha_traslado(self):
         """Fecha de traslado de este préstamo, a partir de la primera línea que empieza."""
         self.ensure_one()
         if not self.line_ids:
             return False
-        return self._fecha_traslado_de(min(self.line_ids.mapped('date_from')))
+        return self._fecha_traslado_de(min(self.line_ids.mapped('date_from')), self.company_id)
 
     # ------------------------------------------------------------------
     # Liberar lo que un pedido cancelado o reducido ya no necesita (§7.0.2)

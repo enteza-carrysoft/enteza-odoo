@@ -42,20 +42,19 @@
         <!--
             Parámetros de configuración (PRP §8).
 
-            Van en `ir.config_parameter` y no en `res.config.settings`: son tres valores que
-            hoy nadie va a tocar a diario, y una página de ajustes propia obligaría a
-            depender de `base_setup` y a mantener una vista más. Se leen con
-            `_parametro()`, que aplica el valor por defecto si el registro no existe, así
-            que borrarlos no rompe nada.
+            Van en `ir.config_parameter` y no en `res.config.settings`: son valores que hoy
+            nadie va a tocar a diario, y una página de ajustes propia obligaría a depender de
+            `base_setup` y a mantener una vista más. Se leen con `_parametro()`, que aplica
+            el valor por defecto si el registro no existe, así que borrarlos no rompe nada.
+
+            El día de traslado (`[PENDIENTE-3]`) NO va aquí desde la `19.0.10.0.0`: el
+            cliente pidió que se pudiera configurar por compañía y desde un sitio visible, así
+            que es `res.company.enteza_dia_traslado_semana`, en Ajustes → Ventas → Alquiler
+            (`models/res_company.py`).
 
             `noupdate="1"`: si el cliente los cambia, una actualización del módulo no debe
             devolverlos a su valor de fábrica.
         -->
-        <record id="param_dias_antelacion" model="ir.config_parameter">
-            <field name="key">enteza_prestamo.dias_antelacion_traslado</field>
-            <field name="value">3</field>
-        </record>
-
         <record id="param_horizonte_analisis" model="ir.config_parameter">
             <field name="key">enteza_prestamo.horizonte_analisis</field>
             <field name="value">30</field>

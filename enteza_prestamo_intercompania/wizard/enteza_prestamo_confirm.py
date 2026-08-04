@@ -119,7 +119,9 @@ class EntezaPrestamoConfirm(models.TransientModel):
             # widget de la línea.
             if not linea.warehouse_src_id or linea.qty_prestable <= 0:
                 continue
-            fecha = Prestamo._fecha_traslado_de(linea.sale_line_id.start_date)
+            fecha = Prestamo._fecha_traslado_de(
+                linea.sale_line_id.start_date, linea.warehouse_src_id.company_id,
+            )
             por_viaje[(linea.warehouse_src_id, fecha)].append(linea)
 
         # 🔴 `sudo()` para crear el préstamo. Quien confirma un pedido es un comercial, y no

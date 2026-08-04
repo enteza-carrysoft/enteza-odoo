@@ -212,7 +212,9 @@ class EntezaStockDeficit(models.Model):
         Prestamo = self.env['enteza.stock.loan'].sudo()
         creados = Prestamo.browse()
         for deficit in self.filtered(lambda registro: registro.qty_cubrible > 0):
-            fecha = Prestamo._fecha_traslado_de(deficit.date_from)
+            fecha = Prestamo._fecha_traslado_de(
+                deficit.date_from, deficit.warehouse_src_id.company_id,
+            )
             prestamo = Prestamo.search([
                 ('warehouse_src_id', '=', deficit.warehouse_src_id.id),
                 ('warehouse_dest_id', '=', deficit.warehouse_id.id),

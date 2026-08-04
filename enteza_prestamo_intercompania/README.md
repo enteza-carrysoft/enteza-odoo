@@ -19,6 +19,46 @@ entregas siguientes de esta misma fase, en este orden:
 
 Con esto la **fase 2 está completa**: el material se mueve de verdad de una sociedad a otra.
 
+## El traslado se programa por día de la semana, no por días de antelación (`19.0.10.0.0`)
+
+Cambio de criterio pedido por el cliente, 2026-08-04. Hasta esta versión, `date_transfer`
+salía de **restar un número fijo de días** al inicio del alquiler
+(`dias_antelacion_traslado`, un único parámetro para todo el sistema, `[PENDIENTE-3]` del
+PRP, decidido el 2026-08-01). Ahora es **un día de la semana fijo**, el más cercano
+**anterior** al inicio del alquiler — nunca el mismo día: si el evento cae justo en el día
+configurado, el traslado es el de la semana anterior, no el mismo día.
+
+Con la temporada concentrada en fin de semana, un día fijo de reparto («los traslados a
+Jerez salen los martes») encaja mejor con la logística real que contar días desde cada
+evento uno a uno.
+
+**Por compañía**, no un único valor global: `res.company.enteza_dia_traslado_semana`, igual
+que `padding_time`. Cada prestamista puede tener su propio día. Se configura en **Ajustes →
+Ventas → Alquiler**, en el mismo bloque donde ya vive el resto de la configuración de
+alquiler (`views/res_config_settings_views.xml` hereda
+`sale_stock_renting.res_config_settings_inherit_view_form`, la vista donde ya está
+`padding_time`) — no una página propia, para que quien ya sabe dónde está esa configuración
+encuentre esto al lado. Por defecto, miércoles.
+
+`_fecha_traslado_de(inicio, compania)` (`enteza_stock_loan.py`) cambia de firma: antes solo
+necesitaba la fecha, ahora también la compañía **prestamista** (`warehouse_src_id.company_id`,
+no la que recibe), porque el día ya no es el mismo para todas las rutas. Los tres llamadores
+—`_fecha_traslado()` del propio préstamo, el asistente de confirmación
+(`enteza_prestamo_confirm.py`) y el análisis por lotes (`enteza_stock_deficit.py`)— se
+actualizaron para pasarla.
+
+**Efecto en la agrupación de viajes** (§7.2, «un préstamo es un viaje»): antes, dos eventos
+con un día de diferencia caían en portes distintos porque restar el mismo número de días a
+fechas distintas casi nunca coincide. Ahora, como el traslado es semanal, **eventos de toda
+una semana pueden compartir el mismo porte** aunque no sean del mismo día — es una
+consecuencia natural del cambio y no un efecto secundario a corregir: un solo camión sirve a
+todos los eventos de esa semana. Cubierto en
+`test_confirmacion.py::test_eventos_de_la_misma_semana_comparten_porte`.
+
+`enteza_prestamo.dias_antelacion_traslado` deja de leerse; el registro en `data/` se ha
+retirado. No hace falta migrar nada: no había datos que depender de ese valor más allá del
+propio cálculo, que se recalcula cada vez.
+
 ## Disponibilidad en el buscador de producto (`19.0.9.0.0`)
 
 Petición del cliente, 2026-08-04: al pulsar **«Añadir un producto»** en un pedido de
@@ -518,7 +558,7 @@ Las cuatro que el §16 dejaba abiertas para la fase 2:
 | | Decisión | Efecto |
 |---|---|---|
 | `[PENDIENTE-1]` Almacenes | **Habrá más** de uno por compañía | Origen y destino son **seleccionables**, no deducidos de la compañía |
-| `[PENDIENTE-3]` Antelación | **Fija y configurable**, 3 días para todas las rutas | Un solo parámetro. `_fecha_traslado()` es el único sitio que la calcula |
+| `[PENDIENTE-3]` Antelación | **Fija y configurable**, 3 días para todas las rutas | Un solo parámetro. `_fecha_traslado()` es el único sitio que la calcula. **Cambiado en la `19.0.10.0.0`**: ver «El traslado se programa por día de la semana» |
 | `[PENDIENTE-8]` Confirmar sin stock | **Puede cualquiera**, con aviso | 🔴 **Diverge del PRP §7.0.1**, que lo reservaba al responsable. Como cualquiera puede confirmar, la **marca de déficit no cubierto** en el pedido pasa a ser lo único que evita perder de vista un pedido imposible |
 | `[PENDIENTE-9]` Prioridad | **Quien reserva primero** (`date_reserved`) | Por eso `date_reserved` no se toca al modificar un préstamo: perderlo es perder el criterio |
 
@@ -723,6 +763,18 @@ deja constancia de por qué, aun corregido, el nativo sigue sin poder sustituir 
 `display_name` de `product.product`/`product.template` en el buscador: con y sin contexto de
 alquiler, sin existencias, con varias variantes (no se toca) y que descuenta lo prestado a
 otra compañía igual que los dos anteriores.
+
+`tests/test_casos_limite.py` cubre, desde la `19.0.10.0.0`, la fórmula del día de la semana:
+que sigue convirtiendo a la zona horaria del usuario antes de calcular (el caso 8 del §12,
+que ya estaba probado con el criterio antiguo), que un evento en el mismo día configurado
+salta a la semana anterior, y que una compañía sin día elegido cae en el valor por defecto.
+Los sitios que antes fijaban una fecha exacta a mano (`test_analisis.py`,
+`test_ciclo_vida.py`, `test_confirmacion.py`) pasaron a calcular la fecha esperada llamando a
+`_fecha_traslado_de()`, la misma función que el código de producción: no repiten la
+aritmética, solo comprueban que cada camino (análisis por lotes, reserva directa,
+confirmación con préstamo) la usa. `test_confirmacion.py` gana además
+`test_eventos_de_la_misma_semana_comparten_porte`, que documenta el cambio de comportamiento
+en la agrupación de viajes explicado más arriba.
 
 ⚠️ **Sin ejecutar.** No hay instancia de pruebas ni acceso a `odoo-bin --test-enable`. Están
 validadas por sintaxis, no por ejecución.

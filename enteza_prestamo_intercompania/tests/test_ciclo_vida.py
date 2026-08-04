@@ -112,13 +112,13 @@ class TestCicloVida(TransactionCase):
         self.assertEqual(disponible[self.producto.id], 800)
 
     def test_reservar_calcula_la_fecha_de_traslado(self):
-        """Inicio del préstamo menos los días de antelación (por defecto 3)."""
+        """El día de la semana configurado en la prestamista, antes del inicio del préstamo."""
         self._dar_stock(900)
         prestamo = self._crear_prestamo(100)
         prestamo.action_reservar()
         self.assertEqual(
             prestamo.date_transfer,
-            (self.desde - timedelta(days=3)).date(),
+            self.env['enteza.stock.loan']._fecha_traslado_de(self.desde, self.prestamista),
         )
 
     def test_no_se_puede_reservar_mas_de_lo_que_hay(self):

@@ -166,6 +166,11 @@ class TestAnalisisDeficit(TransactionCase):
         self.assertEqual(prestamo.state, 'draft', 'No compromete material por su cuenta')
         self.assertEqual(prestamo.line_ids.qty_proposed, 15)
         self.assertEqual(prestamo.warehouse_src_id, self.almacen_otra)
+        # No se fija un offset a mano: desde la 19.0.10.0.0 la fecha depende del día de la
+        # semana configurado en la compañía prestamista, no de un número de días fijo. La
+        # fórmula en sí la prueban `test_casos_limite.py`; aquí importa que el análisis la
+        # use, no recalcularla con otro criterio.
         self.assertEqual(
-            prestamo.date_transfer, (self.desde - timedelta(days=3)).date(),
+            prestamo.date_transfer,
+            self.env['enteza.stock.loan']._fecha_traslado_de(self.desde, self.otra),
         )

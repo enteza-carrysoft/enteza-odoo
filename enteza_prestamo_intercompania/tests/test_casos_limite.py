@@ -77,7 +77,8 @@ class TestCasosLimite(TransactionCase):
 
         self.assertEqual(prestamo.line_ids.date_from, nuevo_inicio)
         self.assertEqual(
-            prestamo.date_transfer, (nuevo_inicio - timedelta(days=3)).date(),
+            prestamo.date_transfer,
+            self.env['enteza.stock.loan']._fecha_traslado_de(nuevo_inicio, self.otra),
         )
 
     def test_cambiar_fechas_con_el_prestamo_aprobado_pide_revision(self):
@@ -155,12 +156,43 @@ class TestCasosLimite(TransactionCase):
         """Un alquiler que empieza de madrugada no puede adelantar el traslado un día.
 
         Los `Datetime` de Odoo son UTC: en España, las 00:30 del sábado están guardadas como
-        las 22:30 del viernes. Quedarse con la fecha en crudo programaría el porte un día
-        antes de lo que ve el almacén.
+        las 22:30 del viernes. Quedarse con la fecha en crudo (viernes) contaría el día de la
+        semana desde el día equivocado.
+
+        El 15/08/2026 es sábado. Configurando el traslado en VIERNES —el mismo día de la
+        semana que la fecha en crudo sin convertir, 14/08— se distingue el fallo: si el
+        cálculo usara el UTC en bruto, la línea vería el viernes como «el mismo día» y
+        saltaría a la semana anterior (07/08); convertido a Madrid, el sábado 15 cae después
+        del viernes 14, así que el traslado es el 14, no el 07.
         """
         Prestamo = self.env['enteza.stock.loan']
         madrugada = Datetime.to_datetime('2026-08-14 22:30:00')  # 15/08 00:30 en Madrid
+        self.propia.enteza_dia_traslado_semana = '4'  # viernes
 
-        fecha = Prestamo.with_context(tz='Europe/Madrid')._fecha_traslado_de(madrugada)
+        fecha = Prestamo.with_context(tz='Europe/Madrid')._fecha_traslado_de(
+            madrugada, self.propia,
+        )
 
-        self.assertEqual(str(fecha), '2026-08-12', 'El 15 menos 3 días, no el 14')
+        self.assertEqual(str(fecha), '2026-08-14', 'El viernes antes del sábado 15, en Madrid')
+
+    def test_el_mismo_dia_de_la_semana_salta_a_la_anterior(self):
+        """El evento cae justo en el día configurado: no es "antes", va a la semana anterior."""
+        Prestamo = self.env['enteza.stock.loan']
+        # 15/08/2026 es sábado (weekday 5).
+        evento = Datetime.to_datetime('2026-08-15 10:00:00')
+        self.propia.enteza_dia_traslado_semana = '5'  # sábado, el mismo día del evento
+
+        fecha = Prestamo._fecha_traslado_de(evento, self.propia)
+
+        self.assertEqual(str(fecha), '2026-08-08', 'El sábado de la semana anterior')
+
+    def test_sin_configurar_usa_el_valor_por_defecto(self):
+        """Una compañía sin día elegido no rompe el cálculo: cae en el valor por defecto."""
+        Prestamo = self.env['enteza.stock.loan']
+        # 15/08/2026 es sábado (weekday 5); el defecto es miércoles (weekday 2).
+        evento = Datetime.to_datetime('2026-08-15 10:00:00')
+        self.propia.enteza_dia_traslado_semana = False
+
+        fecha = Prestamo._fecha_traslado_de(evento, self.propia)
+
+        self.assertEqual(str(fecha), '2026-08-12')
