@@ -2,7 +2,7 @@
 {
     "name": "Enteza - Factura agrupada por familias",
     "summary": "Informe de factura agrupado por familia de producto, sin repetir el periodo de alquiler en cada línea",
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "category": "Accounting",
     "author": "Enteza",
     "license": "OPL-1",
