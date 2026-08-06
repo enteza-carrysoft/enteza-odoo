@@ -15,6 +15,11 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
                 <field name="event_date" required="1" />
         	<field name="place_number" />
             </xpath>
+            <xpath expr="//field[@name='rental_return_date']" position="after">
+                <field name="rental_billable_days"
+                       invisible="not is_rental_order"
+                       readonly="state not in ['draft', 'sent']"/>
+            </xpath>
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 <field name="warehouse_id" />
             </xpath>
