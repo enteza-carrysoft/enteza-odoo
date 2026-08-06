@@ -68,7 +68,7 @@
                 </t>
             </div>
 
-            <div class="page" style="font-size: 9px;">
+            <div class="page" style="font-size: 10px;">
                 <!-- El título lo coloca el layout, al lado de la dirección. Poniéndolo aquí
                      con nuestro propio <h2> salían dos: el nuestro y el hueco vacío del
                      layout. -->
@@ -86,7 +86,7 @@
                      datos. Sólo cuando toda la factura comparte una misma fecha. -->
                 <t t-set="fecha_evento" t-value="o.enteza_fecha_evento()"/>
 
-                <div id="informations" class="row mb-3">
+                <div id="informations" class="row mb-3" style="font-size: 10px;">
                     <div class="col" t-if="o.invoice_date">
                         <strong>Fecha factura:</strong>
                         <p class="m-0" t-field="o.invoice_date"/>
@@ -113,14 +113,14 @@
                 <t t-set="familias" t-value="o.enteza_familias_usadas()"/>
                 <t t-set="sin_familia" t-value="o.enteza_lineas_sin_familia()"/>
 
-                <table class="table table-sm o_main_table" name="tabla_lineas" style="font-size: 9px; margin-bottom: 0.5rem;">
+                <table class="table table-sm o_main_table" name="tabla_lineas" style="font-size: 10px; margin-bottom: 0.5rem;">
                     <thead>
-                        <tr style="line-height: 1.1;">
-                            <th class="text-start" style="padding: 2px 4px;"><span>Descripción</span></th>
-                            <th class="text-end" style="padding: 2px 4px;"><span>Cantidad</span></th>
-                            <th class="text-end" style="padding: 2px 4px;"><span>Precio</span></th>
-                            <th class="text-end" t-if="display_discount" style="padding: 2px 4px;"><span>Dto. %</span></th>
-                            <th class="text-end" style="padding: 2px 4px;"><span>Importe</span></th>
+                        <tr style="line-height: 1.0;">
+                            <th class="text-start" style="padding: 1px 4px;"><span>Descripción</span></th>
+                            <th class="text-end" style="padding: 1px 4px;"><span>Cantidad</span></th>
+                            <th class="text-end" style="padding: 1px 4px;"><span>Precio</span></th>
+                            <th class="text-end" t-if="display_discount" style="padding: 1px 4px;"><span>Dto. %</span></th>
+                            <th class="text-end" style="padding: 1px 4px;"><span>Importe</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -129,11 +129,11 @@
                             <t t-if="lineas">
                                 <tr>
                                     <td colspan="99" class="fw-bold"
-                                        style="background:#e1e5eb; font-size: 8px; padding: 1px 4px; line-height: 1.1;">
+                                        style="background:#e1e5eb; font-size: 9px; padding: 1px 4px; line-height: 1.0;">
                                         <span t-field="familia.name"/>
                                     </td>
                                 </tr>
-                                <tr t-foreach="lineas" t-as="line" style="line-height: 1.1;">
+                                <tr t-foreach="lineas" t-as="line" style="line-height: 1.0;">
                                     <td class="text-start" style="padding: 1px 4px;">
                                         <span t-out="line.enteza_descripcion()"/>
                                     </td>
@@ -160,11 +160,11 @@
                         <t t-if="sin_familia">
                             <tr>
                                 <td colspan="99" class="fw-bold"
-                                    style="background:#e1e5eb; font-size: 8px; padding: 1px 4px; line-height: 1.1;">
+                                    style="background:#e1e5eb; font-size: 9px; padding: 1px 4px; line-height: 1.0;">
                                     <span>Otros conceptos</span>
                                 </td>
                             </tr>
-                            <tr t-foreach="sin_familia" t-as="line" style="line-height: 1.1;">
+                            <tr t-foreach="sin_familia" t-as="line" style="line-height: 1.0;">
                                 <td class="text-start" style="padding: 1px 4px;">
                                     <span t-out="line.enteza_descripcion()"/>
                                 </td>
@@ -195,16 +195,16 @@
                 <div class="clearfix">
                     <div id="total" class="row justify-content-end">
                         <div class="col-5">
-                            <table class="table table-sm">
-                                <tr>
-                                    <td><strong>Base imponible</strong></td>
-                                    <td class="text-end">
+                            <table class="table table-sm" style="font-size: 10px; margin-bottom: 0;">
+                                <tr style="line-height: 1.0;">
+                                    <td style="padding: 1px 4px;"><strong>Base imponible</strong></td>
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-field="o.amount_untaxed"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
-                                <tr t-foreach="impuestos" t-as="imp">
-                                    <td>
+                                <tr t-foreach="impuestos" t-as="imp" style="line-height: 1.0;">
+                                    <td style="padding: 1px 4px;">
                                         <span t-out="imp['etiqueta']"/>
                                         <!-- La base sólo se detalla cuando hay más de un tipo:
                                              con uno solo sería repetir la de arriba. -->
@@ -213,23 +213,23 @@
                                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                         </span>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-out="imp['importe']"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
                                 <!-- Red de seguridad: si por lo que sea no se pudo agrupar,
                                      el importe de impuestos no desaparece del papel. -->
-                                <tr t-if="not impuestos and o.amount_tax">
-                                    <td>Impuestos</td>
-                                    <td class="text-end">
+                                <tr t-if="not impuestos and o.amount_tax" style="line-height: 1.0;">
+                                    <td style="padding: 1px 4px;">Impuestos</td>
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-field="o.amount_tax"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
-                                <tr class="border-black o_total">
-                                    <td><strong>Total</strong></td>
-                                    <td class="text-end">
+                                <tr class="border-black o_total" style="line-height: 1.0;">
+                                    <td style="padding: 1px 4px;"><strong>Total</strong></td>
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <strong t-field="o.amount_total"
                                                 t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
