@@ -20,25 +20,25 @@ envío**, que se cierre el **blanco de la cabecera**, y que los **impuestos baje
 
 ## Qué hace
 
-**El periodo sale una sola vez**, en un recuadro bajo los datos de la factura, en lugar de
-repetirse en cada línea. Comprobado sobre la factura real: **de 118 renglones a 61, un 48 %
-menos**, y ninguna línea se queda sin descripción.
+**El periodo de alquiler se ha eliminado del informe** para reducir el espacio ocupado. Cuando
+la factura agrupa varios pedidos de alquiler con periodos distintos, el periodo sigue apareciendo
+en la descripción de cada línea, que es lo correcto: no sería el mismo para todas.
 
-Sólo se agrupa así cuando **toda la factura viene de un único pedido de alquiler**. Si agrupa
-varios pedidos, el periodo se queda en cada línea, que es lo correcto: no sería el mismo para
-todas.
+**La fuente y los márgenes de las líneas se han reducido** para que las facturas con muchas
+líneas ocupen menos páginas. El encabezado de cada familia es ahora más compacto y **ya no se
+imprime el subtotal por familia**, que duplicaba renglones.
 
-El recuadro va **en dos bloques**: a la izquierda el **periodo de alquiler** (sólo fechas, sin
-horas) y a la derecha la **fecha del evento** (`event_date`), que es la que mira el negocio. La
-**fecha de vencimiento se mantiene** donde estaba, arriba con los datos de la factura.
+La **fecha del evento** (`event_date`) sale junto a la **fecha de factura** en el bloque de
+datos de la factura, ya que es la fecha que mira el negocio. La **fecha de vencimiento se
+mantiene** en ese mismo bloque.
 
-Cada bloque aparece sólo si hay dato: si la factura agrupa varios pedidos o varias fechas de
-evento, ese lado se deja en blanco en vez de dar una fecha que no sería cierta para todas las
-líneas.
+El bloque de fecha de evento aparece sólo si hay un dato único y claro: si la factura agrupa
+varios pedidos con fechas distintas, se deja en blanco en vez de dar una fecha que no sería
+cierta para todas las líneas.
 
-**Las líneas van agrupadas por familia**, con un encabezado por familia y su subtotal. En la
-factura del ejemplo: VAJILLAS (12), MANTELERÍAS (10), MENAJE (9), CRISTALERÍAS (8), MESAS (6),
-CUBERTERÍAS (5), BOL Y CHUPITO (3), SILLAS (3)…
+**Las líneas van agrupadas por familia**, con un encabezado por familia. En la factura del
+ejemplo: VAJILLAS (12), MANTELERÍAS (10), MENAJE (9), CRISTALERÍAS (8), MESAS (6), CUBERTERÍAS
+(5), BOL Y CHUPITO (3), SILLAS (3)…
 
 Las líneas cuyo producto no tiene familia se imprimen al final bajo **«Otros conceptos»**, para
 que no se pierda ningún importe.
@@ -90,8 +90,9 @@ cuadró Odoo al validar la factura.
 
 ## Qué NO hace
 
-- **No toca los datos.** El periodo se sigue guardando en la descripción de la línea; sólo deja
-  de imprimirse. Quitar el módulo devuelve todo a como estaba.
+- **No toca los datos.** El periodo se sigue guardando en la descripción de la línea; sólo se
+  deja de imprimir en las facturas con un único pedido de alquiler. Quitar el módulo devuelve
+  todo a como estaba.
 - **No cambia la factura oficial** ni la numeración ni los importes.
 
 ## Detalle técnico
@@ -128,6 +129,11 @@ leerlo ahí evita calcularlo línea a línea. Es un `date`: no hay huso que conv
 > como `23:59:59` **UTC**, que en hora española es el día siguiente. Odoo ya los muestra así hoy
 > en pantalla; este informe sólo lo hace más visible. Son pedidos de un día ya cerrados. Si se
 > quiere cuadrar, hay que corregir el dato, no el informe.
+
+`account.move.line.enteza_descripcion()` ahora decide si limpia el periodo de la descripción
+según `account.move.enteza_pedido_alquiler()`: sólo lo elimina cuando toda la factura proviene
+de un único pedido de alquiler, porque en ese caso el periodo ya no se imprime en ningún sitio.
+Si la factura agrupa varios pedidos con periodos distintos, el periodo se conserva en cada línea.
 
 El patrón que detecta el periodo exige que el renglón lleve **dos fechas**, para no borrar por
 error una descripción que empiece por «del». Contempla castellano e inglés.

@@ -206,14 +206,17 @@ class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     def enteza_descripcion(self):
-        """Descripción de la línea sin el renglón del periodo de alquiler.
+        """Descripción de la línea, limpiando el periodo de alquiler cuando sea común a toda la factura.
 
-        Sólo se quita cuando el periodo ya sale en la cabecera (`enteza_pedido_alquiler`); de
-        eso se encarga la plantilla, aquí únicamente se limpia el texto. No se toca el dato
+        El periodo de alquiler se imprime en cada línea cuando la factura agrupa varios pedidos
+        con periodos distintos; cuando toda la factura proviene de un único pedido de alquiler,
+        el periodo ya no se imprime en ningún sitio para ganar espacio. No se toca el dato
         guardado: es sólo lo que se imprime.
         """
         self.ensure_one()
         if not self.name:
             return ""
-        renglones = [r for r in self.name.split("\n") if not PATRON_PERIODO.match(r)]
+        renglones = self.name.split("\n")
+        if self.move_id.enteza_pedido_alquiler():
+            renglones = [r for r in renglones if not PATRON_PERIODO.match(r)]
         return "\n".join(renglones).strip()

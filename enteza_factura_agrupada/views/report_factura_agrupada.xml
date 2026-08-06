@@ -68,7 +68,7 @@
                 </t>
             </div>
 
-            <div class="page">
+            <div class="page" style="font-size: 9px;">
                 <!-- El título lo coloca el layout, al lado de la dirección. Poniéndolo aquí
                      con nuestro propio <h2> salían dos: el nuestro y el hueco vacío del
                      layout. -->
@@ -82,70 +82,45 @@
                     <span t-if="o.name != '/'" t-field="o.name"/>
                 </t>
 
-                <!-- El periodo de alquiler se imprime UNA sola vez aquí, en lugar de repetirlo
-                     en cada línea. Sólo cuando toda la factura viene de un único pedido.
-                     Sin horas: contabilidad sólo quiere el día. -->
-                <t t-set="periodo" t-value="o.enteza_periodo_alquiler()"/>
+                <!-- Fecha del evento: se muestra junto a la fecha de factura en el bloque de
+                     datos. Sólo cuando toda la factura comparte una misma fecha. -->
                 <t t-set="fecha_evento" t-value="o.enteza_fecha_evento()"/>
 
                 <div id="informations" class="row mb-3">
-                    <div class="col-3" t-if="o.invoice_date">
+                    <div class="col" t-if="o.invoice_date">
                         <strong>Fecha factura:</strong>
                         <p class="m-0" t-field="o.invoice_date"/>
                     </div>
-                    <div class="col-3" t-if="o.invoice_date_due and o.move_type == 'out_invoice'">
+                    <div class="col" t-if="fecha_evento">
+                        <strong>Fecha evento:</strong>
+                        <p class="m-0" t-out="fecha_evento" t-options='{"widget": "date"}'/>
+                    </div>
+                    <div class="col" t-if="o.invoice_date_due and o.move_type == 'out_invoice'">
                         <strong>Vencimiento:</strong>
                         <p class="m-0" t-field="o.invoice_date_due"/>
                     </div>
-                    <div class="col-3" t-if="o.invoice_origin">
+                    <div class="col" t-if="o.invoice_origin">
                         <strong>Origen:</strong>
                         <p class="m-0" t-field="o.invoice_origin"/>
                     </div>
-                    <div class="col-3" t-if="o.ref">
+                    <div class="col" t-if="o.ref">
                         <strong>Referencia:</strong>
                         <p class="m-0" t-field="o.ref"/>
-                    </div>
-                </div>
-
-                <!-- Recuadro en dos bloques: a la izquierda el periodo de alquiler, a la
-                     derecha el día del evento, que es la fecha que mira el negocio. -->
-                <div t-if="(periodo[0] and periodo[1]) or fecha_evento" class="row mb-3">
-                    <div class="col-12">
-                        <div class="border rounded p-2">
-                            <div class="row">
-                                <div class="col-6">
-                                    <t t-if="periodo[0] and periodo[1]">
-                                        <strong>Periodo de alquiler:</strong>
-                                        del <span t-out="periodo[0]" t-options='{"widget": "date"}'/>
-                                        al <span t-out="periodo[1]" t-options='{"widget": "date"}'/>
-                                    </t>
-                                </div>
-                                <div class="col-6">
-                                    <t t-if="fecha_evento">
-                                        <strong>Fecha evento:</strong>
-                                        <span t-out="fecha_evento" t-options='{"widget": "date"}'/>
-                                    </t>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
                 <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
                 <t t-set="familias" t-value="o.enteza_familias_usadas()"/>
                 <t t-set="sin_familia" t-value="o.enteza_lineas_sin_familia()"/>
-                <!-- Columnas antes del importe, para los colspan de los subtotales. La de
-                     impuestos ya no está: va en el pie, agrupada por tipo. -->
-                <t t-set="cols_previas" t-value="display_discount and 4 or 3"/>
 
-                <table class="table table-sm o_main_table" name="tabla_lineas">
+                <table class="table table-sm o_main_table" name="tabla_lineas" style="font-size: 9px; margin-bottom: 0.5rem;">
                     <thead>
-                        <tr>
-                            <th class="text-start"><span>Descripción</span></th>
-                            <th class="text-end"><span>Cantidad</span></th>
-                            <th class="text-end"><span>Precio</span></th>
-                            <th class="text-end" t-if="display_discount"><span>Dto. %</span></th>
-                            <th class="text-end"><span>Importe</span></th>
+                        <tr style="line-height: 1.1;">
+                            <th class="text-start" style="padding: 2px 4px;"><span>Descripción</span></th>
+                            <th class="text-end" style="padding: 2px 4px;"><span>Cantidad</span></th>
+                            <th class="text-end" style="padding: 2px 4px;"><span>Precio</span></th>
+                            <th class="text-end" t-if="display_discount" style="padding: 2px 4px;"><span>Dto. %</span></th>
+                            <th class="text-end" style="padding: 2px 4px;"><span>Importe</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -154,35 +129,26 @@
                             <t t-if="lineas">
                                 <tr>
                                     <td colspan="99" class="fw-bold"
-                                        style="background:#e1e5eb;border-top:2px solid #000;border-bottom:1px solid #000;">
+                                        style="background:#e1e5eb; font-size: 8px; padding: 1px 4px; line-height: 1.1;">
                                         <span t-field="familia.name"/>
                                     </td>
                                 </tr>
-                                <tr t-foreach="lineas" t-as="line">
-                                    <td class="text-start">
+                                <tr t-foreach="lineas" t-as="line" style="line-height: 1.1;">
+                                    <td class="text-start" style="padding: 1px 4px;">
                                         <span t-out="line.enteza_descripcion()"/>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-field="line.quantity"/>
                                         <span t-field="line.product_uom_id" groups="uom.group_uom"/>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-field="line.price_unit"/>
                                     </td>
-                                    <td class="text-end" t-if="display_discount">
+                                    <td class="text-end" t-if="display_discount" style="padding: 1px 4px;">
                                         <span t-field="line.discount"/>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end" style="padding: 1px 4px;">
                                         <span t-field="line.price_subtotal"
-                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td t-att-colspan="cols_previas" class="text-end fst-italic">
-                                        Subtotal <span t-field="familia.name"/>
-                                    </td>
-                                    <td class="text-end fst-italic">
-                                        <span t-out="sum(lineas.mapped('price_subtotal'))"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
@@ -194,23 +160,23 @@
                         <t t-if="sin_familia">
                             <tr>
                                 <td colspan="99" class="fw-bold"
-                                    style="background:#e1e5eb;border-top:2px solid #000;border-bottom:1px solid #000;">
+                                    style="background:#e1e5eb; font-size: 8px; padding: 1px 4px; line-height: 1.1;">
                                     <span>Otros conceptos</span>
                                 </td>
                             </tr>
-                            <tr t-foreach="sin_familia" t-as="line">
-                                <td class="text-start">
+                            <tr t-foreach="sin_familia" t-as="line" style="line-height: 1.1;">
+                                <td class="text-start" style="padding: 1px 4px;">
                                     <span t-out="line.enteza_descripcion()"/>
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end" style="padding: 1px 4px;">
                                     <span t-field="line.quantity"/>
                                     <span t-field="line.product_uom_id" groups="uom.group_uom"/>
                                 </td>
-                                <td class="text-end"><span t-field="line.price_unit"/></td>
-                                <td class="text-end" t-if="display_discount">
+                                <td class="text-end" style="padding: 1px 4px;"><span t-field="line.price_unit"/></td>
+                                <td class="text-end" t-if="display_discount" style="padding: 1px 4px;">
                                     <span t-field="line.discount"/>
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end" style="padding: 1px 4px;">
                                     <span t-field="line.price_subtotal"
                                           t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                 </td>
@@ -224,6 +190,7 @@
                      agrupados por porcentaje, de modo que «21% G» y «21% S» —el mismo 21 % en
                      dos cuentas distintas— salen en un solo renglón. -->
                 <t t-set="impuestos" t-value="o.enteza_impuestos_agrupados()"/>
+                <t t-set="imp_size" t-value="len(impuestos)"/>
 
                 <div class="clearfix">
                     <div id="total" class="row justify-content-end">
