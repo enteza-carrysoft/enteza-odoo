@@ -22,7 +22,7 @@ Estos son los que solapan con desarrollos nuevos. Aquí es donde se duplica trab
 
 | Módulo | Estado | Qué hace y por qué importa |
 |---|---|---|
-| `rental_custom` | **installed** | Módulo del cliente. Aporta **`event_date`** en `sale.order` y `sale.order.line`, y una `get_total_availability` propia. Cualquier módulo que use `event_date` **debe depender de él** |
+| `rental_custom` | **installed** (`19.0.1.4.1`, verificado el 2026-08-06) | Módulo del cliente. Aporta **`event_date`** en `sale.order` y `sale.order.line`, y una `get_total_availability` propia. También incluye días facturables independientes del periodo, la supresión del periodo repetido en las líneas de alquiler, cambio controlado del número de presupuesto antes de confirmar y el estado de factura en la lista de alquileres. Cualquier módulo que use `event_date` **debe depender de él** |
 | `rental_multi_warehouse` | uninstalled | ⚠️ **853 líneas + widget OWL + asistente + cron.** Reserva automática multi-almacén con traslados programados: motor de disponibilidad propio, prioridad de almacenes, asignaciones, traslados de ida y vuelta, cron de avisos. **Resuelve casi lo mismo que `enteza_prestamo_intercompania`**, pero entre almacenes de una misma compañía y **sin aprobación humana**. No instalar los dos a la vez |
 | `sale_stock_renting_extension` | uninstalled | **Sobrescribe `_compute_qty_at_date`** para añadir cantidad global disponible y mostrarla en el widget. Si se instala, cualquier código que replique ese método deja de dar la misma cifra que la ficha del producto |
 | `sale_rental_income_account` | **installed** | Cuenta de ingresos específica para alquiler |
@@ -55,6 +55,15 @@ funcionalidad existe:
 | `no_publisher_warranty_contract` | Quita el aviso de garantía del editor |
 | `rental_custom` | Ver arriba |
 | `sale_rental_income_account` | Ver arriba |
+
+## Operaciones de datos verificadas
+
+- **2026-08-06 — cuentas de gasto de productos en Stileum.** En las 277 plantillas cuya
+  categoría directa es `All` (`product.category` 7), se rellenó
+  `product.template.property_account_expense_id` bajo el contexto de compañía Stileum sólo
+  cuando estaba vacío y Vimaple tenía una cuenta definida. Se actualizaron **249** fichas,
+  haciendo la equivalencia por código de cuenta y comprobando que la cuenta destino pertenecía
+  al plan de Stileum. Quedan 18 fichas vacías porque también lo están en Vimaple; no se tocaron.
 
 ### Desinstalados (Odoo ve, no está activo)
 
