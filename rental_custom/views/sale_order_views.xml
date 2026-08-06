@@ -37,9 +37,8 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale_renting.rental_order_view_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='invoice_status']" position="attributes">
-                <attribute name="column_invisible">False</attribute>
-                <attribute name="optional">show</attribute>
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="invoice_status" optional="show"/>
             </xpath>
         </field>
     </record>
