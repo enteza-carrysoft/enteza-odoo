@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from datetime import datetime, timedelta
 
 
@@ -53,6 +53,22 @@ class SaleOrder(models.Model):
                 and order.state in ("draft", "sent")
             )._recompute_rental_prices()
         return result
+
+    def action_open_rental_order_rename_wizard(self):
+        self.ensure_one()
+        if not self.is_rental_order or self.state not in ("draft", "sent"):
+            raise UserError(_("El número solo puede modificarse antes de confirmar el pedido."))
+        return {
+            "name": _("Cambiar número de presupuesto"),
+            "type": "ir.actions.act_window",
+            "res_model": "rental.order.rename.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_order_id": self.id,
+                "default_name": self.name,
+            },
+        }
 
     def action_confirm(self):
         """No deja confirmar un alquiler sin fecha de evento.

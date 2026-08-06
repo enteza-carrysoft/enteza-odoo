@@ -7,6 +7,12 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale_renting.rental_order_primary_form_view" />
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_rental_order_rename_wizard"
+                        type="object"
+                        string="Cambiar número"
+                        invisible="not is_rental_order or state not in ['draft', 'sent']"/>
+            </xpath>
             <xpath expr="//field[@name='date_order']" position="after">
                 <!-- Obligatoria: esta vista es la del formulario de ALQUILER
                      (`sale_renting.rental_order_primary_form_view`), así que no afecta a los
@@ -22,6 +28,18 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             </xpath>
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 <field name="warehouse_id" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="rental_order_view_tree_invoice_status" model="ir.ui.view">
+        <field name="name">rental.order.list.invoice.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale_renting.rental_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_status']" position="attributes">
+                <attribute name="column_invisible">False</attribute>
+                <attribute name="optional">show</attribute>
             </xpath>
         </field>
     </record>

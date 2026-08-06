@@ -6,6 +6,19 @@ from odoo.tests.common import TransactionCase
 
 class TestRentalBillableDays(TransactionCase):
 
+    def test_draft_rental_order_number_can_be_changed(self):
+        order = self.env["sale.order"].with_context(in_rental_app=True).create({
+            "partner_id": self.env.ref("base.res_partner_1").id,
+        })
+        wizard = self.env["rental.order.rename.wizard"].create({
+            "order_id": order.id,
+            "name": "PRESUPUESTO-PRUEBA-1",
+        })
+
+        wizard.action_confirm()
+
+        self.assertEqual(order.name, "PRESUPUESTO-PRUEBA-1")
+
     def test_rental_line_does_not_add_period_to_description(self):
         line = self.env["sale.order.line"].new()
 
