@@ -6,6 +6,11 @@ from odoo.tests.common import TransactionCase
 
 class TestRentalBillableDays(TransactionCase):
 
+    def test_rental_line_does_not_add_period_to_description(self):
+        line = self.env["sale.order.line"].new()
+
+        self.assertEqual(line._get_rental_order_line_description(), "")
+
     def test_billable_days_do_not_change_rental_period(self):
         recurrence = self.env["sale.temporal.recurrence"].search(
             [("unit", "=", "day"), ("duration", "=", 1)], limit=1

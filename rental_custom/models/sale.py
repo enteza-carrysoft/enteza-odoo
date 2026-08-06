@@ -85,6 +85,11 @@ class SaleOrderLine(models.Model):
         related="order_id.event_date",
     )
 
+    def _get_rental_order_line_description(self):
+        """No repetir el periodo común del pedido en cada línea de alquiler."""
+        self.ensure_one()
+        return ""
+
     def _get_pricelist_price(self):
         """Precio de alquiler calculado con los días facturables del pedido.
 
