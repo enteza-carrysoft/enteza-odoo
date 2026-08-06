@@ -68,7 +68,7 @@
                 </t>
             </div>
 
-            <div class="page" style="font-size: 10px;">
+            <div class="page" style="font-size: 14px;">
                 <!-- El título lo coloca el layout, al lado de la dirección. Poniéndolo aquí
                      con nuestro propio <h2> salían dos: el nuestro y el hueco vacío del
                      layout. -->
@@ -86,7 +86,7 @@
                      datos. Sólo cuando toda la factura comparte una misma fecha. -->
                 <t t-set="fecha_evento" t-value="o.enteza_fecha_evento()"/>
 
-                <div id="informations" class="row mb-3" style="font-size: 10px;">
+                <div id="informations" class="row mb-3" style="font-size: 14px;">
                     <div class="col" t-if="o.invoice_date">
                         <strong>Fecha factura:</strong>
                         <p class="m-0" t-field="o.invoice_date"/>
@@ -113,7 +113,7 @@
                 <t t-set="familias" t-value="o.enteza_familias_usadas()"/>
                 <t t-set="sin_familia" t-value="o.enteza_lineas_sin_familia()"/>
 
-                <table class="table table-sm o_main_table" name="tabla_lineas" style="font-size: 10px; margin-bottom: 0.5rem;">
+                <table class="table table-sm o_main_table" name="tabla_lineas" style="font-size: 14px; margin-bottom: 0.25rem;">
                     <thead>
                         <tr style="line-height: 1.0;">
                             <th class="text-start" style="padding: 1px 4px;"><span>Descripción</span></th>
@@ -129,7 +129,7 @@
                             <t t-if="lineas">
                                 <tr>
                                     <td colspan="99" class="fw-bold"
-                                        style="background:#e1e5eb; font-size: 9px; padding: 1px 4px; line-height: 1.0;">
+                                        style="background:#e9ecef; font-size: 14px; padding: 1px 4px; line-height: 1.0; border-bottom: 1px solid #adb5bd;">
                                         <span t-field="familia.name"/>
                                     </td>
                                 </tr>
@@ -160,7 +160,7 @@
                         <t t-if="sin_familia">
                             <tr>
                                 <td colspan="99" class="fw-bold"
-                                    style="background:#e1e5eb; font-size: 9px; padding: 1px 4px; line-height: 1.0;">
+                                    style="background:#e9ecef; font-size: 14px; padding: 1px 4px; line-height: 1.0; border-bottom: 1px solid #adb5bd;">
                                     <span>Otros conceptos</span>
                                 </td>
                             </tr>
@@ -195,7 +195,7 @@
                 <div class="clearfix">
                     <div id="total" class="row justify-content-end">
                         <div class="col-5">
-                            <table class="table table-sm" style="font-size: 10px; margin-bottom: 0;">
+                            <table class="table table-sm" style="font-size: 14px; margin-bottom: 0;">
                                 <tr style="line-height: 1.0;">
                                     <td style="padding: 1px 4px;"><strong>Base imponible</strong></td>
                                     <td class="text-end" style="padding: 1px 4px;">
