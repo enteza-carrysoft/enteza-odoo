@@ -122,11 +122,17 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
   compañías es la premisa de todo el desarrollo de alquiler.
 - **Negocio**: alquiler de material para eventos (sillas, mesas, vajilla). Muy estacional y
   concentrado en fines de semana.
-- **Renombrados y cambios de la 19 que más muerden**: `product_uom`→`product_uom_id` ·
-  `tax_id`→`tax_ids` · `type='product'`→`type='consu'` + `is_storable=True` ·
-  `detailed_type` y `uom_po_id` eliminados · `attrs`/`states` eliminados en vistas (usar
-  `invisible="..."`, `readonly="..."` directos) · en `uom.uom` el factor es
-  `relative_factor`, no `factor`.
+- **Renombrados y cambios de la 19 que más muerden**: `product_uom`→`product_uom_id` (sólo en
+  `sale.order.line`; en `stock.move` sigue siendo `product_uom`) · `tax_id`→`tax_ids` ·
+  `type='product'`→`type='consu'` + `is_storable=True` · `detailed_type` y `uom_po_id`
+  eliminados · `attrs`/`states` eliminados en vistas (usar `invisible="..."`, `readonly="..."`
+  directos) · en `uom.uom` el factor es `relative_factor`, no `factor` · **`res.groups` ya no
+  tiene `category_id`**: ahora el grupo apunta a `privilege_id` (modelo nuevo
+  `res.groups.privilege`), y es el privilegio el que apunta a la `ir.module.category` — un
+  `<record model="res.groups">` con `category_id` falla la instalación con `ValueError:
+  Invalid field 'category_id' in 'res.groups'` (repetido dos veces ya: `rental_custom` el
+  2026-08-07 y `enteza_prestamo_intercompania` el 2026-08-01, que documenta el patrón completo
+  en `enteza_prestamo_intercompania/security/prestamo_security.xml`).
 - **Alquiler**: `sale_renting` **y `sale_stock_renting`** están instalados. El segundo trae
   el **motor de disponibilidad completo** (`product._get_unavailable_qty`), el padding y la
   ubicación de alquiler. Antes de calcular disponibilidad a mano, leer
