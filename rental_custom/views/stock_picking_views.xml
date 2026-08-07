@@ -6,7 +6,10 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
-                <button name="action_create_sale_order" type="object" string="Facturar las Faltas" class="btn-primary"/>
+                <button name="action_create_sale_order" type="object" string="Facturar las Faltas"
+                        class="btn-primary"
+                        groups="rental_custom.group_faltas_alquiler"
+                        invisible="not is_rental_order or not backorder_id or sale_order_id or state in ('done', 'cancel')"/>
             </xpath>
         </field>
     </record>
