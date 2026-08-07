@@ -14,8 +14,8 @@ módulos con su estado real y dónde está el código fuente de Odoo.
 
 Enteza alquila material para eventos (sillas, mesas, vajilla), con dos sociedades
 independientes: **Visueña de Material Plegable ("Vimaple")** y **Stileum**. Migraron de Odoo
-15 a Odoo 19 EE en agosto de 2026 y están arrancando: llevan el almacén **en paralelo** con
-una aplicación externa hasta confiar en Odoo.
+15 a Odoo 19 EE en agosto de 2026. Desde el 2026-08-07 **el stock se controla desde Odoo**:
+ya no llevan el almacén en paralelo con la aplicación externa.
 
 Consecuencia para cualquier desarrollo: **nada se mueve sin aprobación humana**, y todo tiene
 que ser reversible y trazable. Eso pesa más que la automatización.

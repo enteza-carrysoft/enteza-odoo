@@ -175,10 +175,10 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **Direcciones de cliente**: el grupo es `account.group_delivery_invoice_address` — en la 19
   vive en `account`, **no** en `sale`. Referenciarlo con el prefijo antiguo rompe la
   instalación. Está activado desde el 2026-08-01.
-- **Contexto del equipo**: arrancaron en Odoo 19 la primera semana de agosto de 2026 y llevan
-  el almacén **en paralelo** con una aplicación externa hasta confiar en Odoo. Priorizar que
-  nada se mueva sin aprobación humana, y que todo sea reversible y trazable, por encima de la
-  automatización.
+- **Contexto del equipo**: arrancaron en Odoo 19 la primera semana de agosto de 2026. Desde el
+  2026-08-07 **el stock se controla desde Odoo** — dejaron de llevar el almacén en paralelo
+  con la aplicación externa. Priorizar que nada se mueva sin aprobación humana, y que todo sea
+  reversible y trazable, por encima de la automatización.
 
 ## Ficheros de referencia
 
