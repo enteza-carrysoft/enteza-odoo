@@ -122,7 +122,12 @@ class SaleOrder(models.Model):
         con_envio = self - sin_envio
         result = True
         if sin_envio:
-            result = super(SaleOrder, sin_envio).with_context(skip_procurement=True).action_confirm()
+            # `with_context` va ANTES de construir el super(): aplicado después del proxy de
+            # super(), devuelve un recordset normal (no limitado a partir de esta clase en el
+            # MRO) y el action_confirm() siguiente reentra desde el principio de toda la
+            # cadena de herencia — con más de un módulo tocando sale.order.action_confirm,
+            # eso es una recursión infinita, no solo un contexto que se pierde.
+            result = super(SaleOrder, sin_envio.with_context(skip_procurement=True)).action_confirm()
         if con_envio:
             result = super(SaleOrder, con_envio).action_confirm() and result
         return result

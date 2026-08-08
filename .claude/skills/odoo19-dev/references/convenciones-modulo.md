@@ -211,6 +211,36 @@ Comparación de cantidades: `float_compare` con
 `self.env['decimal.precision'].precision_get('Product Unit of Measure')`, que es el idioma que
 usa el propio `sale_renting`. Nunca `> 0` a pelo sobre floats.
 
+### `super(Clase, subset).with_context(...).metodo()` en el orden equivocado recursiona infinito 🔴
+
+Cuando un método (p. ej. `action_confirm`) se reparte entre un subconjunto de `self` con
+contexto especial y el resto sin él, es tentador escribir:
+
+```python
+# MAL: recursión infinita en cuanto otro módulo también toca action_confirm
+result = super(SaleOrder, subset).with_context(mi_flag=True).action_confirm()
+```
+
+`with_context()` llamado **sobre el proxy de `super()`** no se queda limitado a "a partir de
+esta clase en el MRO": internamente construye un recordset nuevo con `self.__class__` (la
+clase dinámica completa del modelo, no la restringida por `super()`), así que el
+`.action_confirm()` que sigue **reentra desde el principio de toda la cadena de herencia** en
+vez de seguir avanzando. Con un solo módulo tocando `action_confirm` no se nota (vuelve a caer
+en el mismo sitio y termina). En cuanto **otro módulo también hereda ese mismo método**
+(`enteza_portal_pedidos` y `rental_custom`, los dos sobre `sale.order.action_confirm`, el
+2026-08-08), los dos overrides se llaman el uno al otro sin parar hasta `RecursionError:
+maximum recursion depth exceeded`.
+
+```python
+# BIEN: with_context() antes de construir el super()
+result = super(SaleOrder, subset.with_context(mi_flag=True)).action_confirm()
+```
+
+Ninguno de los tres validadores del skill lo detecta (no ejecutan el ORM). Sólo se ve
+reventando en producción, y el traceback es engañoso: parece un conflicto entre dos módulos
+cuando la causa está en uno solo. Regla general: **`with_context()` siempre antes que
+`super()`** cuando se opera sobre un subconjunto distinto de `self`.
+
 ### Hooks
 
 `post_init_hook(env)` recibe el entorno directamente (antes eran `cr, registry`).
