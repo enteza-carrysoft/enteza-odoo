@@ -42,6 +42,10 @@ class StockPicking(models.Model):
             'product_uom_qty': move.product_uom_qty,
             'product_uom_id': move.product_uom.id,
             'price_unit': move.product_id.lst_price,
+            # El producto es alquilable (rent_ok) y sale_renting marca la línea como alquiler
+            # por defecto en cuanto lo detecta, arrastrando al pedido entero a is_rental_order.
+            # Esto es una venta normal de material perdido, no un alquiler.
+            'is_rental': False,
         }) for move in self.move_ids]
 
         sale_order = self.env['sale.order'].create({
