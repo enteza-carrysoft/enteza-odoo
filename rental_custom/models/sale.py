@@ -26,6 +26,14 @@ class SaleOrder(models.Model):
 
     picking_id = fields.Many2one('stock.picking', string="Stock Picking", readonly=True, copy=False)
 
+    skip_delivery_creation = fields.Boolean(
+        string="No generar albarán de salida",
+        copy=False,
+        help="El material ya salió por otro albarán (por ejemplo, una venta que factura "
+             "material de alquiler no devuelto). Al confirmar este pedido no se genera ningún "
+             "envío nuevo.",
+    )
+
     @api.onchange("event_date")
     def event_date_change(self):
         if self.event_date:
@@ -92,7 +100,19 @@ class SaleOrder(models.Model):
                     ", ".join(sin_fecha.mapped("name")),
                 )
             )
-        return super().action_confirm()
+
+        # Pedidos que sólo formalizan el cobro de material que ya salió por otro albarán (por
+        # ejemplo, "Facturar las Faltas" en rental_custom): confirmarlos no debe generar un
+        # albarán de salida nuevo. `skip_procurement` es el contexto nativo que usa
+        # sale_stock para no lanzar la regla de stock al confirmar.
+        sin_envio = self.filtered("skip_delivery_creation")
+        con_envio = self - sin_envio
+        result = True
+        if sin_envio:
+            result = super(SaleOrder, sin_envio).with_context(skip_procurement=True).action_confirm()
+        if con_envio:
+            result = super(SaleOrder, con_envio).action_confirm() and result
+        return result
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"

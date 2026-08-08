@@ -53,6 +53,9 @@ class StockPicking(models.Model):
             'company_id': self.company_id.id,
             'origin': self.sale_id.name or self.name,
             'order_line': order_line,
+            # El material ya salió por el albarán de alquiler original; esta venta sólo
+            # formaliza el cobro. Al confirmarla no debe generarse un albarán de salida nuevo.
+            'skip_delivery_creation': True,
         })
         self.sale_order_id = sale_order.id
 
