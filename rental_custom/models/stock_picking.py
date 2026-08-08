@@ -57,6 +57,12 @@ class StockPicking(models.Model):
             # formaliza el cobro. Al confirmarla no debe generarse un albarán de salida nuevo.
             'skip_delivery_creation': True,
             'rental_order_id': self.sale_id.id,
+            # Forzado explícito: el botón se pulsa desde un albarán de la app de Alquiler, y
+            # ese contexto trae un `default_is_rental_order` ambiental que, si no se anula
+            # aquí, cuela el pedido en la app de Alquiler aunque ninguna línea sea de alquiler
+            # (is_rental=False en todas). No basta con las líneas, hay que fijarlo también en
+            # la cabecera.
+            'is_rental_order': False,
             # No es un pedido de alquiler, así que este campo queda libre para anotar la fecha
             # del evento de origen: sirve de dimensión de periodo en los informes de pérdidas.
             'event_date': self.sale_id.event_date,
