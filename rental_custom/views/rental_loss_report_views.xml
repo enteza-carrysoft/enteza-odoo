@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_rental_loss_pivot" model="ir.ui.view">
+        <field name="name">sale.order.line.pivot.rental.loss</field>
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Material de alquiler no devuelto">
+                <field name="order_partner_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="event_date" interval="month" type="col"/>
+                <field name="qty_lost" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="price_subtotal" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_rental_loss_list" model="ir.ui.view">
+        <field name="name">sale.order.line.list.rental.loss</field>
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml">
+            <list string="Material de alquiler no devuelto" create="0" edit="0" delete="0">
+                <field name="order_id"/>
+                <field name="order_partner_id"/>
+                <field name="event_date"/>
+                <field name="product_id"/>
+                <field name="product_uom_qty"/>
+                <field name="qty_lost"/>
+                <field name="price_subtotal"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rental_loss_search" model="ir.ui.view">
+        <field name="name">sale.order.line.search.rental.loss</field>
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml">
+            <search string="Material de alquiler no devuelto">
+                <field name="order_partner_id"/>
+                <field name="product_id"/>
+                <field name="event_date"/>
+                <group>
+                    <filter name="group_partner" string="Cliente" context="{'group_by': 'order_partner_id'}"/>
+                    <filter name="group_product" string="Artículo" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_event_month" string="Mes del evento" context="{'group_by': 'event_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rental_loss_units" model="ir.actions.act_window">
+        <field name="name">Unidades no devueltas</field>
+        <field name="res_model">sale.order.line</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="domain">[('qty_lost', '>', 0)]</field>
+        <field name="search_view_id" ref="view_rental_loss_search"/>
+        <field name="help">Unidades de material de alquiler no devueltas, anotadas al pulsar "Facturar las Faltas" en el pedido de alquiler de origen — independientemente de si la venta que las factura ya está confirmada o cobrada.</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_rental_loss_pivot')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_rental_loss_list')}),
+        ]"/>
+    </record>
+
+    <record id="action_rental_loss_amount" model="ir.actions.act_window">
+        <field name="name">Importe facturado por faltas</field>
+        <field name="res_model">sale.order.line</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="domain">[('order_id.rental_order_id', '!=', False)]</field>
+        <field name="search_view_id" ref="view_rental_loss_search"/>
+        <field name="help">Líneas de las ventas generadas por "Facturar las Faltas": lo que se ha facturado a cada cliente por material de alquiler no devuelto.</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_rental_loss_pivot')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_rental_loss_list')}),
+        ]"/>
+    </record>
+
+    <menuitem id="menu_rental_loss_root"
+              name="Material no devuelto"
+              parent="sale_renting.rental_menu_root"
+              sequence="6"/>
+    <menuitem id="menu_rental_loss_units"
+              name="Unidades no devueltas"
+              parent="menu_rental_loss_root"
+              action="action_rental_loss_units"
+              sequence="1"/>
+    <menuitem id="menu_rental_loss_amount"
+              name="Importe facturado"
+              parent="menu_rental_loss_root"
+              action="action_rental_loss_amount"
+              sequence="2"/>
+</odoo>

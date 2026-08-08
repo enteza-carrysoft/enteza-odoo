@@ -57,6 +57,9 @@ class StockPicking(models.Model):
             # formaliza el cobro. Al confirmarla no debe generarse un albarán de salida nuevo.
             'skip_delivery_creation': True,
             'rental_order_id': self.sale_id.id,
+            # No es un pedido de alquiler, así que este campo queda libre para anotar la fecha
+            # del evento de origen: sirve de dimensión de periodo en los informes de pérdidas.
+            'event_date': self.sale_id.event_date,
         })
         self.sale_order_id = sale_order.id
 
