@@ -34,6 +34,19 @@ class SaleOrder(models.Model):
              "envío nuevo.",
     )
 
+    rental_order_id = fields.Many2one(
+        "sale.order",
+        string="Pedido de alquiler de origen",
+        copy=False,
+        help="Este pedido factura material de alquiler no devuelto de este otro pedido.",
+    )
+    compensation_order_ids = fields.One2many(
+        "sale.order",
+        "rental_order_id",
+        string="Ventas por material no devuelto",
+        help="Pedidos de venta que facturan material de este alquiler que no se devolvió.",
+    )
+
     @api.onchange("event_date")
     def event_date_change(self):
         if self.event_date:
@@ -119,6 +132,16 @@ class SaleOrderLine(models.Model):
 
     event_date = fields.Date(
         related="order_id.event_date",
+    )
+
+    qty_lost = fields.Float(
+        string="No devueltas (facturadas)",
+        copy=False,
+        digits="Product Unit",
+        help="Unidades que no se devolvieron y se facturaron en otro pedido de venta en vez "
+             "de contarse como una devolución real. Ya están incluidas en «Devueltas» para "
+             "que el pedido de alquiler pueda cerrarse como devuelto: este número es sólo la "
+             "anotación de cuántas de esas unidades son en realidad una pérdida facturada.",
     )
 
     def _get_rental_order_line_description(self):

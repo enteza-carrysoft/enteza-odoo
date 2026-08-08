@@ -56,6 +56,7 @@ class StockPicking(models.Model):
             # El material ya salió por el albarán de alquiler original; esta venta sólo
             # formaliza el cobro. Al confirmarla no debe generarse un albarán de salida nuevo.
             'skip_delivery_creation': True,
+            'rental_order_id': self.sale_id.id,
         })
         self.sale_order_id = sale_order.id
 
@@ -75,7 +76,9 @@ class StockPicking(models.Model):
         # (stock_move._action_done, en sale_stock_renting). Como este backorder se cancela en
         # vez de completarse, hay que cerrar ese hueco a mano para que el pedido deje de verse
         # como "Recogido" (con material pendiente) y pase a "Devuelto": la falta ya no se
-        # espera de vuelta, se ha resuelto facturándola.
+        # espera de vuelta, se ha resuelto facturándola. `qty_lost` deja anotado, sin tocar el
+        # motor nativo de alquiler, cuántas de esas "devueltas" son en realidad una pérdida
+        # facturada — para no confundirlo con una devolución física real.
         for move in self.move_ids:
             sale_line = move.sale_line_id
             if sale_line and sale_line.is_rental and move.product_id == sale_line.product_id:
@@ -83,6 +86,7 @@ class StockPicking(models.Model):
                     move.product_uom_qty, sale_line.product_uom_id, rounding_method='HALF-UP'
                 )
                 sale_line.qty_returned += qty_missing
+                sale_line.qty_lost += qty_missing
 
         self.action_cancel()
 

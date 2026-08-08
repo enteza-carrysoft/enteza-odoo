@@ -29,6 +29,18 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 <field name="warehouse_id" />
             </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <div class="alert alert-warning mb-0" role="alert" invisible="not compensation_order_ids">
+                    Hay material de este alquiler no devuelto, facturado como venta en:
+                    <field name="compensation_order_ids" widget="many2many_tags" readonly="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='qty_returned']" position="after">
+                <field name="qty_lost"
+                       string="No devueltas"
+                       column_invisible="parent.state != 'sale' or not parent.is_rental_order"
+                       invisible="not is_rental or not qty_lost"/>
+            </xpath>
         </field>
     </record>
 
