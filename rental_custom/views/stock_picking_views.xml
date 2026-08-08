@@ -11,6 +11,11 @@
                         groups="rental_custom.group_faltas_alquiler"
                         invisible="not is_rental_order or not backorder_id or sale_order_id or state in ('done', 'cancel')"/>
             </xpath>
+            <xpath expr="//field[@name='quantity']" position="after">
+                <field name="qty_missing"
+                       string="Faltas"
+                       column_invisible="parent.state in ('done', 'cancel') or not parent.is_rental_order or parent.picking_type_code != 'incoming'"/>
+            </xpath>
         </field>
     </record>
 </odoo>
