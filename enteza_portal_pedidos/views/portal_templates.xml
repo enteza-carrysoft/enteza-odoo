@@ -2,6 +2,35 @@
 <odoo>
 
     <!--
+        🔴 Parche a una plantilla NATIVA de Odoo, no de este módulo.
+
+        `portal.language_selector` (fichero `portal/views/portal_templates.xml` del core)
+        hace `len(frontend_languages) > 1` sin protegerse de que `frontend_languages` no
+        exista. Esa variable la rellena normalmente el módulo `website` (selector de idioma
+        del sitio público); como aquí NO se instala `website` a propósito (PRP §2.1), la
+        variable nunca se crea y `len(None)` revienta con un 500 real, verificado contra
+        `enteza26` el 2026-08-08 al abrir `/my/solicitudes`:
+
+            TypeError: object of type 'NoneType' has no len()
+            Template: portal.language_selector · Reference: 586
+
+        No es un fallo de este módulo: cualquier página del portal que llegue al pie de
+        `portal.frontend_layout` lo dispara igual (`/my/orders`, `/my/invoices`...), lo que
+        pasa es que nadie las había visitado como cliente portal hasta ahora. El propio Odoo
+        reconoce el patrón como frágil: lo eliminó más adelante moviendo el selector a
+        `website` (https://github.com/odoo/odoo/pull/113795).
+
+        El parche es mínimo: `frontend_languages or []` en vez de `frontend_languages` a
+        secas. Con una sola lengua activa (`es_ES`), el resultado correcto es igual de todas
+        formas: `len([]) > 1` es `False`, el selector no se muestra.
+    -->
+    <template id="portal_language_selector_fix" inherit_id="portal.language_selector">
+        <xpath expr="//t[@t-set='language_selector_visible']" position="attributes">
+            <attribute name="t-value">len(frontend_languages or []) > 1</attribute>
+        </xpath>
+    </template>
+
+    <!--
         Tarjeta en la portada de «Mi cuenta» (PRP §9). Solo si `enteza_portal_pedidos_ok`
         (PRP §12.1: es la puerta del módulo). Markup propio, sin depender de
         `portal.portal_docs_entry`: su contrato de parámetros exactos no está verificado
