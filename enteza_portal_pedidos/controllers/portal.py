@@ -1,11 +1,11 @@
-"""Páginas HTML del portal de pedidos (PRP §8.1).
+"""Páginas HTML del portal de pedidos (PRP §8.1; PRP v2 §8.4, F4).
 
 🔴 Ninguna ruta lleva `website=True`: este módulo no instala `website` ni `website_sale`
 (PRP §2.1), solo `portal`, así que ese parámetro no se puede usar — sin él la ruta
 sencillamente no se registraría.
 """
 from odoo import _
-from odoo.exceptions import MissingError
+from odoo.exceptions import MissingError, UserError
 from odoo.http import request, route
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 
@@ -90,6 +90,16 @@ class PortalPedidos(CustomerPortal):
         partner = enteza_partner_portal_ok()
         if not partner:
             return request.redirect('/my')
+
+        # 🔴 D3 (PRP v2): el almacén no se elige desde el portal, es siempre el de la ficha
+        # del cliente. Si no lo tiene configurado, no se crea ninguna solicitud huérfana:
+        # se le dice que hable con su comercial. Comprobado ANTES de llamar al modelo, para
+        # que `_enteza_portal_get_or_create` pueda asumir que el almacén siempre existe.
+        if not partner.enteza_portal_warehouse_id:
+            values = self._prepare_portal_layout_values()
+            values['page_name'] = 'solicitud_sin_almacen'
+            return request.render('enteza_portal_pedidos.portal_sin_almacen', values)
+
         # Una sola solicitud en composición por cliente (PRP §5): si ya existe, redirige a
         # la misma en vez de crear otra.
         pedido = request.env['sale.order']._enteza_portal_get_or_create(partner)
@@ -113,7 +123,7 @@ class PortalPedidos(CustomerPortal):
         return request.render('enteza_portal_pedidos.portal_solicitud_grid', values)
 
     # ------------------------------------------------------------------
-    # Resumen + diff de contrapropuesta (PRP §8.1, §11)
+    # Resumen + diff de contrapropuesta + diálogo (PRP §8.1, §11; PRP v2 §8.3)
     # ------------------------------------------------------------------
 
     @route('/my/solicitud/<int:order_id>/resumen', type='http', auth='user')
@@ -132,8 +142,65 @@ class PortalPedidos(CustomerPortal):
             ),
             'timeline': order._enteza_portal_timeline(),
             'estados_portal': self._enteza_estados_labels(),
+            'mensajes': order._enteza_portal_mensajes(),
         })
         return request.render('enteza_portal_pedidos.portal_solicitud_resumen', values)
+
+    # ------------------------------------------------------------------
+    # Diálogo cliente ↔ comercial (PRP v2 §8.4) — F4
+    # ------------------------------------------------------------------
+
+    def _enteza_portal_post_dialogo(self, order_id, accion, **kw):
+        """Punto único para las tres rutas de diálogo: validan propiedad, ejecutan la
+        acción y vuelven siempre al resumen — con un mensaje de error legible si algo falla,
+        en vez de un 500 (mismo criterio que `enteza_json_endpoint` para las rutas JSON).
+        """
+        partner = enteza_partner_portal_ok()
+        if not partner:
+            return request.redirect('/my')
+        order = enteza_get_solicitud(order_id)
+        try:
+            accion(order, **kw)
+        except (UserError, MissingError) as error:
+            values = self._prepare_portal_layout_values()
+            values.update({
+                'page_name': 'solicitud_resumen',
+                'order': order,
+                'diff_rows': (
+                    order._enteza_portal_diff_contrapropuesta()
+                    if order.enteza_portal_state == 'counter' else []
+                ),
+                'timeline': order._enteza_portal_timeline(),
+                'estados_portal': self._enteza_estados_labels(),
+                'mensajes': order._enteza_portal_mensajes(),
+                'error_dialogo': str(error),
+            })
+            return request.render('enteza_portal_pedidos.portal_solicitud_resumen', values)
+        return request.redirect('/my/solicitud/%d/resumen' % order.id)
+
+    @route(
+        '/my/solicitud/<int:order_id>/mensaje',
+        type='http', auth='user', methods=['POST'], csrf=True,
+    )
+    def portal_solicitud_mensaje(self, order_id, body=None, **kw):
+        return self._enteza_portal_post_dialogo(
+            order_id, lambda order, **kw: order.action_enteza_portal_mensaje(body))
+
+    @route(
+        '/my/solicitud/<int:order_id>/aceptar',
+        type='http', auth='user', methods=['POST'], csrf=True,
+    )
+    def portal_solicitud_aceptar(self, order_id, **kw):
+        return self._enteza_portal_post_dialogo(
+            order_id, lambda order, **kw: order.action_enteza_portal_aceptar())
+
+    @route(
+        '/my/solicitud/<int:order_id>/cambios',
+        type='http', auth='user', methods=['POST'], csrf=True,
+    )
+    def portal_solicitud_cambios(self, order_id, body=None, **kw):
+        return self._enteza_portal_post_dialogo(
+            order_id, lambda order, **kw: order.action_enteza_portal_pedir_cambios(body))
 
     # ------------------------------------------------------------------
     # Repetir un pedido anterior (PRP §9.4)

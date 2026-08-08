@@ -15,15 +15,21 @@ class TestPortalHttp(HttpCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.warehouse = cls.env['stock.warehouse'].search(
+            [('company_id', '=', cls.env.company.id)], limit=1)
+
         cls.user_a = new_test_user(cls.env, login='enteza_test_cliente_a',
                                     groups='base.group_portal')
         cls.partner_a = cls.user_a.partner_id
         cls.partner_a.enteza_portal_pedidos_ok = True
+        # D3 (PRP v2): `_enteza_portal_get_or_create` exige almacén, ya no elige uno.
+        cls.partner_a.enteza_portal_warehouse_id = cls.warehouse.id
 
         cls.user_b = new_test_user(cls.env, login='enteza_test_cliente_b',
                                     groups='base.group_portal')
         cls.partner_b = cls.user_b.partner_id
         cls.partner_b.enteza_portal_pedidos_ok = True
+        cls.partner_b.enteza_portal_warehouse_id = cls.warehouse.id
 
         cls.user_sin_permiso = new_test_user(cls.env, login='enteza_test_sin_permiso',
                                               groups='base.group_portal')
@@ -51,15 +57,24 @@ class TestPortalHttp(HttpCase):
 
     def test_other_customer_gets_denied(self):
         """Un usuario del portal de OTRO cliente no puede ver esta solicitud (PRP §8.1):
-        cinturón y tirantes, aunque la `ir.rule` nativa ya debería bastar."""
+        cinturón y tirantes, aunque la `ir.rule` nativa ya debería bastar.
+
+        🔴 PRP v2 §5.5/F1: `enteza_json_endpoint` atrapa la excepción DENTRO de la ruta y
+        la convierte en `{'error': ..., 'error_code': ...}` -un resultado JSON-RPC normal,
+        con HTTP 200-, en vez de dejarla escapar como un error de transporte. Es
+        precisamente lo que arregla que antes una promesa rechazada no se viera en ningún
+        sitio: ahora siempre hay un JSON con forma predecible que el JS puede leer.
+        """
         pedido = self.env['sale.order'].sudo()._enteza_portal_get_or_create(self.partner_a)
 
         self.authenticate('enteza_test_cliente_b', 'enteza_test_cliente_b')
         respuesta = self._jsonrpc(
             '/enteza_portal/solicitud/catalogo', {'order_id': pedido.id})
 
-        cuerpo = respuesta.json()
-        self.assertIn('error', cuerpo)
+        self.assertEqual(respuesta.status_code, 200)
+        resultado = respuesta.json().get('result', {})
+        self.assertIn('error', resultado)
+        self.assertEqual(resultado.get('error_code'), 'no_encontrado')
 
     def test_user_without_flag_is_denied(self):
         """Sin `enteza_portal_pedidos_ok`, ni siquiera puede pedir SU propia solicitud
@@ -71,8 +86,10 @@ class TestPortalHttp(HttpCase):
         respuesta = self._jsonrpc(
             '/enteza_portal/solicitud/catalogo', {'order_id': pedido.id})
 
-        cuerpo = respuesta.json()
-        self.assertIn('error', cuerpo)
+        self.assertEqual(respuesta.status_code, 200)
+        resultado = respuesta.json().get('result', {})
+        self.assertIn('error', resultado)
+        self.assertEqual(resultado.get('error_code'), 'no_acceso')
 
     def test_my_solicitudes_page_requires_login(self):
         self.authenticate('enteza_test_cliente_a', 'enteza_test_cliente_a')

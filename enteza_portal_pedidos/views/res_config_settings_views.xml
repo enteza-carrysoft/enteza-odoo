@@ -33,6 +33,10 @@
                 <setting string="Avisar también por correo">
                     <field name="enteza_portal_aviso_email"/>
                 </setting>
+                <setting string="Comercial por defecto del portal"
+                         help="A quién se asigna una solicitud cuando el cliente no tiene comercial propio en su ficha.">
+                    <field name="enteza_portal_user_id"/>
+                </setting>
             </xpath>
         </field>
     </record>

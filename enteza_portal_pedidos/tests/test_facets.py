@@ -8,9 +8,13 @@ class TestFacets(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.warehouse = cls.env['stock.warehouse'].search(
+            [('company_id', '=', cls.env.company.id)], limit=1)
         cls.partner = cls.env['res.partner'].create({
             'name': 'Cliente facetas',
             'enteza_portal_pedidos_ok': True,
+            # D3 (PRP v2): `_enteza_portal_get_or_create` exige almacén, ya no elige uno.
+            'enteza_portal_warehouse_id': cls.warehouse.id,
         })
         cls.faceta_marca = cls.env['enteza.product.facet'].create({
             'name': 'Marca (test)',

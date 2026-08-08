@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Portal de pedidos de alquiler',
-    'version': '19.0.1.0.1',
+    'version': '19.0.2.0.0',
     'category': 'Sales/Rental',
     'summary': "Solicitudes de alquiler hechas por el cliente desde el portal",
     'description': """

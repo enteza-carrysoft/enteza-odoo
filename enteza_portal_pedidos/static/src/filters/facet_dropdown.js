@@ -33,8 +33,16 @@ export class FacetDropdown extends Component {
     /**
      * Con contador se ordena primero lo seleccionado, luego lo disponible, y al final -
      * atenuado, no oculto (PRP §9.3)- lo que quedaría a cero con el resto de filtros.
+     *
+     * 🔴 PRP v2 §5.2/F2: con el desplegable CERRADO no se recorre nada -ni `filter`, ni
+     * `map`, ni `sort`, ni `getCount` (que es O(productos) por opción). Antes se
+     * recalculaba en cada render del padre aunque el desplegable estuviera cerrado y nadie
+     * pudiera ver el resultado.
      */
     get opcionesOrdenadas() {
+        if (!this.state.open) {
+            return [];
+        }
         const texto = this.state.buscar.trim().toLowerCase();
         const filtradas = this.props.options.filter(
             (opcion) => !texto || opcion.name.toLowerCase().includes(texto)

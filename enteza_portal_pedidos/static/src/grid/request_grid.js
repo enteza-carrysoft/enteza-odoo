@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { RequestService } from "../services/request_service";
 import { buildTextIndex, buildTagIndex, matchesText, searchWords } from "../services/catalog_index";
@@ -8,15 +8,26 @@ import { FilterBar } from "../filters/filter_bar";
 import { QtyCell } from "./qty_cell";
 import { AvailabilityDot } from "./availability_dot";
 
-// Al filtrar o cambiar fechas/almacén, cuántas filas visibles se precargan en segundo plano
-// (PRP §6.2). No es un verdadero IntersectionObserver por fila -viable, pero no se puede
-// verificar contra `enteza26` sin instancia de pruebas-: cubre el caso normal (menos de 150
-// artículos visibles a la vez tras filtrar) sin recorrer el catálogo entero de golpe.
-const PRECARGA_DISPONIBILIDAD_MAX = 150;
+// Ventana de render (PRP v2 §5.2, §7.2, F2): cuántas filas se pintan en el DOM de una vez.
+// Antes se pintaban las 1.025 de golpe -con 0 facetas configuradas (verificado por RPC), el
+// cliente estaba casi siempre ante el catálogo entero-, y cada confirmación de cantidad
+// repintaba las 1.025 filas y sus componentes hijos. Cambiar cualquier filtro reinicia la
+// ventana: es progressive disclosure, no solo rendimiento.
+const FILAS_INICIALES = 60;
+const FILAS_INCREMENTO = 60;
+
+// Autoguardado: tiempo de inactividad tras la última tecla antes de reconciliar el cesto
+// completo con el servidor (PRP v2 §2.2, F1/F2).
+const AUTOSAVE_DEBOUNCE_MS = 2500;
+
+const DIAS_CORTOS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
 /**
  * Rejilla de solicitud (PRP §9). Raíz montada como componente público del portal -no del
  * backend-, registrada en `public_components` (PRP §9.1).
+ *
+ * PRP v2 (2026-08-08): reescrita sobre el guardado idempotente del cesto completo (F1), la
+ * ventana de render (F2), la fecha única derivada (D2) y el almacén fijo del cliente (D3).
  */
 export class RequestGrid extends Component {
     static template = "enteza_portal_pedidos.RequestGrid";
@@ -35,19 +46,26 @@ export class RequestGrid extends Component {
         this.tagIndex = new Map();
         this._productsById = new Map();
         this._searchWords = [];
+        this._autosaveTimer = null;
 
         this.state = useState({
             cargando: true,
             error: null,
             order: {},
+            eventDateInput: "",
+            ajustando: false,
+            pickupInput: "",
+            returnInput: "",
             categories: [],
             facets: [],
             products: [],
             lines: {}, // productId -> cantidad
             availability: {}, // productId -> 'green'|'amber'|'red'|'grey'
             boxWarnings: {}, // productId -> aviso de múltiplo devuelto por el servidor
+            avisos: [], // avisos NO bloqueantes del último guardado (antelación, ignorados)
             totals: { untaxed: 0, tax: 0, total: 0 },
             visibleProductIds: [],
+            renderWindow: FILAS_INICIALES,
             filters: {
                 text: "",
                 categoryIds: [],
@@ -57,12 +75,15 @@ export class RequestGrid extends Component {
                 hideUnavailable: false,
             },
             customerNote: "",
-            guardando: false,
+            estadoGuardado: null, // null|'pendiente'|'guardando'|'guardado'|'error'
+            guardandoManual: false,
             enviando: false,
             mensaje: null, // {tipo: 'success'|'danger', texto: '...'}
+            borrador: null, // cesto encontrado en localStorage, distinto del servidor
         });
 
         onWillStart(() => this._cargar());
+        onWillUnmount(() => clearTimeout(this._autosaveTimer));
     }
 
     _leerOrderId() {
@@ -81,32 +102,95 @@ export class RequestGrid extends Component {
 
     async _cargar() {
         try {
-            const payload = await this.service.catalogo();
-            this.state.order = payload.order;
-            this.state.categories = payload.categories;
-            this.state.facets = payload.facets;
-            this.state.products = payload.products;
-            this.state.totals = payload.totals;
-            this.state.customerNote = payload.order.customer_note || "";
-
-            const lineas = {};
-            for (const linea of payload.lines) {
-                lineas[linea.product_id] = linea.qty;
+            const resultado = await this.service.catalogo();
+            if (!resultado.ok) {
+                this.state.error = resultado.error;
+                return;
             }
-            this.state.lines = lineas;
+            this.state.order = resultado.order;
+            this.state.eventDateInput = resultado.order.event_date || "";
+            this.state.categories = resultado.categories;
+            this.state.facets = resultado.facets;
+            this.state.products = resultado.products;
+            this.state.totals = resultado.totals;
+            this.state.customerNote = resultado.order.customer_note || "";
 
-            this._productsById = new Map(payload.products.map((p) => [p.id, p]));
-            this.textIndex = buildTextIndex(payload.products);
-            this.tagIndex = buildTagIndex(payload.products);
+            const lineasServidor = {};
+            for (const linea of resultado.lines) {
+                lineasServidor[linea.product_id] = linea.qty;
+            }
+            this.state.lines = lineasServidor;
+
+            this._productsById = new Map(resultado.products.map((p) => [p.id, p]));
+            this.textIndex = buildTextIndex(resultado.products);
+            this.tagIndex = buildTagIndex(resultado.products);
+
+            // Entrada por el camino corto (PRP v2 §7.1): si el cliente tiene artículos
+            // habituales, el filtro arranca activado -para quien repite, eso ES su pedido.
+            this.state.filters.onlyHabitual = resultado.products.some((p) => p.habitual);
 
             this._recomputeVisible();
             this._precargarDisponibilidad();
+
+            const borradorLocal = this._leerBorradorLocal();
+            if (borradorLocal && JSON.stringify(borradorLocal) !== JSON.stringify(lineasServidor)) {
+                this.state.borrador = borradorLocal;
+            }
         } catch (error) {
             this.state.error = "No se ha podido cargar el catálogo. Recarga la página.";
             console.error(error); // eslint-disable-line no-console
         } finally {
             this.state.cargando = false;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Borrador local (PRP v2 §F2): red de seguridad del guardado diferido
+    // ------------------------------------------------------------------
+
+    _claveLocalStorage() {
+        return `enteza_portal_solicitud_${this.orderId}`;
+    }
+
+    _guardarBorradorLocal() {
+        try {
+            localStorage.setItem(this._claveLocalStorage(), JSON.stringify(this.state.lines));
+        } catch {
+            // Almacenamiento no disponible (modo privado, cuota llena...): no es crítico,
+            // el guardado real sigue yendo al servidor igual.
+        }
+    }
+
+    _leerBorradorLocal() {
+        try {
+            const crudo = localStorage.getItem(this._claveLocalStorage());
+            return crudo ? JSON.parse(crudo) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    _limpiarBorradorLocal() {
+        try {
+            localStorage.removeItem(this._claveLocalStorage());
+        } catch {
+            // no-op
+        }
+    }
+
+    onRecuperarBorrador() {
+        this.state.lines = { ...this.state.borrador };
+        this.state.borrador = null;
+        this._recalcularTotalesProvisional();
+        if (this.state.filters.onlyWithQty) {
+            this._recomputeVisible();
+        }
+        this._scheduleAutosave();
+    }
+
+    onDescartarBorrador() {
+        this.state.borrador = null;
+        this._limpiarBorradorLocal();
     }
 
     // ------------------------------------------------------------------
@@ -156,9 +240,12 @@ export class RequestGrid extends Component {
             }
         }
         this.state.visibleProductIds = visibles;
+        this.state.renderWindow = FILAS_INICIALES;
     }
 
-    /** Contador de una opción de categoría con el resto de filtros aplicados (PRP §9.3). */
+    /** Contador de una opción de categoría con el resto de filtros aplicados (PRP §9.3).
+     * Solo se llama mientras el desplegable correspondiente está abierto -ver
+     * `facet_dropdown.js`-, así que el coste O(productos) no se paga en cada render. */
     categoryOptionCount(categoryId) {
         let n = 0;
         for (const producto of this.state.products) {
@@ -207,6 +294,34 @@ export class RequestGrid extends Component {
         return n;
     }
 
+    // ------------------------------------------------------------------
+    // Ventana de render (PRP v2 §5.2, §7.2, F2)
+    // ------------------------------------------------------------------
+
+    get renderedProductIds() {
+        return this.state.visibleProductIds.slice(0, this.state.renderWindow);
+    }
+
+    get hayMasFilas() {
+        return this.state.visibleProductIds.length > this.state.renderWindow;
+    }
+
+    get filasRestantes() {
+        return Math.max(this.state.visibleProductIds.length - this.state.renderWindow, 0);
+    }
+
+    onMostrarMas() {
+        this.state.renderWindow += FILAS_INCREMENTO;
+    }
+
+    onVerTodoElCatalogo() {
+        this.state.filters = {
+            ...this.state.filters,
+            text: "", categoryIds: [], facetTagIds: {}, onlyHabitual: false,
+        };
+        this._recomputeVisible();
+    }
+
     onTextChange(texto) {
         this.state.filters = { ...this.state.filters, text: texto };
         this._recomputeVisible();
@@ -247,51 +362,101 @@ export class RequestGrid extends Component {
         if (!this.state.order.semaforo_activo) {
             return;
         }
-        if (!(this.state.order.warehouse_id && this.state.order.pickup_date &&
-                this.state.order.return_date)) {
+        if (!(this.state.order.pickup_date && this.state.order.return_date)) {
             return;
         }
         let candidatos;
         if (idsForzados) {
-            candidatos = idsForzados.filter((id) => !(id in this.state.availability));
+            candidatos = idsForzados;
         } else {
-            candidatos = this.state.visibleProductIds
-                .filter((id) => !(id in this.state.availability))
-                .slice(0, PRECARGA_DISPONIBILIDAD_MAX);
+            const enVentana = this.renderedProductIds;
+            const conCantidad = Object.keys(this.state.lines).map((k) => parseInt(k, 10));
+            candidatos = [...new Set([...enVentana, ...conCantidad])];
         }
+        candidatos = candidatos.filter((id) => !(id in this.state.availability));
         if (!candidatos.length) {
             return;
         }
-        const resultado = await this.service.disponibilidad(candidatos);
-        this.state.availability = { ...this.state.availability, ...resultado };
+        const items = candidatos.map((id) => ({ productId: id, qty: this.state.lines[id] || 0 }));
+        const resultado = await this.service.disponibilidad(items);
+        if (!resultado.ok) {
+            // El semáforo es orientativo (PRP §6.4): un fallo aquí no merece un banner de
+            // error, se deja simplemente sin colorear esas filas.
+            return;
+        }
+        this.state.availability = { ...this.state.availability, ...resultado.colors };
+        if (this.state.filters.hideUnavailable) {
+            // PRP v2 §5.6: sin esto, "ocultar sin disponibilidad" quedaba desfasado hasta
+            // la siguiente interacción -los colores llegaban después del filtrado.
+            this._recomputeVisible();
+        }
     }
 
     // ------------------------------------------------------------------
-    // Cabecera (PRP §8.2 /cabecera)
+    // Cabecera: fecha única derivada (D2), sin selector de almacén (D3)
     // ------------------------------------------------------------------
 
-    async onHeaderChange(campo, valor) {
-        const resultado = await this.service.cabecera(
-            { [campo]: valor }, this.state.order.write_date);
-        if (resultado.error) {
-            this.state.mensaje = { tipo: "danger", texto: this._errorLegible(resultado.error) };
+    formatoFechaCorta(iso) {
+        if (!iso) {
+            return "";
+        }
+        const [y, m, d] = iso.split("-").map(Number);
+        const fecha = new Date(y, m - 1, d);
+        return `${DIAS_CORTOS[fecha.getDay()]} ${String(d).padStart(2, "0")}`;
+    }
+
+    _construirHeader() {
+        const header = { event_date: this.state.eventDateInput || null };
+        if (this.state.ajustando) {
+            header.pickup_date = this.state.pickupInput || null;
+            header.return_date = this.state.returnInput || null;
+        }
+        return header;
+    }
+
+    async _guardarHeaderAhora() {
+        const resultado = await this.service.guardar({ header: this._construirHeader() });
+        if (!resultado.ok) {
+            this.state.mensaje = { tipo: "danger", texto: resultado.error };
             return;
         }
-        this.state.order = resultado;
-        // Fechas o almacén distintos invalidan todo lo que hubiera en caché (PRP §6.2).
+        this.state.order = resultado.order;
+        this.state.eventDateInput = resultado.order.event_date || "";
+        this.state.avisos = resultado.warnings || [];
+        // Fechas distintas invalidan todo lo que hubiera en caché (PRP §6.2).
         this.state.availability = {};
         this._precargarDisponibilidad();
     }
 
-    _errorLegible(error) {
-        if (error === "stale") {
-            return "La solicitud se ha actualizado en otra pestaña. Recarga la página.";
-        }
-        return error;
+    async onEventDateChange(valor) {
+        this.state.eventDateInput = valor;
+        await this._guardarHeaderAhora();
+    }
+
+    onAjustarAbrir() {
+        this.state.pickupInput = this.state.order.pickup_date || "";
+        this.state.returnInput = this.state.order.return_date || "";
+        this.state.ajustando = true;
+    }
+
+    onAjustarCancelar() {
+        this.state.ajustando = false;
+    }
+
+    async onAjustarConfirmar() {
+        await this._guardarHeaderAhora();
+        this.state.ajustando = false;
+    }
+
+    async onUsarFechasAutomaticas() {
+        this.state.ajustando = false;
+        this.state.pickupInput = "";
+        this.state.returnInput = "";
+        await this._guardarHeaderAhora();
     }
 
     // ------------------------------------------------------------------
-    // Líneas (PRP §7, §8.2 /lineas)
+    // Líneas (PRP §7) — guardado idempotente del cesto completo (PRP v2 §2.2, F1)
     // ------------------------------------------------------------------
 
     onQtyChange(productId, qty) {
@@ -304,11 +469,8 @@ export class RequestGrid extends Component {
         }
 
         this._recalcularTotalesProvisional();
-
-        this.service.encolarCambioLinea(
-            productId, qty, this.state.order.write_date,
-            (resultado) => this._aplicarResultadoLineas(resultado),
-        );
+        this._guardarBorradorLocal();
+        this._scheduleAutosave();
 
         if (this.state.filters.onlyWithQty) {
             this._recomputeVisible();
@@ -332,28 +494,65 @@ export class RequestGrid extends Component {
         this.state.totals = { ...this.state.totals, untaxed, provisional: true };
     }
 
-    _aplicarResultadoLineas(resultado) {
-        if (!resultado) {
-            return;
-        }
-        if (resultado.error) {
-            this.state.mensaje = { tipo: "danger", texto: this._errorLegible(resultado.error) };
-            return;
-        }
-        this.state.totals = { ...resultado.totals, provisional: false };
-        this.state.order = { ...this.state.order, write_date: resultado.write_date };
+    _construirLineas() {
+        return Object.entries(this.state.lines)
+            .filter(([, qty]) => qty > 0)
+            .map(([productId, qty]) => ({ product_id: parseInt(productId, 10), qty }));
+    }
 
-        const nuevasLineas = { ...this.state.lines };
+    _aplicarResultadoGuardado(resultado) {
+        this.state.totals = { ...resultado.totals, provisional: false };
+        this.state.avisos = resultado.warnings || [];
+
+        const nuevasBoxWarnings = {};
+        for (const aviso of resultado.box_warnings || []) {
+            nuevasBoxWarnings[aviso.product_id] = aviso;
+        }
+        this.state.boxWarnings = nuevasBoxWarnings;
+
+        // El servidor reconcilia el cesto ENTERO en cada llamada, así que su respuesta ya
+        // es autoritativa para toda línea con cantidad -no hace falta fusionar, se
+        // reemplaza (PRP v2 §5.9a: con guardado incremental esto habría sido una
+        // divergencia silenciosa; con el cesto completo es sencillamente el estado real).
+        const nuevasLineas = {};
         for (const linea of resultado.lines) {
             nuevasLineas[linea.product_id] = linea.qty;
         }
         this.state.lines = nuevasLineas;
+    }
 
-        const avisos = {};
-        for (const aviso of resultado.warnings || []) {
-            avisos[aviso.product_id] = aviso;
+    _scheduleAutosave() {
+        clearTimeout(this._autosaveTimer);
+        this.state.estadoGuardado = "pendiente";
+        this._autosaveTimer = setTimeout(() => this._autoguardarAhora(), AUTOSAVE_DEBOUNCE_MS);
+    }
+
+    async _autoguardarAhora() {
+        this.state.estadoGuardado = "guardando";
+        const resultado = await this.service.guardar({ lines: this._construirLineas() });
+        if (!resultado.ok) {
+            this.state.estadoGuardado = "error";
+            this.state.mensaje = { tipo: "danger", texto: resultado.error };
+            return;
         }
-        this.state.boxWarnings = avisos;
+        this._aplicarResultadoGuardado(resultado);
+        this.state.estadoGuardado = "guardado";
+        this._limpiarBorradorLocal();
+    }
+
+    get indicadorGuardado() {
+        switch (this.state.estadoGuardado) {
+            case "guardando":
+                return "Guardando…";
+            case "guardado":
+                return "Guardado";
+            case "error":
+                return "Sin guardar: hubo un error. Pulsa «Guardar».";
+            case "pendiente":
+                return "Cambios sin guardar";
+            default:
+                return "";
+        }
     }
 
     // ------------------------------------------------------------------
@@ -361,39 +560,32 @@ export class RequestGrid extends Component {
     // ------------------------------------------------------------------
 
     async onGuardar() {
-        this.state.guardando = true;
+        clearTimeout(this._autosaveTimer);
+        this.state.guardandoManual = true;
         this.state.mensaje = null;
-        try {
-            const resultado = await this.service.flushLineasAhora(this.state.order.write_date);
-            if (resultado) {
-                this._aplicarResultadoLineas(resultado);
-            }
-            if (!this.state.mensaje) {
-                this.state.mensaje = { tipo: "success", texto: "Guardado." };
-            }
-        } finally {
-            this.state.guardando = false;
+        await this._autoguardarAhora();
+        if (this.state.estadoGuardado === "guardado") {
+            this.state.mensaje = { tipo: "success", texto: "Guardado." };
         }
+        this.state.guardandoManual = false;
     }
 
     async onEnviar() {
+        clearTimeout(this._autosaveTimer);
         this.state.enviando = true;
         this.state.mensaje = null;
-        try {
-            const previas = await this.service.flushLineasAhora(this.state.order.write_date);
-            if (previas) {
-                this._aplicarResultadoLineas(previas);
-            }
-            const resultado = await this.service.enviar(
-                this.state.customerNote, this.state.order.write_date);
-            if (resultado.error) {
-                this.state.mensaje = { tipo: "danger", texto: this._errorLegible(resultado.error) };
-                return;
-            }
-            window.location.href = resultado.redirect;
-        } finally {
+        const resultado = await this.service.enviar({
+            header: this._construirHeader(),
+            lines: this._construirLineas(),
+            customerNote: this.state.customerNote,
+        });
+        if (!resultado.ok) {
+            this.state.mensaje = { tipo: "danger", texto: resultado.error };
             this.state.enviando = false;
+            return;
         }
+        this._limpiarBorradorLocal();
+        window.location.href = resultado.redirect;
     }
 
     async onCancelar() {
@@ -402,7 +594,13 @@ export class RequestGrid extends Component {
                 "¿Seguro que quieres cancelar esta solicitud? Se perderá lo que hayas montado.")) {
             return;
         }
-        await this.service.cancelar();
+        clearTimeout(this._autosaveTimer);
+        const resultado = await this.service.cancelar();
+        if (!resultado.ok) {
+            this.state.mensaje = { tipo: "danger", texto: resultado.error };
+            return;
+        }
+        this._limpiarBorradorLocal();
         window.location.href = "/my/solicitudes";
     }
 

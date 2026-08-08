@@ -19,15 +19,17 @@
                     <h4 class="mb-0">
                         <t t-esc="state.order.ref || 'Borrador'"/>
                     </h4>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="small text-muted enteza_indicador_guardado"
+                              t-esc="indicadorGuardado"/>
                         <button type="button" class="btn btn-outline-secondary"
                                 t-on-click="onCancelar" t-att-disabled="state.enviando">
                             Cancelar
                         </button>
                         <button type="button" class="btn btn-outline-primary"
                                 t-on-click="onGuardar"
-                                t-att-disabled="state.guardando or state.enviando">
-                            <t t-if="state.guardando">Guardando...</t>
+                                t-att-disabled="state.guardandoManual or state.enviando">
+                            <t t-if="state.guardandoManual">Guardando...</t>
                             <t t-else="">Guardar</t>
                         </button>
                         <button type="button" class="btn btn-primary"
@@ -47,38 +49,75 @@
                          t-esc="state.mensaje.texto"/>
                 </t>
 
-                <!-- Cabecera del pedido (PRP §9.2: fija) -->
+                <t t-if="state.avisos.length">
+                    <div class="alert alert-warning mt-2">
+                        <t t-foreach="state.avisos" t-as="aviso" t-key="aviso_index">
+                            <div t-esc="aviso"/>
+                        </t>
+                    </div>
+                </t>
+
+                <!-- Borrador local recuperable (PRP v2 §F2): red de seguridad si un
+                     guardado falló a medio camino en una sesión anterior. -->
+                <t t-if="state.borrador">
+                    <div class="alert alert-info mt-2 d-flex justify-content-between align-items-center">
+                        <span>Encontramos cambios sin guardar de una sesión anterior.</span>
+                        <span class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    t-on-click="onRecuperarBorrador">Recuperar</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="onDescartarBorrador">Descartar</button>
+                        </span>
+                    </div>
+                </t>
+
+                <!-- Cabecera del pedido (PRP §9.2: fija; PRP v2 D2/D3): una sola fecha, el
+                     resto se deriva. Sin selector de almacén: es el de la ficha del
+                     cliente. -->
                 <div class="enteza_header row gy-2 align-items-end my-2">
                     <div class="col-auto">
-                        <label class="form-label small mb-0">Fecha del evento</label>
+                        <label class="form-label small mb-0">¿Qué día es el evento?</label>
                         <input type="date" class="form-control form-control-sm"
-                               t-att-value="state.order.event_date"
-                               t-on-change="(ev) => this.onHeaderChange('event_date', ev.target.value)"/>
+                               t-att-value="state.eventDateInput"
+                               t-on-change="(ev) => this.onEventDateChange(ev.target.value)"/>
                     </div>
-                    <div class="col-auto">
-                        <label class="form-label small mb-0">Entrega</label>
-                        <input type="date" class="form-control form-control-sm"
-                               t-att-value="state.order.pickup_date"
-                               t-on-change="(ev) => this.onHeaderChange('pickup_date', ev.target.value)"/>
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label small mb-0">Retirada</label>
-                        <input type="date" class="form-control form-control-sm"
-                               t-att-value="state.order.return_date"
-                               t-on-change="(ev) => this.onHeaderChange('return_date', ev.target.value)"/>
-                    </div>
-                    <t t-if="state.order.warehouses and state.order.warehouses.length > 1">
+                    <t t-if="state.order.pickup_date and !state.ajustando">
                         <div class="col-auto">
-                            <label class="form-label small mb-0">Almacén</label>
-                            <select class="form-select form-select-sm"
-                                    t-on-change="(ev) => this.onHeaderChange('warehouse_id', parseInt(ev.target.value, 10))">
-                                <t t-foreach="state.order.warehouses" t-as="almacen" t-key="almacen.id">
-                                    <option t-att-value="almacen.id"
-                                            t-att-selected="almacen.id === state.order.warehouse_id">
-                                        <t t-esc="almacen.name"/>
-                                    </option>
-                                </t>
-                            </select>
+                            <div class="small text-muted">
+                                Te lo llevamos el <t t-esc="formatoFechaCorta(state.order.pickup_date)"/>
+                                y lo recogemos el <t t-esc="formatoFechaCorta(state.order.return_date)"/>.
+                                <a href="#" t-on-click.prevent="onAjustarAbrir">ajustar</a>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-if="state.ajustando">
+                        <div class="col-auto">
+                            <label class="form-label small mb-0">Entrega</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   t-model="state.pickupInput"/>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-0">Retirada</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   t-model="state.returnInput"/>
+                        </div>
+                        <div class="col-auto d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    t-on-click="onAjustarConfirmar">Aplicar</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="onAjustarCancelar">Cancelar</button>
+                        </div>
+                        <div class="col-12">
+                            <a href="#" class="small" t-on-click.prevent="onUsarFechasAutomaticas">
+                                Usar fechas automáticas (día antes / día después del evento)
+                            </a>
+                        </div>
+                    </t>
+                    <t t-if="state.order.warehouse_name">
+                        <div class="col-auto">
+                            <div class="small text-muted">
+                                Se sirve desde: <strong t-esc="state.order.warehouse_name"/>
+                            </div>
                         </div>
                     </t>
                     <div class="col text-end">
@@ -96,7 +135,8 @@
                             Comentario para el comercial (opcional)
                         </label>
                         <textarea class="form-control form-control-sm" rows="2"
-                                  t-model="state.customerNote"/>
+                                  t-model="state.customerNote"
+                                  t-on-blur="() => this._guardarHeaderAhora()"/>
                     </div>
                 </div>
 
@@ -111,6 +151,12 @@
                            onFacetChange="(facetId, ids) => this.onFacetChange(facetId, ids)"
                            onToggleChange="(clave, valor) => this.onToggleChange(clave, valor)"
                            onClearAll="() => this.onClearAllFilters()"/>
+
+                <t t-if="state.filters.onlyHabitual or state.filters.text or state.filters.categoryIds.length">
+                    <div class="small mb-2">
+                        <a href="#" t-on-click.prevent="onVerTodoElCatalogo">Ver todo el catálogo</a>
+                    </div>
+                </t>
 
                 <!-- Rejilla (PRP §9.2: cabecera de tabla fija) -->
                 <div class="enteza_table_wrap">
@@ -129,7 +175,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="state.visibleProductIds" t-as="productId" t-key="productId">
+                            <t t-foreach="renderedProductIds" t-as="productId" t-key="productId">
                                 <t t-set="producto" t-value="this._productsById.get(productId)"/>
                                 <tr>
                                     <td t-esc="producto.code"/>
@@ -175,6 +221,15 @@
                             </t>
                         </tbody>
                     </table>
+                    <t t-if="hayMasFilas">
+                        <div class="text-center p-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    t-on-click="onMostrarMas">
+                                Mostrar <t t-esc="Math.min(60, filasRestantes)"/> más
+                                (quedan <t t-esc="filasRestantes"/>)
+                            </button>
+                        </div>
+                    </t>
                 </div>
 
                 <!-- Pie (PRP §9.2: fijo) -->

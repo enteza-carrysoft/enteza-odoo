@@ -58,6 +58,27 @@
     </template>
 
     <!--
+        Aviso cuando el cliente no tiene almacén habitual configurado (PRP v2 D3): el
+        almacén ya NO se elige desde el portal -Sevilla es Vimaple y Jerez es Stileum, y
+        dejar que el cliente salte de sociedad sin que nadie lo decida era el defecto §5.8
+        del diseño anterior-. Sin este dato en su ficha, no se crea ninguna solicitud
+        huérfana: se le pide que hable con su comercial.
+    -->
+    <template id="portal_sin_almacen" name="Sin almacén asignado">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Todavía no puedes montar una solicitud</h4>
+                <p>
+                    Antes de que puedas pedir material desde aquí, tu comercial tiene que
+                    indicar desde qué almacén se te sirve habitualmente.
+                </p>
+                <p class="mb-0">Contacta con tu comercial y vuelve a intentarlo.</p>
+            </div>
+        </t>
+    </template>
+
+    <!--
         Lista de solicitudes (PRP §8.1, §9.4). Mismo idioma que las páginas nativas del
         portal (`portal.portal_table` + `portal.pager`), para que se sienta parte del mismo
         sitio y no un módulo aparte.
@@ -112,7 +133,9 @@
                 </div>
             </t>
 
-            <!-- Repetir un pedido anterior (PRP §9.4): copia las líneas con fechas vacías. -->
+            <!-- Repetir un pedido anterior (PRP §9.4): copia las líneas con fechas vacías.
+                 PRP v2 §F3: si ya hay una solicitud en composición, esto REEMPLAZA su
+                 contenido -de ahí la confirmación antes de enviar el formulario. -->
             <t t-if="pedidos_repetibles">
                 <h3 class="mt-4">Repetir un pedido anterior</h3>
                 <div class="row">
@@ -125,7 +148,8 @@
                                         <span t-field="pedido.event_date"/>
                                     </p>
                                     <form t-attf-action="/my/solicitudes/#{pedido.id}/repetir"
-                                          method="post" class="mt-auto">
+                                          method="post" class="mt-auto"
+                                          onsubmit="return confirm('Si ya tienes una solicitud a medio montar, esto reemplazará sus líneas por las de este pedido. ¿Continuar?');">
                                         <input type="hidden" name="csrf_token"
                                                t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-secondary btn-sm">
@@ -157,8 +181,15 @@
     </template>
 
     <!--
-        Resumen + diff de contrapropuesta (PRP §11). Estático: se renderiza en QWeb del lado
-        servidor, no en OWL.
+        Resumen + diff de contrapropuesta (PRP §11) + diálogo cliente-comercial (PRP v2 §8).
+        Estático: se renderiza en QWeb del lado servidor, no en OWL -el diálogo no necesita
+        la reactividad de la rejilla, y montar otro componente OWL solo para esto habría
+        sido peso sin beneficio.
+
+        🔴 Renderizado propio, no `portal.message_thread` (existe en la instancia, `ir.ui.view`
+        id 606, pero su contrato de `t-set` no está verificado contra `enteza26`, y un
+        `t-call` mal parametrizado es un 500 en la página — mismo criterio que
+        `portal.portal_docs_entry` más arriba).
     -->
     <template id="portal_solicitud_resumen" name="Resumen de la solicitud">
         <t t-call="portal.portal_layout">
@@ -172,6 +203,10 @@
                     <t t-esc="estados_portal.get(order.enteza_portal_state)"/>
                 </span>
             </div>
+
+            <t t-if="error_dialogo">
+                <div class="alert alert-danger" t-esc="error_dialogo"/>
+            </t>
 
             <div class="row mb-4">
                 <div class="col-md-6">
@@ -229,16 +264,93 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Decisión pendiente, por encima de la conversación (PRP v2 §8.3):
+                     «Acepto» no confirma el pedido, la firma sigue siendo la nativa del
+                     presupuesto -esto solo avisa al comercial de que puede prepararlo. -->
+                <div class="d-flex gap-2 mb-3">
+                    <form t-attf-action="/my/solicitud/#{order.id}/aceptar" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <button type="submit" class="btn btn-success">
+                            Acepto la propuesta
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-toggle="collapse" data-bs-target="#enteza_form_cambios">
+                        Pedir cambios
+                    </button>
+                </div>
+                <div class="collapse mb-3" id="enteza_form_cambios">
+                    <form t-attf-action="/my/solicitud/#{order.id}/cambios" method="post" class="card card-body">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label class="form-label small">¿Qué te gustaría cambiar?</label>
+                        <textarea name="body" class="form-control mb-2" rows="3" required="required"/>
+                        <button type="submit" class="btn btn-primary align-self-start">Enviar</button>
+                    </form>
+                </div>
+
                 <p class="text-muted">
-                    Revisa el presupuesto actualizado y, si estás de acuerdo, acéptalo y
-                    fírmalo desde ahí.
+                    También puedes revisar el presupuesto actualizado y, si estás de
+                    acuerdo, aceptarlo y firmarlo directamente desde ahí.
                 </p>
             </t>
 
             <t t-if="order.enteza_portal_state == 'composing'">
-                <a t-attf-href="/my/solicitud/#{order.id}" class="btn btn-primary">
+                <a t-attf-href="/my/solicitud/#{order.id}" class="btn btn-primary mb-3">
                     Seguir editando
                 </a>
+            </t>
+
+            <!-- Conversación con el comercial (PRP v2 §8.3). Los 3 últimos mensajes
+                 visibles, el resto plegado -progressive disclosure: no hace falta ver todo
+                 el histórico para escribir un mensaje nuevo. -->
+            <t t-if="order.enteza_portal_state != 'none'">
+                <h5 class="mt-4">Conversación</h5>
+                <t t-if="not mensajes">
+                    <p class="text-muted small">Todavía no hay mensajes.</p>
+                </t>
+                <t t-else="">
+                    <div class="enteza_mensajes">
+                        <t t-foreach="mensajes[:3]" t-as="mensaje" t-key="mensaje['id']">
+                            <div class="border rounded p-2 mb-2">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <strong t-esc="mensaje['author']"/>
+                                    <span t-esc="mensaje['date']"/>
+                                </div>
+                                <div t-raw="mensaje['body']"/>
+                            </div>
+                        </t>
+                    </div>
+                    <t t-if="len(mensajes) > 3">
+                        <a href="#" class="small" data-bs-toggle="collapse"
+                           data-bs-target="#enteza_mensajes_resto">
+                            Ver los <t t-esc="len(mensajes) - 3"/> anteriores
+                        </a>
+                        <div class="collapse mt-2" id="enteza_mensajes_resto">
+                            <t t-foreach="mensajes[3:]" t-as="mensaje" t-key="mensaje['id']">
+                                <div class="border rounded p-2 mb-2">
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <strong t-esc="mensaje['author']"/>
+                                        <span t-esc="mensaje['date']"/>
+                                    </div>
+                                    <div t-raw="mensaje['body']"/>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+
+                <a href="#" class="small d-block mt-2" data-bs-toggle="collapse"
+                   data-bs-target="#enteza_form_mensaje">
+                    Escribir al comercial
+                </a>
+                <div class="collapse mt-2" id="enteza_form_mensaje">
+                    <form t-attf-action="/my/solicitud/#{order.id}/mensaje" method="post" class="card card-body">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <textarea name="body" class="form-control mb-2" rows="3" required="required"/>
+                        <button type="submit" class="btn btn-primary align-self-start">Enviar</button>
+                    </form>
+                </div>
             </t>
         </t>
     </template>

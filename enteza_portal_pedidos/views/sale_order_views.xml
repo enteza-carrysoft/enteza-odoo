@@ -28,6 +28,13 @@
                 <button name="action_enteza_portal_marcar_contrapropuesta" type="object"
                         string="Marcar como contrapropuesta"
                         invisible="enteza_portal_state != 'reviewing'"/>
+                <!-- PRP v2 §8.1/§8.5: único camino de vuelta a `composing` desde fuera del
+                     propio cliente -sin esto, una solicitud mal formada se quedaba
+                     atascada en el backend sin que el comercial pudiera devolvérsela. -->
+                <button name="action_enteza_portal_devolver" type="object"
+                        string="Devolver al cliente"
+                        confirm="La solicitud volverá a estar en composición y el cliente podrá editarla. ¿Continuar?"
+                        invisible="enteza_portal_state not in ('submitted', 'reviewing', 'counter')"/>
             </xpath>
 
             <!-- Ribbon con el estado del portal (uno por estado: `web_ribbon` no admite un

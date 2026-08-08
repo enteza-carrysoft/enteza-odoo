@@ -8,6 +8,8 @@ class TestPackaging(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.warehouse = cls.env['stock.warehouse'].search(
+            [('company_id', '=', cls.env.company.id)], limit=1)
         cls.uom_unidades = cls.env.ref('uom.product_uom_unit')
         cls.caja_25 = cls.env['uom.uom'].create({
             'name': 'CAJA 25 UDS (test)',
@@ -65,18 +67,20 @@ class TestPackaging(TransactionCase):
         self.assertIsNone(aviso)
 
     def test_lines_update_reports_warning_without_blocking(self):
-        """`/lineas` avisa del múltiplo pero SÍ guarda la cantidad tal cual (PRP §7): el
-        servidor no redondea por su cuenta, solo avisa. El bloqueo real es al enviar."""
+        """`guardar` avisa del múltiplo pero SÍ guarda la cantidad tal cual (PRP §7): el
+        servidor no redondea por su cuenta, solo avisa. El bloqueo real es al enviar
+        (PRP v2: sustituye a `_enteza_portal_actualizar_lineas`)."""
         partner = self.env['res.partner'].create({
             'name': 'Cliente packaging',
             'enteza_portal_pedidos_ok': True,
+            'enteza_portal_warehouse_id': self.warehouse.id,
         })
         pedido = self.env['sale.order']._enteza_portal_get_or_create(partner)
-        resultado = pedido._enteza_portal_actualizar_lineas([
+        resultado = pedido._enteza_portal_guardar(lines=[
             {'product_id': self.producto_con_caja.product_variant_id.id, 'qty': 90},
         ])
-        self.assertEqual(len(resultado['warnings']), 1)
-        self.assertEqual(resultado['warnings'][0]['round_down'], 75)
+        self.assertEqual(len(resultado['box_warnings']), 1)
+        self.assertEqual(resultado['box_warnings'][0]['round_down'], 75)
         linea = pedido.order_line.filtered(
             lambda l: l.product_id == self.producto_con_caja.product_variant_id)
         self.assertEqual(linea.product_uom_qty, 90)

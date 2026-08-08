@@ -43,5 +43,55 @@
             </field>
         </record>
 
+        <!--
+            Aviso al cliente de que hay una contrapropuesta esperándole (PRP v2 §8.2). Sin
+            esto, la única forma de enterarse era volver a entrar en el portal por su cuenta
+            -el chatter ya lo tiene, pero antes de esta versión el cliente ni siquiera era
+            seguidor del pedido, así que ni eso le llegaba.
+        -->
+        <record id="mail_template_portal_contrapropuesta" model="mail.template">
+            <field name="name">Portal: contrapropuesta del comercial</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Tenemos una propuesta para tu solicitud: {{ object.enteza_portal_ref or object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="email_to">{{ object.partner_id.email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-family: sans-serif;">
+    <p>Hola <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>
+        Hemos revisado tu solicitud <strong t-out="object.enteza_portal_ref or object.name"/>
+        y te proponemos algunos cambios en las cantidades, según la disponibilidad real para
+        tu evento.
+    </p>
+    <p>Entra en tu cuenta para ver el detalle y decidir si la aceptas o nos escribes.</p>
+</div>
+            </field>
+        </record>
+
+        <!--
+            Aviso al cliente de que su solicitud vuelve a estar editable (PRP v2 §8.1/§8.2,
+            botón «Devolver al cliente» del comercial).
+        -->
+        <record id="mail_template_portal_devuelta" model="mail.template">
+            <field name="name">Portal: solicitud devuelta para editar</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Puedes editar tu solicitud: {{ object.enteza_portal_ref or object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="email_to">{{ object.partner_id.email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-family: sans-serif;">
+    <p>Hola <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>
+        Tu comercial te ha devuelto la solicitud
+        <strong t-out="object.enteza_portal_ref or object.name"/> para que la revises o la
+        completes antes de que la valoremos otra vez.
+    </p>
+    <p>Entra en tu cuenta para editarla cuando quieras.</p>
+</div>
+            </field>
+        </record>
+
     </data>
 </odoo>

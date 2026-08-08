@@ -1,32 +1,35 @@
 <templates xml:space="preserve">
     <t t-name="enteza_portal_pedidos.QtyCell">
         <div class="enteza_qty_cell">
-            <input type="text" inputmode="decimal"
-                   t-att-value="state.texto"
+            <input type="text" inputmode="decimal" t-ref="input"
                    t-att-disabled="props.disabled"
-                   t-att-class="{ 'enteza_qty_input': true, 'form-control': true, 'form-control-sm': true, 'is-invalid': avisoCaja }"
+                   t-att-class="{ 'enteza_qty_input': true, 'form-control': true, 'form-control-sm': true, 'is-invalid': state.aviso }"
                    t-on-input="onInput"
                    t-on-focus="onFocus"
                    t-on-blur="onBlur"
                    t-on-keydown="onKeydown"/>
-            <t t-if="avisoCaja">
-                <div class="enteza_qty_aviso small text-danger mt-1">
-                    La caja son <t t-esc="box"/> uds.
-                    <br/>
-                    <button type="button" class="btn btn-link btn-sm p-0 me-2"
-                            t-on-click="() => this.aplicarRedondeo(avisoCaja.abajo)">
-                        ↓ <t t-esc="avisoCaja.abajo"/>
-                        (<t t-esc="avisoCaja.cajasAbajo"/>
-                        <t t-if="avisoCaja.cajasAbajo == 1">caja</t>
-                        <t t-else="">cajas</t>)
-                    </button>
-                    <button type="button" class="btn btn-link btn-sm p-0"
-                            t-on-click="() => this.aplicarRedondeo(avisoCaja.arriba)">
-                        ↑ <t t-esc="avisoCaja.arriba"/>
-                        (<t t-esc="avisoCaja.cajasArriba"/> cajas)
-                    </button>
-                </div>
-            </t>
+            <!-- Altura reservada (SCSS): con el aviso plegado por defecto, la fila no
+                 cambia de alto cuando aparece -era la causa del "salta la pantalla" al
+                 teclear (PRP v2 §5.1, §F2). -->
+            <div class="enteza_qty_aviso_slot">
+                <t t-if="state.aviso">
+                    <div class="enteza_qty_aviso small text-danger">
+                        La caja son <t t-esc="box"/> uds.
+                        <button type="button" class="btn btn-link btn-sm p-0 me-2"
+                                t-on-click="() => this.aplicarRedondeo(state.aviso.abajo)">
+                            ↓ <t t-esc="state.aviso.abajo"/>
+                            (<t t-esc="state.aviso.cajasAbajo"/>
+                            <t t-if="state.aviso.cajasAbajo == 1">caja</t>
+                            <t t-else="">cajas</t>)
+                        </button>
+                        <button type="button" class="btn btn-link btn-sm p-0"
+                                t-on-click="() => this.aplicarRedondeo(state.aviso.arriba)">
+                            ↑ <t t-esc="state.aviso.arriba"/>
+                            (<t t-esc="state.aviso.cajasArriba"/> cajas)
+                        </button>
+                    </div>
+                </t>
+            </div>
         </div>
     </t>
 </templates>

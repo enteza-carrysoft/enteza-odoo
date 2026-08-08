@@ -91,6 +91,12 @@ $enteza-filterbar-h: 5.5rem;
 }
 
 // Celda de cantidad (PRP §7, §9.5): compacta, con el chip de redondeo debajo.
+//
+// 🔴 PRP v2 §5.1/F2: `enteza_qty_aviso_slot` reserva altura fija SIEMPRE -con o sin aviso
+// dentro-, para que la fila no cambie de alto cuando aparece o desaparece el aviso de caja
+// mientras se teclea. Era la causa visible del "se renderiza otra vez" reportado: el bloque
+// de aviso aparecía y desaparecía bajo el input en cada tecla, empujando el resto de la
+// tabla.
 .enteza_qty_cell {
     .enteza_qty_input {
         width: 5rem;
@@ -98,10 +104,19 @@ $enteza-filterbar-h: 5.5rem;
         display: inline-block;
     }
 
+    .enteza_qty_aviso_slot {
+        min-height: 1.1rem;
+    }
+
     .enteza_qty_aviso {
         max-width: 12rem;
         line-height: 1.2;
     }
+}
+
+.enteza_indicador_guardado {
+    min-width: 8rem;
+    text-align: right;
 }
 
 // Desplegable de faceta (PRP §9.3): construido a mano -no usa el JS de Bootstrap-, así que

@@ -33,6 +33,8 @@ class TestAvailability(TransactionCase):
         return self.env['res.partner'].create({
             'name': 'Cliente disponibilidad',
             'enteza_portal_pedidos_ok': True,
+            # D3 (PRP v2): `_enteza_portal_get_or_create` exige almacén, ya no elige uno.
+            'enteza_portal_warehouse_id': self.warehouse.id,
         })
 
     def _crear_alquiler_confirmado(self, qty, desde, hasta):
@@ -82,17 +84,23 @@ class TestAvailability(TransactionCase):
         self.assertEqual(color, 'red')
 
     def test_result_is_only_a_color_string(self):
-        """El endpoint nunca devuelve la cantidad libre (PRP §6.3): solo el color."""
+        """El endpoint nunca devuelve la cantidad libre (PRP §6.3): solo el color.
+
+        🔴 PRP v2: `_enteza_portal_disponibilidad` recibe `items = [{product_id, qty}]`
+        -la cantidad tecleada, no la de la línea en base de datos- en vez de una lista de
+        ids sueltos, porque con guardado diferido esa cantidad puede no estar escrita
+        todavía cuando el cliente pide el semáforo.
+        """
         partner = self._crear_cliente_portal()
         pedido = self.env['sale.order']._enteza_portal_get_or_create(partner)
         pedido.write({
-            'warehouse_id': self.warehouse.id,
             'rental_start_date': '2026-09-11 08:00:00',
             'rental_return_date': '2026-09-13 18:00:00',
         })
         self.env.company.enteza_portal_semaforo = True
 
-        resultado = pedido._enteza_portal_disponibilidad([self.product.id])
+        resultado = pedido._enteza_portal_disponibilidad(
+            [{'product_id': self.product.id, 'qty': 1}])
         self.assertIsInstance(resultado[self.product.id], str)
         self.assertIn(resultado[self.product.id], ('green', 'amber', 'red', 'grey'))
 
@@ -103,13 +111,13 @@ class TestAvailability(TransactionCase):
         partner = self._crear_cliente_portal()
         pedido = self.env['sale.order']._enteza_portal_get_or_create(partner)
         pedido.write({
-            'warehouse_id': self.warehouse.id,
             'rental_start_date': '2026-09-11 08:00:00',
             'rental_return_date': '2026-09-13 18:00:00',
         })
         self.env.company.enteza_portal_semaforo = False
 
-        resultado = pedido._enteza_portal_disponibilidad([self.product.id])
+        resultado = pedido._enteza_portal_disponibilidad(
+            [{'product_id': self.product.id, 'qty': 1}])
         self.assertEqual(resultado[self.product.id], 'grey')
 
     def test_non_storable_product_is_always_grey(self):

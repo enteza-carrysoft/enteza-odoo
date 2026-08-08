@@ -10,8 +10,20 @@ comprobar la propiedad del pedido) ya ha hecho `.sudo()` sobre el recordset de e
 grupo Portal no tiene acceso de escritura sobre `sale.order` ni de lectura sobre
 `product.product` (verificado por RPC, PRP §8.2), así que sin ese sudo previo estos métodos
 no podrían ni leer el catálogo.
+
+🔴 **PRP v2 (2026-08-08, `PRP-PORTAL-PEDIDOS-V2-REPARACION.md`)**: este fichero incorpora la
+reparación de los tres síntomas reportados (repintado al teclear, fallo al grabar, fallo al
+enviar) y las cuatro decisiones D1-D4 tomadas con el usuario. El cambio de fondo es el
+guardado: de escritura incremental por línea con bloqueo optimista por `write_date`
+(inviable: crear una línea puede tocar la cabecera vía `rental_custom._get_pricelist_price`
+→ `_rental_set_dates`, moviendo el candado que la propia petición usa) a **guardado
+idempotente del cesto completo** en `_enteza_portal_guardar`.
 """
 import math
+from datetime import datetime, time, timedelta
+
+import pytz
+from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -20,6 +32,13 @@ from odoo.tools import float_compare
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    # Hora de negocio para las fechas derivadas de `event_date` (D2) y para los ajustes
+    # manuales del cliente: nunca se deja que Odoo complete un `Datetime` con 00:00 UTC
+    # (PRP v2 §5.9f — con esa hora, la entrega "significa" las 02:00 en España y no cuadra
+    # con nada real).
+    _ENTEZA_PORTAL_HORA_ENTREGA = time(8, 0)
+    _ENTEZA_PORTAL_HORA_RETIRADA = time(20, 0)
 
     enteza_portal_ref = fields.Char(
         string="Referencia de solicitud", copy=False, index=True, readonly=True,
@@ -74,6 +93,12 @@ class SaleOrder(models.Model):
         devuelve la misma en vez de crear otra. `partner` siempre es
         `request.env.user.partner_id` — el propio usuario logado —, así que no hay
         comprobación de propiedad que hacer: por construcción no puede pedirse la de otro.
+
+        🔴 D3 (PRP v2): el almacén NO se elige desde el portal, es siempre
+        `partner.enteza_portal_warehouse_id`. El controlador comprueba que existe ANTES de
+        llamar aquí (`controllers/portal.py`); este método no tiene fallback a "cualquier
+        almacén" — asignar uno arbitrario entre Sevilla (Vimaple) y Jerez (Stileum) sería
+        peor que no crear nada, porque cambia de sociedad sin que nadie lo decida.
         """
         existente = self.sudo().search([
             ('partner_id', '=', partner.id),
@@ -83,15 +108,29 @@ class SaleOrder(models.Model):
             return existente
 
         almacen = partner.enteza_portal_warehouse_id
-        if not almacen:
-            almacen = self.env['stock.warehouse'].sudo().search([], limit=1)
+        vals = self._enteza_portal_vals_nueva_solicitud(partner, almacen)
+        return self.sudo().with_context(in_rental_app=True).create(vals)
 
-        return self.sudo().with_context(in_rental_app=True).create({
+    def _enteza_portal_vals_nueva_solicitud(self, partner, almacen):
+        """Valores comunes para crear una solicitud nueva (PRP v2 D1, D3).
+
+        🔴 D1: si el cliente no tiene comercial propio (`partner.user_id`), se asigna el
+        comercial por defecto de la compañía (`res.company.enteza_portal_user_id`).
+        Verificado por RPC el 2026-08-08: el único cliente con portal (`AGRIPINA`) no tiene
+        comercial. Sin este campo, el aviso de la solicitud se lo habría mandado a sí mismo
+        -el pedido se crea con `sudo()`, pero `sudo()` mantiene el `uid`: `self.env.user`
+        sigue siendo el usuario del portal.
+        """
+        comercial = partner.user_id or almacen.company_id.enteza_portal_user_id
+        vals = {
             'partner_id': partner.id,
-            'company_id': almacen.company_id.id if almacen else self.env.company.id,
-            'warehouse_id': almacen.id if almacen else False,
+            'company_id': almacen.company_id.id,
+            'warehouse_id': almacen.id,
             'enteza_portal_state': 'composing',
-        })
+        }
+        if comercial:
+            vals['user_id'] = comercial.id
+        return vals
 
     def action_enteza_portal_repetir(self):
         """Solicitud nueva copiando las líneas de un pedido pasado (PRP §9.4).
@@ -99,25 +138,39 @@ class SaleOrder(models.Model):
         Cantidades incluidas, fechas vacías: el cliente solo tiene que revisarlas y enviar.
         Solo copia material físico de alquiler — los servicios (fianza, portes...) se
         renegocian aparte en cada evento.
+
+        🔴 PRP v2 §5.7 / F3: si el cliente ya tiene una solicitud en `composing`, NO se crea
+        otra (rompía la invariante "una sola solicitud en composición" — la anterior quedaba
+        huérfana e invisible). Se reutiliza esa misma, reemplazando sus líneas por las del
+        pedido de origen. El aviso de que esto reemplaza el contenido actual lo hace la
+        interfaz antes de llamar aquí (confirmación en el navegador).
         """
         self.ensure_one()
         lineas_copiables = self.order_line.filtered(
             lambda l: l.product_id and l.product_id.rent_ok and l.product_id.type == 'consu'
         )
-        return self.sudo().with_context(in_rental_app=True).create({
-            'partner_id': self.partner_id.id,
-            'company_id': self.company_id.id,
-            'warehouse_id': self.warehouse_id.id,
-            'enteza_portal_state': 'composing',
-            'order_line': [
-                (0, 0, {
-                    'product_id': linea.product_id.id,
-                    'product_uom_qty': linea.product_uom_qty,
-                    'product_uom_id': linea.product_uom_id.id,
-                })
-                for linea in lineas_copiables
-            ],
-        })
+
+        destino = self.sudo().search([
+            ('partner_id', '=', self.partner_id.id),
+            ('enteza_portal_state', '=', 'composing'),
+        ], limit=1, order='id desc')
+
+        if not destino:
+            almacen = self.partner_id.enteza_portal_warehouse_id or self.warehouse_id
+            vals = self._enteza_portal_vals_nueva_solicitud(self.partner_id, almacen)
+            destino = self.sudo().with_context(in_rental_app=True).create(vals)
+        else:
+            destino.order_line.filtered(lambda l: l.product_id).sudo().unlink()
+
+        for linea in lineas_copiables:
+            self.env['sale.order.line'].sudo().with_context(in_rental_app=True).create({
+                'order_id': destino.id,
+                'product_id': linea.product_id.id,
+                'product_uom_qty': linea.product_uom_qty,
+                'product_uom_id': linea.product_uom_id.id,
+                'is_rental': True,
+            })
+        return destino
 
     # ------------------------------------------------------------------
     # Guardas de estado
@@ -133,7 +186,7 @@ class SaleOrder(models.Model):
             ))
 
     # ------------------------------------------------------------------
-    # Cabecera (PRP §8.2 /cabecera, §8.3)
+    # Cabecera (PRP §8.2 /cabecera, §8.3) — D2, D3
     # ------------------------------------------------------------------
 
     def _enteza_portal_fecha_local(self, valor):
@@ -147,20 +200,28 @@ class SaleOrder(models.Model):
             return False
         return fields.Datetime.context_timestamp(self, valor).date().isoformat()
 
+    def _enteza_portal_fecha_negocio(self, fecha, hora):
+        """`date` + hora de negocio en la zona del usuario → `Datetime` UTC para escribir.
+
+        Sustituye a dejar que Odoo complete un `<input type="date">` con `00:00 UTC`
+        (PRP v2 §5.9f): esa hora no significa nada de verdad -en España cuadraba de
+        milagro-, y la hora de entrega/retirada es información real para el almacén.
+        """
+        tz = pytz.timezone(self.env.user.tz or 'Europe/Madrid')
+        local = tz.localize(datetime.combine(fecha, hora))
+        return fields.Datetime.to_string(local.astimezone(pytz.UTC).replace(tzinfo=None))
+
     def _enteza_portal_payload_cabecera(self):
         self.ensure_one()
-        almacenes = self.env['stock.warehouse'].sudo().search([])
         moneda = self.currency_id or self.company_id.currency_id
         return {
             'id': self.id,
             'ref': self.enteza_portal_ref or False,
             'state': self.enteza_portal_state,
-            'write_date': fields.Datetime.to_string(self.write_date),
             'event_date': fields.Date.to_string(self.event_date) if self.event_date else False,
             'pickup_date': self._enteza_portal_fecha_local(self.rental_start_date),
             'return_date': self._enteza_portal_fecha_local(self.rental_return_date),
-            'warehouse_id': self.warehouse_id.id or False,
-            'warehouses': [{'id': a.id, 'name': a.name} for a in almacenes],
+            'warehouse_name': self.warehouse_id.name or '',
             'semaforo_activo': self.company_id.enteza_portal_semaforo,
             'dias_minimos': self.company_id.enteza_portal_dias_minimos,
             'customer_note': self.enteza_portal_customer_note or '',
@@ -171,66 +232,111 @@ class SaleOrder(models.Model):
             },
         }
 
-    def _enteza_portal_actualizar_cabecera(self, vals):
-        """Escribe fecha de evento, entrega, retirada y almacén (PRP §8.2).
+    def _enteza_portal_escribir_header(self, header):
+        """Valida y escribe la cabecera. Devuelve una lista de avisos que NO bloquean
+        (p.ej. antelación mínima insuficiente) — el primer problema que SÍ bloquea se lanza
+        como `UserError` (PRP v2 §7.3: un error cada vez, no un muro).
 
-        `rental_custom` ya calcula `rental_start_date`/`rental_return_date` a partir de
-        `event_date` mediante un `onchange` del cliente web de backend, que aquí no se
-        dispara: el portal manda las tres fechas explícitas y se escriben tal cual.
+        🔴 D2: el cliente indica solo `event_date`. Entrega y retirada se DERIVAN en el
+        servidor (evento ∓ 1 día, mismo criterio que `rental_custom.event_date_change` en
+        el backend) salvo que el cliente las haya ajustado a mano («ajustar» en la
+        interfaz), en cuyo caso `header` trae `pickup_date`/`return_date` explícitos.
         """
         self.ensure_one()
-        self._enteza_portal_check_composing()
+        avisos = []
 
-        vals_pedido = {}
-        if 'event_date' in vals:
-            vals_pedido['event_date'] = vals['event_date'] or False
-        if vals.get('pickup_date'):
-            vals_pedido['rental_start_date'] = vals['pickup_date']
-        if vals.get('return_date'):
-            vals_pedido['rental_return_date'] = vals['return_date']
-        if vals.get('warehouse_id'):
-            almacen = self.env['stock.warehouse'].sudo().browse(vals['warehouse_id'])
-            if almacen.exists():
-                vals_pedido['warehouse_id'] = almacen.id
-                vals_pedido['company_id'] = almacen.company_id.id
+        if 'event_date' not in header:
+            return avisos
 
-        if vals_pedido:
-            self.write(vals_pedido)
-        return self._enteza_portal_payload_cabecera()
+        event_date_str = header.get('event_date')
+        if not event_date_str:
+            self.write({'event_date': False})
+            return avisos
+
+        event_date = fields.Date.from_string(event_date_str)
+
+        pickup_override = header.get('pickup_date')
+        return_override = header.get('return_date')
+        pickup_date_obj = (
+            fields.Date.from_string(pickup_override) if pickup_override
+            else event_date - timedelta(days=1)
+        )
+        return_date_obj = (
+            fields.Date.from_string(return_override) if return_override
+            else event_date + timedelta(days=1)
+        )
+
+        if pickup_date_obj > return_date_obj:
+            raise UserError(_(
+                "La fecha de entrega no puede ser posterior a la de retirada."))
+        if not (pickup_date_obj <= event_date <= return_date_obj):
+            raise UserError(_(
+                "La fecha del evento tiene que estar entre la entrega y la retirada."))
+
+        self.write({
+            'event_date': event_date,
+            'rental_start_date': self._enteza_portal_fecha_negocio(
+                pickup_date_obj, self._ENTEZA_PORTAL_HORA_ENTREGA),
+            'rental_return_date': self._enteza_portal_fecha_negocio(
+                return_date_obj, self._ENTEZA_PORTAL_HORA_RETIRADA),
+        })
+
+        dias_minimos = self.company_id.enteza_portal_dias_minimos
+        if dias_minimos:
+            antelacion = (pickup_date_obj - fields.Date.context_today(self)).days
+            if antelacion < dias_minimos:
+                avisos.append(_(
+                    "Pides el material con %(dias)s día(s) de antelación; lo habitual son "
+                    "al menos %(minimos)s. Puede que no dé tiempo a prepararlo — el "
+                    "comercial lo revisará igualmente.",
+                    dias=max(antelacion, 0), minimos=dias_minimos))
+
+        return avisos
 
     # ------------------------------------------------------------------
     # Catálogo (PRP §8.3)
     # ------------------------------------------------------------------
 
     def _enteza_portal_productos_habituales(self):
-        """Ids de producto que el cliente ya alquiló alguna vez (PRP §9.4)."""
+        """Ids de producto que el cliente ya alquiló alguna vez, en los últimos 24 meses
+        (PRP §9.4; PRP v2 §5.9g: antes era un `search_read` sin límite de TODO el histórico
+        en cada carga del catálogo).
+        """
         self.ensure_one()
-        lineas = self.env['sale.order.line'].sudo().search_read(
+        desde = fields.Date.to_string(fields.Date.context_today(self) - relativedelta(months=24))
+        grupos = self.env['sale.order.line'].sudo().read_group(
             domain=[
                 ('order_id.partner_id', 'child_of', self.partner_id.commercial_partner_id.id),
                 ('order_id.state', '=', 'sale'),
+                ('order_id.date_order', '>=', desde),
                 ('product_id', '!=', False),
             ],
             fields=['product_id'],
+            groupby=['product_id'],
         )
-        return {linea['product_id'][0] for linea in lineas if linea['product_id']}
+        return {grupo['product_id'][0] for grupo in grupos if grupo['product_id']}
 
-    def _enteza_portal_payload_catalogo(self):
-        """Catálogo completo servido de una vez (PRP §2.3, §8.3): se filtra en el navegador.
+    def _enteza_portal_catalogo_valido(self):
+        """Productos que el portal sirve de verdad (PRP §8.3): recordset, no ids sueltos,
+        para poder usarse tanto en el payload como en la reconciliación de líneas.
 
         🔴 `type='consu'` además de `rent_ok`: hay artículos de servicio marcados como
         alquilables (fianza, portes, precio por plaza...) que no son material de camión.
         """
         self.ensure_one()
-        productos = self.env['product.product'].sudo().search([
+        return self.env['product.product'].sudo().search([
             ('rent_ok', '=', True),
             ('type', '=', 'consu'),
             ('enteza_portal_ok', '=', True),
             ('active', '=', True),
         ])
 
+    def _enteza_portal_payload_catalogo(self):
+        """Catálogo completo servido de una vez (PRP §2.3, §8.3): se filtra en el navegador."""
+        self.ensure_one()
+        productos = self._enteza_portal_catalogo_valido()
+
         habituales = self._enteza_portal_productos_habituales()
-        lineas_por_producto = {linea.product_id.id: linea for linea in self.order_line}
 
         categorias = {}
         etiquetas_usadas = set()
@@ -326,123 +432,180 @@ class SaleOrder(models.Model):
         }
 
     # ------------------------------------------------------------------
-    # Líneas (PRP §8.2 /lineas)
+    # Guardado idempotente del cesto completo (PRP v2 §2.2, §9) — F1
     # ------------------------------------------------------------------
 
-    def _enteza_portal_actualizar_lineas(self, changes):
-        """Altas/bajas/cambios de cantidad en una sola transacción (PRP §8.2).
+    def _enteza_portal_reconciliar_lineas(self, lines, warnings):
+        """Reconcilia el cesto COMPLETO contra las líneas existentes: crea, actualiza y
+        BORRA lo que ya no esté en `lines` (PRP v2 §9) — `lines` es el estado entero, no un
+        delta. Ignora en silencio productos que no cumplan el filtro del catálogo servido
+        (nunca se acepta un producto que el portal no serviría) y lo anota en `warnings`.
 
-        :param changes: lista de `{'product_id': int, 'qty': float}`
+        :param warnings: lista donde se acumulan avisos que NO bloquean (se modifica in situ).
+        :return: avisos de múltiplo de caja, uno por producto con la cantidad mal redondeada.
+        """
+        self.ensure_one()
+        Product = self.env['product.product'].sudo()
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        lineas_por_producto = {l.product_id.id: l for l in self.order_line if l.product_id}
+        catalogo_valido_ids = set(self._enteza_portal_catalogo_valido().ids)
+
+        cesto = {}
+        ignorados = False
+        for item in lines:
+            pid = item.get('product_id')
+            qty = float(item.get('qty') or 0.0)
+            if not pid or qty <= 0:
+                continue
+            if pid not in catalogo_valido_ids:
+                ignorados = True
+                continue
+            cesto[pid] = qty
+
+        if ignorados:
+            warnings.append(_(
+                "Algunos artículos de tu cesto ya no están disponibles en el portal y no "
+                "se han guardado."))
+
+        for pid in list(lineas_por_producto):
+            if pid not in cesto:
+                lineas_por_producto.pop(pid).unlink()
+
+        box_warnings = []
+        for pid, qty in cesto.items():
+            linea = lineas_por_producto.get(pid)
+            if linea:
+                if float_compare(linea.product_uom_qty, qty, precision_digits=precision) != 0:
+                    linea.write({'product_uom_qty': qty})
+            else:
+                producto = Product.browse(pid)
+                linea = self.env['sale.order.line'].sudo().with_context(
+                    in_rental_app=True
+                ).create({
+                    'order_id': self.id,
+                    'product_id': pid,
+                    'product_uom_qty': qty,
+                    'product_uom_id': producto.uom_id.id,
+                    # El portal solo sirve productos `rent_ok`, así que este valor siempre
+                    # es correcto — no se depende de que `in_rental_app` fije un default en
+                    # la línea, porque verificado por RPC el 2026-08-08 no lo hace.
+                    'is_rental': True,
+                })
+                lineas_por_producto[pid] = linea
+
+            aviso = self._enteza_portal_check_multiplo(linea.product_id, qty)
+            if aviso:
+                box_warnings.append(aviso)
+
+        return box_warnings
+
+    def _enteza_portal_guardar(self, header=None, lines=None, customer_note=None):
+        """Guardado idempotente del cesto completo. **El método central de F1.**
+
+        Sustituye a los antiguos `_enteza_portal_actualizar_cabecera` /
+        `_enteza_portal_actualizar_lineas`, que escribían incrementalmente y arbitraban la
+        escritura con un bloqueo optimista por `write_date` que la propia maquinaria de
+        alquiler invalidaba sola: crear una línea de alquiler dispara
+        `rental_custom.SaleOrderLine._get_pricelist_price` → `order_id._rental_set_dates()`,
+        que puede escribir en la cabecera y mover el `write_date` que la misma petición
+        estaba usando como candado.
+
+        Llamar dos veces con el mismo cesto dos veces deja el mismo resultado: es la
+        propiedad que hace segura la reconexión tras un fallo de red o un doble clic — el
+        bloqueo optimista sobra porque ya no hace falta detectar una carrera, todo el estado
+        se reconcilia en cada llamada.
+
+        :return: payload autoritativo `{order, lines, totals, warnings, box_warnings}`.
         """
         self.ensure_one()
         self._enteza_portal_check_composing()
 
-        Product = self.env['product.product'].sudo()
-        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
-        lineas_por_producto = {linea.product_id.id: linea for linea in self.order_line}
+        warnings = []
+        if header:
+            warnings += self._enteza_portal_escribir_header(header)
+        if customer_note is not None:
+            self.enteza_portal_customer_note = customer_note
 
-        avisos = []
-        lineas_afectadas = []
-        for cambio in changes:
-            producto = Product.browse(cambio.get('product_id'))
-            if not producto.exists():
-                continue
-            qty = float(cambio.get('qty') or 0.0)
-            if qty < 0:
-                qty = 0.0
-
-            linea = lineas_por_producto.get(producto.id)
-
-            if float_compare(qty, 0.0, precision_digits=precision) <= 0:
-                if linea:
-                    linea.unlink()
-                    lineas_por_producto.pop(producto.id, None)
-                continue
-
-            if linea:
-                linea.write({'product_uom_qty': qty})
-            else:
-                linea = self.env['sale.order.line'].with_context(
-                    in_rental_app=True
-                ).create({
-                    'order_id': self.id,
-                    'product_id': producto.id,
-                    'product_uom_qty': qty,
-                    'product_uom_id': producto.uom_id.id,
-                })
-                lineas_por_producto[producto.id] = linea
-
-            lineas_afectadas.append(linea.id)
-
-            aviso = self._enteza_portal_check_multiplo(producto, qty)
-            if aviso:
-                avisos.append(aviso)
+        box_warnings = []
+        if lines is not None:
+            box_warnings = self._enteza_portal_reconciliar_lineas(lines, warnings)
 
         return {
-            'ok': True,
-            'lines_updated': lineas_afectadas,
-            'warnings': avisos,
+            'order': self._enteza_portal_payload_cabecera(),
             'lines': self._enteza_portal_payload_lineas(),
             'totals': self._enteza_portal_payload_totales(),
-            'write_date': fields.Datetime.to_string(self.write_date),
+            'warnings': warnings,
+            'box_warnings': box_warnings,
         }
 
     # ------------------------------------------------------------------
     # Disponibilidad por lotes (PRP §6.2, §8.2 /disponibilidad)
     # ------------------------------------------------------------------
 
-    def _enteza_portal_disponibilidad(self, product_ids):
+    def _enteza_portal_disponibilidad(self, items):
         """Semáforo por lotes, máximo 50 productos por llamada (PRP §6.2).
 
-        Nunca devuelve la cantidad libre: solo el color (PRP §6.3). Si el semáforo está
-        desactivado, o faltan fechas/almacén, se devuelve `grey` para todo sin consultar el
-        motor de disponibilidad.
+        🔴 PRP v2: recibe `items = [{product_id, qty}]` -la cantidad tecleada por producto-
+        en vez de leerla de la línea en base de datos: con guardado diferido (F1), esa
+        cantidad puede no estar escrita todavía cuando el cliente pide el semáforo.
+
+        Nunca devuelve la cantidad libre: solo el color. Si el semáforo está desactivado, o
+        faltan fechas/almacén, se devuelve `grey` para todo sin consultar el motor de
+        disponibilidad.
         """
         self.ensure_one()
-        product_ids = list(product_ids)[:50]
+        items = list(items)[:50]
 
         if not self.company_id.enteza_portal_semaforo:
-            return {pid: 'grey' for pid in product_ids}
+            return {item.get('product_id'): 'grey' for item in items}
         if not (self.warehouse_id and self.rental_start_date and self.rental_return_date):
-            return {pid: 'grey' for pid in product_ids}
+            return {item.get('product_id'): 'grey' for item in items}
 
         Product = self.env['product.product'].sudo()
         almacen = self.warehouse_id
         desde, hasta = self.rental_start_date, self.rental_return_date
-        lineas_por_producto = {linea.product_id.id: linea for linea in self.order_line}
+        lineas_por_producto = {l.product_id.id: l for l in self.order_line}
 
         resultado = {}
-        for pid in product_ids:
+        for item in items:
+            pid = item.get('product_id')
             producto = Product.browse(pid)
             if not producto.exists():
                 resultado[pid] = 'grey'
                 continue
+            qty = float(item.get('qty') or 0.0)
             linea = lineas_por_producto.get(pid)
-            qty = linea.product_uom_qty if linea else 0.0
             resultado[pid] = producto._enteza_portal_semaforo(
                 qty, desde, hasta, almacen, ignorar_linea=linea)
         return resultado
 
     # ------------------------------------------------------------------
-    # Envío (PRP §4.1) — el único punto crítico de concurrencia
+    # Envío (PRP §4.1) — guardado + envío atómicos (PRP v2 §2.2, §5.4)
     # ------------------------------------------------------------------
 
-    def action_enteza_portal_submit(self, customer_note=None):
-        """Cierra la composición y avisa al comercial. Idempotente.
-
-        Un doble clic del cliente no debe duplicar ni la referencia ni el aviso: si la
+    def action_enteza_portal_submit(self, header=None, lines=None, customer_note=None):
+        """Guarda el cesto completo y envía, en una sola transacción. Idempotente: un
+        doble clic del cliente no debe duplicar ni la referencia ni el aviso — si la
         solicitud ya no está en `composing`, se devuelve el estado actual sin repetir nada.
+
+        🔴 PRP v2: recibe el cesto (antes solo `customer_note`) precisamente para eliminar
+        la carrera entre "guardar" y "enviar" del diseño anterior: ya no hay una escritura
+        previa cuyo resultado (`write_date`) el envío tenga que validar contra sí mismo.
         """
         self.ensure_one()
         if self.enteza_portal_state != 'composing':
             return self._enteza_portal_payload_cabecera()
 
+        self._enteza_portal_guardar(header=header, lines=lines, customer_note=customer_note)
+
         if not (self.event_date and self.rental_start_date and self.rental_return_date):
             raise UserError(_(
-                "Faltan datos del evento: indica la fecha del evento, la de entrega y la de "
-                "retirada antes de enviar la solicitud."))
+                "Faltan datos del evento: indica la fecha del evento antes de enviar la "
+                "solicitud."))
         if not self.warehouse_id:
-            raise UserError(_("Indica desde qué almacén quieres que se sirva el material."))
+            raise UserError(_(
+                "No tienes un almacén asignado para servirte. Contacta con tu comercial "
+                "antes de continuar."))
 
         lineas = self.order_line.filtered(lambda l: l.product_id and l.product_uom_qty > 0)
         if not lineas:
@@ -500,10 +663,13 @@ class SaleOrder(models.Model):
         self.write({
             'enteza_portal_ref': referencia,
             'enteza_portal_snapshot': snapshot,
-            'enteza_portal_customer_note': customer_note or self.enteza_portal_customer_note,
             'enteza_portal_submitted_on': fields.Datetime.now(),
             'enteza_portal_state': 'submitted',
         })
+
+        # Sin esto, ninguna respuesta del comercial en el chatter llega al cliente: no
+        # queda como seguidor de su propio pedido (PRP v2 §5.9j / §8.2).
+        self.message_subscribe(partner_ids=self.partner_id.ids)
 
         resumen = _(
             "Solicitud %(ref)s enviada desde el portal por %(cliente)s.\n"
@@ -543,7 +709,7 @@ class SaleOrder(models.Model):
         return {'ok': True}
 
     # ------------------------------------------------------------------
-    # Lado del comercial (PRP §10)
+    # Lado del comercial (PRP §10) — F4
     # ------------------------------------------------------------------
 
     def action_enteza_portal_tomar(self):
@@ -560,15 +726,52 @@ class SaleOrder(models.Model):
         """«Marcar como contrapropuesta»: `reviewing` → `counter`.
 
         No envía nada por sí sola: el comercial ajusta las cantidades y usa el botón nativo
-        «Enviar por correo» (PRP §10 punto 4). Esto solo deja constancia de en qué punto
-        está el diálogo con el cliente, para que el portal le muestre el diff en vez de la
-        pantalla de edición.
+        «Enviar por correo» (PRP §10 punto 4) para el presupuesto en sí. Esto deja
+        constancia de en qué punto está el diálogo, para que el portal le muestre el diff en
+        vez de la pantalla de edición, y avisa al cliente por correo (PRP v2 §8.2) de que
+        hay una propuesta esperándole — si no, no tiene forma de enterarse.
         """
         self.ensure_one()
         if self.enteza_portal_state != 'reviewing':
             raise UserError(_(
                 "Solo se puede marcar como contrapropuesta una solicitud en revisión."))
         self.enteza_portal_state = 'counter'
+        if self.company_id.enteza_portal_aviso_email:
+            plantilla = self.env.ref(
+                'enteza_portal_pedidos.mail_template_portal_contrapropuesta',
+                raise_if_not_found=False)
+            if plantilla:
+                plantilla.send_mail(self.id, force_send=False)
+
+    def action_enteza_portal_devolver(self, motivo=None):
+        """«Devolver al cliente» (PRP v2 §8.1, botón nuevo en `views/sale_order_views.xml`):
+        único camino de vuelta a `composing` desde fuera del propio cliente. Sin esto, una
+        solicitud mal formada se quedaba atascada en el backend sin que el comercial
+        pudiera devolvérsela al cliente para que la corrigiera él mismo.
+        """
+        self.ensure_one()
+        if self.enteza_portal_state not in ('submitted', 'reviewing', 'counter'):
+            raise UserError(_(
+                "Solo se puede devolver al cliente una solicitud enviada, en revisión o "
+                "con contrapropuesta."))
+        self.enteza_portal_state = 'composing'
+
+        resumen = _("Solicitud devuelta al cliente para que la edite.")
+        if self.state == 'sent':
+            resumen += "\n\n" + str(_(
+                "⚠ El presupuesto ya se había enviado al cliente por el canal nativo de "
+                "Ventas: puede que esté viendo una versión distinta a la que ahora vuelve "
+                "a editar."))
+        if motivo:
+            resumen += "\n\n" + motivo
+        self.message_post(body=resumen, subtype_xmlid='mail.mt_comment')
+
+        if self.company_id.enteza_portal_aviso_email:
+            plantilla = self.env.ref(
+                'enteza_portal_pedidos.mail_template_portal_devuelta',
+                raise_if_not_found=False)
+            if plantilla:
+                plantilla.send_mail(self.id, force_send=False)
 
     def action_confirm(self):
         """Al confirmarse (aceptación directa o tras contrapropuesta), la solicitud del
@@ -589,6 +792,96 @@ class SaleOrder(models.Model):
             lambda o: o.enteza_portal_state not in ('none', 'closed')
         ).write({'enteza_portal_state': 'closed'})
         return resultado
+
+    # ------------------------------------------------------------------
+    # Diálogo cliente ↔ comercial (PRP v2 §8) — F4
+    # ------------------------------------------------------------------
+
+    def _enteza_portal_mensajes(self):
+        """Mensajes visibles para el cliente en el portal (PRP v2 §8.3).
+
+        🔴 Filtra `subtype_id.internal`: sin este filtro el cliente vería las notas
+        internas que el comercial escribe en el chatter, pensadas solo para uso interno. Es
+        el fallo de seguridad más fácil de cometer aquí — lleva test obligatorio
+        (`test_mensajes_portal_no_filtran_notas_internas`).
+        """
+        self.ensure_one()
+        mensajes = self.message_ids.filtered(
+            lambda m: m.message_type == 'comment'
+            and not (m.subtype_id and m.subtype_id.internal)
+        ).sorted(key=lambda m: m.date or fields.Datetime.now(), reverse=True)
+        return [{
+            'id': mensaje.id,
+            'author': mensaje.author_id.display_name or mensaje.email_from or _("Enteza"),
+            'date': fields.Datetime.to_string(mensaje.date) if mensaje.date else False,
+            'body': mensaje.body,
+            'is_customer': mensaje.author_id == self.partner_id,
+        } for mensaje in mensajes]
+
+    def action_enteza_portal_mensaje(self, body):
+        """El cliente escribe al comercial desde el resumen de su solicitud."""
+        self.ensure_one()
+        if not body or not body.strip():
+            raise UserError(_("Escribe algo antes de enviarlo."))
+        self.message_post(
+            body=body, message_type='comment', subtype_xmlid='mail.mt_comment',
+            author_id=self.partner_id.id,
+        )
+        if self.user_id:
+            self.activity_schedule(
+                'mail.mail_activity_data_todo',
+                summary=_(
+                    "Mensaje del cliente en %s", self.enteza_portal_ref or self.name),
+                user_id=self.user_id.id,
+            )
+
+    def action_enteza_portal_pedir_cambios(self, body):
+        """`counter` → `reviewing`: el cliente no está de acuerdo con la contrapropuesta y
+        pide que se revise otra vez.
+        """
+        self.ensure_one()
+        if self.enteza_portal_state != 'counter':
+            raise UserError(_("Solo se pueden pedir cambios sobre una contrapropuesta."))
+        if not body or not body.strip():
+            raise UserError(_("Cuéntanos qué quieres cambiar antes de enviarlo."))
+        self.message_post(
+            body=body, message_type='comment', subtype_xmlid='mail.mt_comment',
+            author_id=self.partner_id.id,
+        )
+        self.enteza_portal_state = 'reviewing'
+        if self.user_id:
+            self.activity_schedule(
+                'mail.mail_activity_data_todo',
+                summary=_(
+                    "%(cliente)s pide cambios en %(ref)s",
+                    cliente=self.partner_id.display_name,
+                    ref=self.enteza_portal_ref or self.name),
+                note=body,
+                user_id=self.user_id.id,
+            )
+
+    def action_enteza_portal_aceptar(self):
+        """El cliente acepta la contrapropuesta. NO confirma el pedido — el cierre real
+        sigue siendo la firma nativa del presupuesto (`/my/quotes/<id>`, «Aceptar y
+        firmar»): esto solo avisa al comercial de que puede prepararlo para firma.
+        """
+        self.ensure_one()
+        if self.enteza_portal_state != 'counter':
+            raise UserError(_("Solo se puede aceptar una contrapropuesta."))
+        self.message_post(
+            body=_(
+                "El cliente ha aceptado la propuesta. Pendiente de que firme el "
+                "presupuesto."),
+            subtype_xmlid='mail.mt_comment')
+        if self.user_id:
+            self.activity_schedule(
+                'mail.mail_activity_data_todo',
+                summary=_(
+                    "%(cliente)s ha aceptado la propuesta de %(ref)s",
+                    cliente=self.partner_id.display_name,
+                    ref=self.enteza_portal_ref or self.name),
+                user_id=self.user_id.id,
+            )
 
     # ------------------------------------------------------------------
     # Trazabilidad para el portal (PRP §11)

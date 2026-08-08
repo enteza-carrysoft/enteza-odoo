@@ -20,3 +20,10 @@ class ResCompany(models.Model):
         string="Avisar al comercial también por correo", default=True,
         help="Además de la actividad y el mensaje en el chatter, envía la plantilla de "
              "correo al comercial asignado cuando el cliente envía una solicitud.")
+
+    enteza_portal_user_id = fields.Many2one(
+        'res.users', string="Comercial por defecto del portal",
+        help="A quién se asigna una solicitud del portal cuando el cliente no tiene "
+             "comercial propio en su ficha (`res.partner.user_id` vacío). Verificado por "
+             "RPC el 2026-08-08: el único cliente con acceso al portal no tiene comercial "
+             "asignado, así que sin este campo la solicitud se autoasignaría al cliente.")
