@@ -188,33 +188,85 @@ class SaleOrderLine(models.Model):
     total_rented = fields.Float(string='Total Alquilado', compute='_compute_total_availability', store=False)
     total_available = fields.Float(string='Total Disponible', compute='_compute_total_availability', store=False)
 
-    @api.depends('product_id', 'reservation_begin', 'return_date')
+    @api.depends('product_id', 'reservation_begin', 'return_date', 'order_id.warehouse_id')
     def _compute_total_availability(self):
+        """Delega en el motor nativo de disponibilidad (`sale_stock_renting`), en vez de
+        sumar `stock.quant` y líneas a mano (2026-08-08, PRP v2 D4).
+
+        El cálculo manual anterior sumaba TODOS los `stock.quant` internos sin filtrar por
+        almacén ni compañía, y TODAS las líneas `state='sale'` del sistema entero: mezclaba
+        Vimaple y Stileum en una sola cifra. Además, cuando `is_rental` era `False` -una
+        línea de servicio (fianza, portes) dentro de un pedido de alquiler- el `if` no
+        entraba nunca y los tres campos se quedaban SIN asignar: un campo calculado no
+        almacenado sin asignar lanza `ValueError` al leerlo. Verificado por RPC el
+        2026-08-08: 2.008 líneas de pedidos de alquiler reales tienen `is_rental=False`
+        (son servicios), así que no era un caso de laboratorio.
+
+        Los tres campos se asignan SIEMPRE, incluso a 0.0, para que ese `ValueError` no
+        pueda volver a producirse.
+        """
         for line in self:
-            if line.is_rental:
-                availability = self.get_total_availability(line.product_id.id, line.reservation_begin, line.return_date)
+            if line.is_rental and line.product_id and line.reservation_begin and line.return_date:
+                almacen = line.order_id.warehouse_id
+                availability = self.get_total_availability(
+                    line.product_id.id, line.reservation_begin, line.return_date,
+                    warehouse_id=almacen.id if almacen else False,
+                    ignored_soline_id=line.id if line.state == 'draft' else False,
+                )
                 line.total_stock = availability['total_stock']
                 line.total_rented = availability['total_rented']
                 line.total_available = availability['total_available']
+            else:
+                line.total_stock = 0.0
+                line.total_rented = 0.0
+                line.total_available = 0.0
 
     @api.model
-    def get_total_availability(self, product_id, start_date, end_date):
+    def get_total_availability(self, product_id, start_date, end_date, warehouse_id=False,
+                                ignored_soline_id=False):
+        """Réplica del cálculo de `enteza_portal_pedidos.product.product._enteza_portal_disponible`
+        (mismo patrón, ya documentado y verificado contra `enteza26` el 2026-08-02 en
+        `enteza_prestamo_intercompania`): usa `_get_unavailable_qty` y
+        `_get_virtual_unavailable_qty_in_rent`, ambos de `sale_stock_renting`, en vez de
+        reimplementar la disponibilidad a mano.
+
+        Se duplica aquí en vez de llamar al método del otro módulo porque
+        `enteza_portal_pedidos` DEPENDE de `rental_custom` (no al revés, PRP original §2.5):
+        invertir esa dependencia para reutilizar código habría sido un cambio de alcance
+        mayor que el propio arreglo.
+
+        :param warehouse_id: sin él (llamada desde el widget `QtyAtDate`, que no tiene un
+            pedido concreto detrás) se calcula sin restringir por almacén, igual que hacía
+            el cálculo manual anterior.
+        :param ignored_soline_id: la propia línea que se está mirando, para que no compita
+            consigo misma. Solo tiene efecto si esa línea sigue en borrador -en cuanto se
+            confirma, ya hay un movimiento de stock real que `virtual_available` descuenta,
+            y sumarla dos veces fue un bug ya cazado una vez en este repositorio (ver
+            docstring de `_enteza_portal_disponible`).
+        """
         product = self.env['product.product'].browse(product_id)
+        contexto = {'from_date': start_date, 'to_date': end_date}
+        if warehouse_id:
+            contexto['warehouse_id'] = warehouse_id
 
-        total_stock = sum(self.env['stock.quant'].search([
-            ('product_id', '=', product_id),
-            ('location_id.usage', '=', 'internal')
-        ]).mapped('quantity'))
+        ahora = fields.Datetime.now()
+        if start_date and start_date <= ahora:
+            total_stock = product.with_context(**contexto).qty_available
+        else:
+            contexto_virtual = dict(contexto, from_date=False, to_date=start_date)
+            total_stock = product.with_context(**contexto_virtual).virtual_available
+            total_stock += product._get_virtual_unavailable_qty_in_rent(
+                pivot_date=start_date,
+                ignored_soline_id=ignored_soline_id,
+                warehouse_id=warehouse_id,
+            )
 
-        total_rented = sum(self.env['sale.order.line'].search([
-            ('product_id', '=', product_id),
-            ('is_rental', '=', True),
-            ('reservation_begin', '<=', end_date),
-            ('return_date', '>=', start_date),
-            ('state', '=', 'sale')
-        ]).mapped('product_uom_qty'))
-
-        total_available = total_stock - total_rented
+        total_rented = product._get_unavailable_qty(
+            start_date, end_date,
+            ignored_soline_id=ignored_soline_id,
+            warehouse_id=warehouse_id,
+        )
+        total_available = max(total_stock - total_rented, 0.0)
 
         return {
             'product_id': product.display_name,
@@ -225,6 +277,9 @@ class SaleOrderLine(models.Model):
 
     @api.model
     def get_availability_data(self, product_id, start_date, end_date):
-        availability_data = self.get_total_availability(product_id, start_date, end_date)
-        return availability_data
+        """Llamado por RPC desde `rental_availability_popup.js` (widget `QtyAtDate` del
+        formulario de línea de pedido). Firma sin `warehouse_id`: se mantiene así a
+        propósito porque ese widget pregunta "en todos los almacenes", no en uno concreto.
+        """
+        return self.get_total_availability(product_id, start_date, end_date)
 
