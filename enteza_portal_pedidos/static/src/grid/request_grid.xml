@@ -1,6 +1,6 @@
 <templates xml:space="preserve">
     <t t-name="enteza_portal_pedidos.RequestGrid">
-        <div class="enteza_request_grid">
+        <div class="enteza_request_grid" t-ref="root">
 
             <t t-if="state.cargando">
                 <div class="text-center p-5">
@@ -14,7 +14,16 @@
             </t>
 
             <t t-else="">
-                <!-- Barra de acciones (PRP §9.2: fija) -->
+                <!-- Bloque superior fijo (PRP §9.2): toolbar + avisos + cabecera + filtros,
+                     TODO dentro de un único `position: sticky` (ver portal_pedidos.scss).
+                     Antes cada banda era sticky por su cuenta con un `top` sumado a mano en
+                     rem, y en cuanto la cabecera creció (fecha del evento, «ajustar»,
+                     almacén, comentario) esas sumas dejaron de cuadrar: la banda de
+                     filtros -con el buscador- se quedaba tapada bajo la cabecera. Con un
+                     solo bloque, el navegador coloca todo bien sin necesidad de medir nada
+                     a mano. -->
+                <div class="enteza_sticky_top" t-ref="stickyTop">
+                <!-- Barra de acciones -->
                 <div class="enteza_toolbar d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h4 class="mb-0">
                         <t t-esc="state.order.ref || 'Borrador'"/>
@@ -157,6 +166,7 @@
                         <a href="#" t-on-click.prevent="onVerTodoElCatalogo">Ver todo el catálogo</a>
                     </div>
                 </t>
+                </div>
 
                 <!-- Rejilla (PRP §9.2: cabecera de tabla fija) -->
                 <div class="enteza_table_wrap">

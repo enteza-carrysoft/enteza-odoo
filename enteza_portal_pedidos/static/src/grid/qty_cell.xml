@@ -15,6 +15,7 @@
                 <t t-if="state.aviso">
                     <div class="enteza_qty_aviso small text-danger">
                         La caja son <t t-esc="box"/> uds.
+                        <br/>
                         <button type="button" class="btn btn-link btn-sm p-0 me-2"
                                 t-on-click="() => this.aplicarRedondeo(state.aviso.abajo)">
                             ↓ <t t-esc="state.aviso.abajo"/>

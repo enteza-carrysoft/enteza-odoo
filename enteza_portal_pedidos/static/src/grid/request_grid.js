@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart, onWillUnmount } from "@odoo/owl";
+import { Component, useState, useRef, onWillStart, onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { RequestService } from "../services/request_service";
 import { buildTextIndex, buildTagIndex, matchesText, searchWords } from "../services/catalog_index";
@@ -48,6 +48,14 @@ export class RequestGrid extends Component {
         this._searchWords = [];
         this._autosaveTimer = null;
 
+        // Referencias para medir en tiempo real la altura del bloque superior fijo
+        // (toolbar + avisos + cabecera + filtros) y pegar la cabecera de la tabla justo
+        // debajo -en vez de sumar estimaciones en rem a mano, que dejaron de cuadrar en
+        // cuanto la cabecera creció (PRP v2, corrección reportada en real el 2026-08-08).
+        this.rootRef = useRef("root");
+        this.stickyTopRef = useRef("stickyTop");
+        this._resizeObserver = null;
+
         this.state = useState({
             cargando: true,
             error: null,
@@ -83,7 +91,35 @@ export class RequestGrid extends Component {
         });
 
         onWillStart(() => this._cargar());
-        onWillUnmount(() => clearTimeout(this._autosaveTimer));
+        // `onMounted` no basta por sí solo: mientras `state.cargando` es `true` la
+        // plantilla muestra el spinner y `.enteza_sticky_top` ni existe en el DOM todavía
+        // -se monta más tarde, en un PATCH cuando `_cargar()` termina-. `onPatched` reintenta
+        // en cada repintado, pero `_intentarObservarSticky` es idempotente (no hace nada si
+        // ya hay un observer activo), así que no cuesta nada de más.
+        onMounted(() => this._intentarObservarSticky());
+        onPatched(() => this._intentarObservarSticky());
+        onWillUnmount(() => {
+            clearTimeout(this._autosaveTimer);
+            if (this._resizeObserver) {
+                this._resizeObserver.disconnect();
+            }
+        });
+    }
+
+    _intentarObservarSticky() {
+        if (this._resizeObserver || !this.stickyTopRef.el || !this.rootRef.el) {
+            return;
+        }
+        if (typeof ResizeObserver === "undefined") {
+            // Navegador sin soporte (residual): se queda con el valor de arranque de
+            // `--enteza-sticky-h` del SCSS -peor que medido, pero no rompe nada.
+            return;
+        }
+        this._resizeObserver = new ResizeObserver(() => {
+            const alto = this.stickyTopRef.el.getBoundingClientRect().height;
+            this.rootRef.el.style.setProperty("--enteza-sticky-h", `${Math.ceil(alto)}px`);
+        });
+        this._resizeObserver.observe(this.stickyTopRef.el);
     }
 
     _leerOrderId() {
