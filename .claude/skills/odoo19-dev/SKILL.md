@@ -165,9 +165,20 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
   "material de alquiler" filtrar **`type == 'consu'` (Bienes) Y `rent_ok`**. Detalle en
   `references/alquiler-en-19.md`.
 - **Actualizar un módulo por la interfaz puede decir que ha ido bien sin haber aplicado
-  nada.** Verificar siempre por RPC (`latest_version` frente al `version` del manifiesto), y
-  si hay dudas, lanzar la actualización directamente por RPC — ver
-  `references/instancia-y-conexion.md`.
+  nada.** Verificar siempre por RPC comparando `latest_version` contra el `version` del
+  manifiesto, y si hay dudas, lanzar la actualización directamente por RPC — ver
+  `references/instancia-y-conexion.md`. 🔴 **Los nombres de estos dos campos en
+  `ir.module.module` están al revés de lo intuitivo**: el campo técnico `latest_version` es
+  el que de verdad está **instalado** en la base de datos (su `field_description` es
+  «Installed Version»), y `installed_version` es el que refleja el manifiesto **en disco**
+  ahora mismo (su `field_description` es «Latest Version»). Comprobado el 2026-08-08 con
+  `rental_custom`: tras dos `git pull` sin pulsar Actualizar entre medias, `latest_version`
+  se había quedado dos versiones atrás (`19.0.1.5.2`) mientras `installed_version` ya
+  mostraba la del repositorio (`19.0.1.7.0`) — el módulo seguía funcionando con el código
+  viejo y fallaba con `UndefinedColumn` al leer campos que sólo existían en el `.py`, no en
+  la tabla. Confirmar siempre con
+  `search ir.model.fields '[["model","=","ir.module.module"],["name","in",["latest_version","installed_version"]]]' name,field_description`
+  si hay alguna duda de cuál es cuál.
 - **Vistas calendario**: en la 19 **no existe una vista calendario propia del alquiler**.
   `sale_renting.rental_order_view_calendar` es una herencia `primary` de
   `sale.view_sale_order_calendar` que solo cambia cuatro atributos. Para un calendario nuevo,
