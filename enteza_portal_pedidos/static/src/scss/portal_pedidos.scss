@@ -1,0 +1,131 @@
+// Portal de pedidos (PRP §9.2): tres bandas fijas + cabecera de tabla fija + pie fijo, para
+// que el scroll de 80-100 líneas nunca haga perder ni el contexto ni los botones.
+//
+// ⚠️ Los `top` encadenados son una estimación en rem, no medida contra un render real (no
+// hay entorno de pruebas para este módulo). Si al desplegar las bandas se solapan o dejan un
+// hueco, es un ajuste de estos tres valores, no un fallo de la maqueta.
+
+$enteza-toolbar-h: 3.25rem;
+$enteza-header-h: 6.5rem;
+$enteza-filterbar-h: 5.5rem;
+
+.enteza_request_grid {
+    display: flex;
+    flex-direction: column;
+
+    .enteza_toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: var(--bs-body-bg, #fff);
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    }
+
+    .enteza_header {
+        position: sticky;
+        top: $enteza-toolbar-h;
+        z-index: 25;
+        background: var(--bs-body-bg, #fff);
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    }
+
+    .enteza_filter_bar {
+        position: sticky;
+        top: $enteza-toolbar-h + $enteza-header-h;
+        z-index: 20;
+        background: var(--bs-body-bg, #fff);
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    }
+
+    .enteza_mensaje {
+        white-space: pre-line;
+    }
+
+    .enteza_table_wrap {
+        overflow-x: auto;
+    }
+
+    .enteza_table {
+        margin-bottom: 0;
+        font-size: 0.85rem;
+
+        thead th {
+            position: sticky;
+            top: $enteza-toolbar-h + $enteza-header-h + $enteza-filterbar-h;
+            z-index: 15;
+            background: var(--bs-body-bg, #fff);
+            white-space: nowrap;
+        }
+
+        td, th {
+            vertical-align: middle;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+
+    .enteza_footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        background: var(--bs-body-bg, #fff);
+        padding: 0.4rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color, #dee2e6);
+    }
+}
+
+// Semáforo de disponibilidad (PRP §6.3): solo color, nunca la cantidad.
+.enteza_disp_dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background-color: var(--bs-secondary-bg, #e9ecef);
+
+    &.enteza_disp_dot_green { background-color: var(--bs-success, #198754); }
+    &.enteza_disp_dot_amber { background-color: var(--bs-warning, #ffc107); }
+    &.enteza_disp_dot_red   { background-color: var(--bs-danger, #dc3545); }
+    &.enteza_disp_dot_grey  { background-color: var(--bs-secondary-bg, #e9ecef); }
+}
+
+// Celda de cantidad (PRP §7, §9.5): compacta, con el chip de redondeo debajo.
+.enteza_qty_cell {
+    .enteza_qty_input {
+        width: 5rem;
+        text-align: right;
+        display: inline-block;
+    }
+
+    .enteza_qty_aviso {
+        max-width: 12rem;
+        line-height: 1.2;
+    }
+}
+
+// Desplegable de faceta (PRP §9.3): construido a mano -no usa el JS de Bootstrap-, así que
+// la visibilidad la controla directamente la clase `show`.
+.enteza_facet_dropdown {
+    .enteza_facet_menu {
+        display: none;
+        min-width: 14rem;
+        max-height: 18rem;
+        overflow-y: auto;
+
+        &.show {
+            display: block;
+        }
+    }
+
+    .dropdown-toggle.active {
+        border-color: var(--bs-primary, #714B67);
+        color: var(--bs-primary, #714B67);
+    }
+}
+
+.enteza_active_chips {
+    .badge {
+        font-weight: 400;
+    }
+}

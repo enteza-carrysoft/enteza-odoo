@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Ajustes del portal de pedidos, en el mismo bloque de Ajustes → Ventas → Alquiler
+        donde ya vive el resto de la configuración de alquiler («Default Padding Time»,
+        «Rental Transfers», y desde `enteza_prestamo_intercompania` el día de traslado).
+
+        Mismo anclaje ya verificado en producción por ese módulo (`enteza26`, 2026-08-03):
+        se hereda `sale_stock_renting.res_config_settings_inherit_view_form` y se selecciona
+        por el campo `group_rental_stock_picking` — estable, no traducible — subiendo al
+        `<setting>` que lo envuelve con `parent::`, nunca por `@string` (rompe la
+        actualización del módulo con «View inheritance may not use attribute 'string' as a
+        selector», y esa comprobación NO la detecta `validar_vistas.py` en local).
+
+        `position="after"` es aditivo: que `enteza_prestamo_intercompania` apunte al mismo
+        anclaje no genera conflicto, cada módulo añade sus `<setting>` como hermanos.
+    -->
+    <record id="res_config_settings_view_form_portal" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.enteza.portal.pedidos</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="sale_stock_renting.res_config_settings_inherit_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='group_rental_stock_picking']/parent::setting"
+                   position="after">
+                <setting string="Semáforo de disponibilidad en el portal"
+                         help="Actívalo cuando el almacén esté cargado de verdad: con el inventario a medio cargar, el semáforo diría «sin disponibilidad» en casi todo y el cliente lo leería como que no hay material.">
+                    <field name="enteza_portal_semaforo"/>
+                </setting>
+                <setting string="Antelación mínima del portal (días)">
+                    <field name="enteza_portal_dias_minimos"/>
+                </setting>
+                <setting string="Avisar también por correo">
+                    <field name="enteza_portal_aviso_email"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

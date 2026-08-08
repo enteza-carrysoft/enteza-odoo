@@ -1,0 +1,19 @@
+<templates xml:space="preserve">
+    <t t-name="enteza_portal_pedidos.ActiveChips">
+        <div class="enteza_active_chips d-flex flex-wrap align-items-center gap-2"
+             t-if="props.chips.length">
+            <span class="text-muted small">Filtros:</span>
+            <t t-foreach="props.chips" t-as="chip" t-key="chip.id">
+                <span class="badge text-bg-secondary d-inline-flex align-items-center gap-1">
+                    <t t-esc="chip.label"/>
+                    <button type="button" class="btn-close btn-close-white"
+                            style="font-size:0.55rem;" aria-label="Quitar filtro"
+                            t-on-click="() => props.onRemove(chip.id)"/>
+                </span>
+            </t>
+            <button type="button" class="btn btn-link btn-sm p-0" t-on-click="props.onClearAll">
+                Limpiar todo
+            </button>
+        </div>
+    </t>
+</templates>

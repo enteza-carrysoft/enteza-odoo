@@ -1,0 +1,199 @@
+<templates xml:space="preserve">
+    <t t-name="enteza_portal_pedidos.RequestGrid">
+        <div class="enteza_request_grid">
+
+            <t t-if="state.cargando">
+                <div class="text-center p-5">
+                    <i class="fa fa-spinner fa-spin fa-2x" role="img" aria-label="Cargando"/>
+                    <p class="mt-2">Cargando catálogo...</p>
+                </div>
+            </t>
+
+            <t t-elif="state.error">
+                <div class="alert alert-danger" t-esc="state.error"/>
+            </t>
+
+            <t t-else="">
+                <!-- Barra de acciones (PRP §9.2: fija) -->
+                <div class="enteza_toolbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h4 class="mb-0">
+                        <t t-esc="state.order.ref || 'Borrador'"/>
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary"
+                                t-on-click="onCancelar" t-att-disabled="state.enviando">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn btn-outline-primary"
+                                t-on-click="onGuardar"
+                                t-att-disabled="state.guardando or state.enviando">
+                            <t t-if="state.guardando">Guardando...</t>
+                            <t t-else="">Guardar</t>
+                        </button>
+                        <button type="button" class="btn btn-primary"
+                                t-on-click="onEnviar" t-att-disabled="state.enviando">
+                            <t t-if="state.enviando">Enviando...</t>
+                            <t t-else="">Enviar solicitud</t>
+                        </button>
+                    </div>
+                </div>
+
+                <t t-if="state.mensaje">
+                    <div class="alert enteza_mensaje mt-2"
+                         t-att-class="{
+                            'alert-success': state.mensaje.tipo === 'success',
+                            'alert-danger': state.mensaje.tipo === 'danger'
+                         }"
+                         t-esc="state.mensaje.texto"/>
+                </t>
+
+                <!-- Cabecera del pedido (PRP §9.2: fija) -->
+                <div class="enteza_header row gy-2 align-items-end my-2">
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Fecha del evento</label>
+                        <input type="date" class="form-control form-control-sm"
+                               t-att-value="state.order.event_date"
+                               t-on-change="(ev) => this.onHeaderChange('event_date', ev.target.value)"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Entrega</label>
+                        <input type="date" class="form-control form-control-sm"
+                               t-att-value="state.order.pickup_date"
+                               t-on-change="(ev) => this.onHeaderChange('pickup_date', ev.target.value)"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">Retirada</label>
+                        <input type="date" class="form-control form-control-sm"
+                               t-att-value="state.order.return_date"
+                               t-on-change="(ev) => this.onHeaderChange('return_date', ev.target.value)"/>
+                    </div>
+                    <t t-if="state.order.warehouses and state.order.warehouses.length > 1">
+                        <div class="col-auto">
+                            <label class="form-label small mb-0">Almacén</label>
+                            <select class="form-select form-select-sm"
+                                    t-on-change="(ev) => this.onHeaderChange('warehouse_id', parseInt(ev.target.value, 10))">
+                                <t t-foreach="state.order.warehouses" t-as="almacen" t-key="almacen.id">
+                                    <option t-att-value="almacen.id"
+                                            t-att-selected="almacen.id === state.order.warehouse_id">
+                                        <t t-esc="almacen.name"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </div>
+                    </t>
+                    <div class="col text-end">
+                        <div class="fw-bold">
+                            <t t-esc="lineCount"/> líneas ·
+                            <t t-esc="this.formatoMoneda(state.totals.untaxed)"/>
+                            (sin IVA)
+                            <t t-if="state.totals.provisional">
+                                <span class="text-muted small">estimado</span>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-0">
+                            Comentario para el comercial (opcional)
+                        </label>
+                        <textarea class="form-control form-control-sm" rows="2"
+                                  t-model="state.customerNote"/>
+                    </div>
+                </div>
+
+                <FilterBar filters="state.filters"
+                           categories="state.categories"
+                           facets="state.facets"
+                           categoryOptionCount="(id) => this.categoryOptionCount(id)"
+                           facetOptionCount="(facetId, tagId) => this.facetOptionCount(facetId, tagId)"
+                           semaforoActivo="!!state.order.semaforo_activo"
+                           onTextChange="(texto) => this.onTextChange(texto)"
+                           onCategoryChange="(ids) => this.onCategoryChange(ids)"
+                           onFacetChange="(facetId, ids) => this.onFacetChange(facetId, ids)"
+                           onToggleChange="(clave, valor) => this.onToggleChange(clave, valor)"
+                           onClearAll="() => this.onClearAllFilters()"/>
+
+                <!-- Rejilla (PRP §9.2: cabecera de tabla fija) -->
+                <div class="enteza_table_wrap">
+                    <table class="table table-sm enteza_table">
+                        <thead>
+                            <tr>
+                                <th>Ref.</th>
+                                <th>Artículo</th>
+                                <t t-if="state.order.semaforo_activo">
+                                    <th class="text-center">Disp.</th>
+                                </t>
+                                <th class="text-center">Uds./caja</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-center">Cajas</th>
+                                <th class="text-end">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.visibleProductIds" t-as="productId" t-key="productId">
+                                <t t-set="producto" t-value="this._productsById.get(productId)"/>
+                                <tr>
+                                    <td t-esc="producto.code"/>
+                                    <td t-esc="producto.name"/>
+                                    <t t-if="state.order.semaforo_activo">
+                                        <td class="text-center">
+                                            <AvailabilityDot color="state.availability[productId]"/>
+                                        </td>
+                                    </t>
+                                    <td class="text-center">
+                                        <t t-if="producto.box">
+                                            <t t-esc="producto.box"/>
+                                        </t>
+                                        <t t-else="">—</t>
+                                    </td>
+                                    <td class="text-center">
+                                        <QtyCell productId="productId"
+                                                 qty="state.lines[productId] || 0"
+                                                 box="producto.box"
+                                                 disabled="state.enviando"
+                                                 onChange="(pid, qty) => this.onQtyChange(pid, qty)"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-if="producto.box and state.lines[productId]">
+                                            <t t-esc="Math.round((state.lines[productId] / producto.box) * 100) / 100"/>
+                                        </t>
+                                        <t t-else="">—</t>
+                                    </td>
+                                    <td class="text-end">
+                                        <t t-if="state.lines[productId]">
+                                            <t t-esc="this.formatoMoneda((state.lines[productId] || 0) * producto.price)"/>
+                                        </t>
+                                        <t t-else="">—</t>
+                                    </td>
+                                </tr>
+                            </t>
+                            <t t-if="!state.visibleProductIds.length">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted p-4">
+                                        Ningún artículo coincide con los filtros aplicados.
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pie (PRP §9.2: fijo) -->
+                <div class="enteza_footer d-flex justify-content-between align-items-center small text-muted">
+                    <span>
+                        <t t-esc="visibleCount"/> de <t t-esc="totalCount"/> artículos
+                    </span>
+                    <t t-if="hiddenWithQtyCount">
+                        <span class="text-warning">
+                            ⚠
+                            <t t-esc="hiddenWithQtyCount"/>
+                            <t t-if="hiddenWithQtyCount == 1">línea con cantidad está oculta</t>
+                            <t t-else="">líneas con cantidad están ocultas</t>
+                            por el filtro -
+                            <a href="#" t-on-click.prevent="onClearAllFilters">verlas</a>
+                        </span>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        La puerta del módulo (PRP §4.5, §12.1): sin `enteza_portal_pedidos_ok` marcado, un
+        usuario del portal ve sus documentos de siempre pero no la pantalla de solicitud.
+        Se añade una pestaña nueva en vez de tocar una existente: `//notebook` es un anclaje
+        estable en cualquier versión de la ficha de contacto, a diferencia de una página
+        interna cuyo `name`/estructura puede haber cambiado en la 19.
+    -->
+    <record id="res_partner_view_form_portal" model="ir.ui.view">
+        <field name="name">res.partner.form.enteza.portal.pedidos</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Portal de pedidos" name="enteza_portal_pedidos">
+                    <group>
+                        <field name="enteza_portal_pedidos_ok"/>
+                        <field name="enteza_portal_warehouse_id"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

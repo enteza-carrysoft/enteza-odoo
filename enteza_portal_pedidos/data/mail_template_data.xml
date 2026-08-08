@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            Aviso al comercial asignado (PRP §4.1 punto 8, §10.1). Se envía además del
+            mensaje en el chatter y la actividad, solo si
+            `res.company.enteza_portal_aviso_email` está activo. `auto_delete` porque no
+            hace falta guardar el correo enviado: la traza ya queda en el chatter del pedido.
+        -->
+        <record id="mail_template_portal_solicitud_comercial" model="mail.template">
+            <field name="name">Portal: nueva solicitud de pedido</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Nueva solicitud de pedido: {{ object.enteza_portal_ref or object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="email_to">{{ object.user_id.email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-family: sans-serif;">
+    <p>Hola <t t-out="object.user_id.name or ''"/>,</p>
+    <p>
+        El cliente <strong t-out="object.partner_id.display_name"/> ha enviado una solicitud
+        de pedido desde el portal: <strong t-out="object.enteza_portal_ref or object.name"/>.
+    </p>
+    <ul>
+        <li>Fecha del evento: <t t-out="object.event_date"/></li>
+        <li>Entrega: <t t-out="object.rental_start_date"/></li>
+        <li>Retirada: <t t-out="object.rental_return_date"/></li>
+        <li>Líneas: <t t-out="len(object.order_line)"/></li>
+        <li>
+            Importe (sin IVA): <t t-out="'%.2f' % object.amount_untaxed"/>
+            <t t-out="object.currency_id.symbol"/>
+        </li>
+    </ul>
+    <t t-if="object.enteza_portal_customer_note">
+        <p>
+            <strong>Comentario del cliente:</strong><br/>
+            <t t-out="object.enteza_portal_customer_note"/>
+        </p>
+    </t>
+    <p>Revísala en Alquiler → Solicitudes de clientes.</p>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

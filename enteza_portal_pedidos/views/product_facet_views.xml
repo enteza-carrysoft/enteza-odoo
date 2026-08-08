@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Gestión de las dimensiones de búsqueda (PRP §2.4, §4.4, §12.3). Es la pantalla que
+        convierte «crear una faceta nueva» en una tarea de un minuto sin tocar código: cada
+        fila de «Valores» es un `product.tag` normal, con su widget de color y su
+        `visible_to_customers` nativo.
+    -->
+    <record id="enteza_product_facet_view_form" model="ir.ui.view">
+        <field name="name">enteza.product.facet.form</field>
+        <field name="model">enteza.product.facet</field>
+        <field name="arch" type="xml">
+            <form string="Dimensión de búsqueda">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="p. ej. Marca, Modelo, Color..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="portal_visible"/>
+                            <field name="multi"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Valores" name="valores">
+                            <field name="tag_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="color" widget="color_picker"/>
+                                    <field name="visible_to_customers"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="enteza_product_facet_view_list" model="ir.ui.view">
+        <field name="name">enteza.product.facet.list</field>
+        <field name="model">enteza.product.facet</field>
+        <field name="arch" type="xml">
+            <list string="Dimensiones de búsqueda">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="tag_count" string="Valores"/>
+                <field name="portal_visible"/>
+                <field name="multi"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_enteza_product_facet" model="ir.actions.act_window">
+        <field name="name">Dimensiones de búsqueda</field>
+        <field name="res_model">enteza.product.facet</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea una dimensión de búsqueda (Marca, Modelo, Color...).
+            </p>
+            <p>
+                Cada dimensión se convierte en un desplegable del catálogo del portal de
+                clientes, sin tocar código. Añade sus valores en la pestaña «Valores» y
+                márcalos visibles al cliente; luego asígnalos a los artículos desde la
+                pestaña de Ventas de cada producto, en el campo «Etiquetas».
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_enteza_product_facet"
+              name="Dimensiones de búsqueda"
+              parent="stock.menu_stock_config_settings"
+              action="action_enteza_product_facet"
+              sequence="60"/>
+
+</odoo>

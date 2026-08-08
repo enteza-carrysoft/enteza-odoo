@@ -1,0 +1,6 @@
+<templates xml:space="preserve">
+    <t t-name="enteza_portal_pedidos.AvailabilityDot">
+        <span t-attf-class="enteza_disp_dot enteza_disp_dot_{{ color }}"
+              t-att-title="etiqueta" role="img" t-att-aria-label="etiqueta or 'Sin datos'"/>
+    </t>
+</templates>

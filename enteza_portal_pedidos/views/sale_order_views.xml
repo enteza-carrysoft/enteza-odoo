@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Formulario del comercial (PRP §10.3). Se hereda `sale.view_order_form`, la vista
+        BASE, y no una de `sale_renting`/`sale_stock_renting`: mismo patrón ya verificado en
+        este repositorio (`enteza_prestamo_intercompania/views/sale_order_product_search_views.xml`,
+        con la nota de por qué: en la 19 las vistas de alquiler ya no tocan estos puntos de
+        enganche, así que apoyarse en la base es más estable que perseguir una herencia
+        `sale_renting` que además viene vacía a propósito.
+
+        Todos los anclajes son por `@name`/`@widget`, nunca por `@string` (gotcha del
+        proyecto: un xpath que selecciona por `@string` rompe la actualización del módulo
+        entero sin avisar en local).
+    -->
+    <record id="sale_order_view_form_portal" model="ir.ui.view">
+        <field name="name">sale.order.form.enteza.portal.pedidos</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Botones de flujo (PRP §10.3), antes del statusbar como el resto de botones
+                 nativos del header. -->
+            <xpath expr="//field[@name='state'][@widget='statusbar']" position="before">
+                <button name="action_enteza_portal_tomar" type="object"
+                        string="Tomar la solicitud" class="btn-primary"
+                        invisible="enteza_portal_state != 'submitted'"/>
+                <button name="action_enteza_portal_marcar_contrapropuesta" type="object"
+                        string="Marcar como contrapropuesta"
+                        invisible="enteza_portal_state != 'reviewing'"/>
+            </xpath>
+
+            <!-- Ribbon con el estado del portal (uno por estado: `web_ribbon` no admite un
+                 título dinámico, así que se apilan tres con su propio `invisible`). -->
+            <xpath expr="//sheet" position="inside">
+                <widget name="web_ribbon" title="Solicitud enviada por el cliente"
+                        bg_color="text-bg-info"
+                        invisible="enteza_portal_state != 'submitted'"/>
+                <widget name="web_ribbon" title="En revisión" bg_color="text-bg-info"
+                        invisible="enteza_portal_state != 'reviewing'"/>
+                <widget name="web_ribbon" title="Contrapropuesta enviada"
+                        bg_color="text-bg-warning"
+                        invisible="enteza_portal_state != 'counter'"/>
+            </xpath>
+
+            <!-- Referencia de solicitud, estado del portal y comentario del cliente, justo
+                 antes de las líneas. Solo se ve en pedidos que vienen del portal. -->
+            <xpath expr="//field[@name='order_line']" position="before">
+                <group invisible="enteza_portal_state == 'none'" col="4">
+                    <field name="enteza_portal_ref" readonly="1"/>
+                    <field name="enteza_portal_state" readonly="1"/>
+                </group>
+                <div class="alert alert-info" role="alert"
+                     invisible="not enteza_portal_customer_note">
+                    <strong>Comentario del cliente:</strong>
+                    <field name="enteza_portal_customer_note" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+
+            <!-- Semáforo guardado por línea (PRP §4.2, §10.3): lo que vio el cliente al
+                 enviar, no la fuente de verdad — el comercial trabaja con el widget nativo
+                 `qty_at_date`. Ancla reutilizada de `enteza_prestamo_intercompania`
+                 (verificada contra `enteza26` el 2026-08-04): el campo `product_template_id`
+                 SÍ existe en la lista embebida de `sale.view_order_form` en esta instancia.
+                 Es un `<field>` nuevo, no una modificación de atributos existentes, así que
+                 no hay riesgo de pisar una decoración que ya hubiera en la lista. -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']"
+                   position="after">
+                <field name="enteza_portal_availability" widget="badge" optional="show"
+                       string="Semáforo (portal)"
+                       decoration-danger="enteza_portal_availability == 'red'"
+                       decoration-warning="enteza_portal_availability == 'amber'"
+                       decoration-success="enteza_portal_availability == 'green'"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!--
+        Lista propia para «Solicitudes de clientes» (PRP §10.2): columnas curadas, no la
+        lista genérica de presupuestos.
+    -->
+    <record id="sale_order_view_list_portal" model="ir.ui.view">
+        <field name="name">sale.order.list.enteza.portal.pedidos</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <list string="Solicitudes de clientes"
+                  default_order="enteza_portal_submitted_on desc">
+                <field name="enteza_portal_ref" string="Referencia"/>
+                <field name="partner_id"/>
+                <field name="event_date"/>
+                <field name="enteza_portal_line_count" string="Líneas"/>
+                <field name="amount_total" sum="Total" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="enteza_portal_state" widget="badge"
+                       decoration-info="enteza_portal_state == 'submitted'"
+                       decoration-warning="enteza_portal_state == 'reviewing'"
+                       decoration-danger="enteza_portal_state == 'counter'"/>
+                <field name="user_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!--
+        Búsqueda: filtros por estado del portal y agrupación. El `<group>` de agrupar NO
+        lleva `expand` ni `string` (gotcha del proyecto: en una vista search rompe la
+        instalación entera y el error no dice cuál es el atributo culpable).
+    -->
+    <record id="sale_order_view_search_portal" model="ir.ui.view">
+        <field name="name">sale.order.search.enteza.portal.pedidos</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search string="Solicitudes de clientes">
+                <field name="enteza_portal_ref"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter name="filter_submitted" string="Enviadas"
+                        domain="[('enteza_portal_state', '=', 'submitted')]"/>
+                <filter name="filter_reviewing" string="En revisión"
+                        domain="[('enteza_portal_state', '=', 'reviewing')]"/>
+                <filter name="filter_counter" string="Contrapropuesta enviada"
+                        domain="[('enteza_portal_state', '=', 'counter')]"/>
+                <separator/>
+                <filter name="filter_mine" string="Mis solicitudes"
+                        domain="[('user_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_state" string="Estado del portal"
+                            context="{'group_by': 'enteza_portal_state'}"/>
+                    <filter name="group_user" string="Comercial"
+                            context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!--
+        Acción: solo lo que ya llegó del portal (`composing` queda fuera a propósito — una
+        solicitud a medio montar no es trabajo pendiente de nadie, PRP §10.2).
+    -->
+    <record id="action_enteza_portal_solicitudes" model="ir.actions.act_window">
+        <field name="name">Solicitudes de clientes</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="sale_order_view_list_portal"/>
+        <field name="search_view_id" ref="sale_order_view_search_portal"/>
+        <field name="domain">[('enteza_portal_state', 'in', ['submitted', 'reviewing', 'counter'])]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay solicitudes de clientes pendientes de revisar.
+            </p>
+            <p>
+                Aquí aparecen las solicitudes de material que los clientes envían desde el
+                portal, en cuanto las envían.
+            </p>
+        </field>
+    </record>
+
+    <!--
+        Menú bajo Alquiler. `sale_renting.rental_order_menu` como padre: documentado como
+        anclaje válido en `references/owl-acciones-cliente.md` de este mismo repositorio.
+    -->
+    <menuitem id="menu_enteza_portal_solicitudes"
+              name="Solicitudes de clientes"
+              parent="sale_renting.rental_order_menu"
+              action="action_enteza_portal_solicitudes"
+              sequence="15"/>
+
+</odoo>

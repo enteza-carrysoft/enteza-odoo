@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Edición en masa de packagings (cajas) y etiquetas (PRP §12.2, §12.3). Es tarea de
+        datos, no de código, pero sin una pantalla cómoda para ~1.000 artículos nadie la
+        hace. Filtrada a Bienes alquilables porque es exactamente lo que el portal sirve.
+    -->
+    <record id="product_template_view_list_portal_datos" model="ir.ui.view">
+        <field name="name">product.template.list.enteza.portal.datos</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <list string="Datos para el portal de clientes" editable="bottom">
+                <field name="default_code"/>
+                <field name="name"/>
+                <field name="categ_id"/>
+                <field name="uom_id" column_invisible="1"/>
+                <field name="uom_ids" widget="many2many_tags" string="Packagings (cajas)"/>
+                <field name="enteza_units_per_box" readonly="1" string="Uds./caja"/>
+                <field name="product_tag_ids" widget="many2many_tags" string="Etiquetas"/>
+                <field name="enteza_portal_ok" string="Visible en el portal"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_enteza_portal_datos_producto" model="ir.actions.act_window">
+        <field name="name">Datos para el portal de clientes</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="product_template_view_list_portal_datos"/>
+        <field name="domain">[('rent_ok', '=', True), ('type', '=', 'consu')]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aquí se configuran los dos datos que el portal de clientes necesita por
+                artículo.
+            </p>
+            <p>
+                <strong>Packagings</strong>: si un artículo se sirve en cajas cerradas,
+                añade su unidad de caja (p. ej. «CAJA 25 UDS»). Sin packaging, se pide por
+                unidades sueltas y no hay restricción de múltiplo.<br/>
+                <strong>Etiquetas</strong>: asigna los valores de marca, modelo, color... que
+                hayas creado en Dimensiones de búsqueda, para que el cliente pueda filtrar
+                por ellos en el portal.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_enteza_portal_datos_producto"
+              name="Datos para el portal de clientes"
+              parent="stock.menu_stock_config_settings"
+              action="action_enteza_portal_datos_producto"
+              sequence="61"/>
+
+</odoo>

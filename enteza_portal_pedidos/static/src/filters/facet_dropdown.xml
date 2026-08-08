@@ -1,0 +1,33 @@
+<templates xml:space="preserve">
+    <t t-name="enteza_portal_pedidos.FacetDropdown">
+        <div class="enteza_facet_dropdown dropdown" t-ref="root">
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                    t-att-class="{ active: props.selectedIds.length }"
+                    t-on-click="toggle" t-on-keydown="onKeydown">
+                <t t-esc="resumen"/>
+            </button>
+            <div class="enteza_facet_menu dropdown-menu p-2"
+                 t-att-class="{ show: state.open }">
+                <t t-if="muchasOpciones">
+                    <input type="text" class="form-control form-control-sm mb-2"
+                           placeholder="Buscar..." t-model="state.buscar"/>
+                </t>
+                <div class="enteza_facet_options">
+                    <t t-foreach="opcionesOrdenadas" t-as="opcion" t-key="opcion.id">
+                        <label class="dropdown-item d-flex align-items-center gap-2"
+                               t-att-class="{ 'text-muted': opcion.count == 0 }">
+                            <input type="checkbox" t-att-checked="opcion.selected"
+                                   t-on-change="() => this.toggleOpcion(opcion.id)"/>
+                            <span class="flex-grow-1" t-esc="opcion.name"/>
+                            <span class="badge text-bg-light" t-esc="opcion.count"/>
+                        </label>
+                    </t>
+                    <t t-if="!opcionesOrdenadas.length">
+                        <div class="text-muted small p-2">Sin resultados.</div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

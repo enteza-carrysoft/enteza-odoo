@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            Referencia de solicitud del portal (PRP §4.1). NO toca `sale.order.name`: el
+            número de presupuesto sigue siendo el nativo. Sin compañía a propósito, como el
+            resto de secuencias compartidas de este repositorio: una solicitud la ve tanto el
+            cliente como el comercial, y una numeración por compañía daría referencias
+            distintas para el mismo documento según quién mirase.
+        -->
+        <record id="seq_enteza_portal_pedido" model="ir.sequence">
+            <field name="name">Solicitud de pedido del portal</field>
+            <field name="code">enteza.portal.pedido</field>
+            <field name="prefix">SOL/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

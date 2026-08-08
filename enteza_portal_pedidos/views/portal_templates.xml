@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Tarjeta en la portada de «Mi cuenta» (PRP §9). Solo si `enteza_portal_pedidos_ok`
+        (PRP §12.1: es la puerta del módulo). Markup propio, sin depender de
+        `portal.portal_docs_entry`: su contrato de parámetros exactos no está verificado
+        contra `enteza26`, y el contenedor `o_portal_docs` sí es un anclaje estable de sobra
+        conocido — es más seguro montar la tarjeta a mano que arriesgar una llamada a un
+        sub-template cuyo `t-set` esperado no se puede confirmar sin la instancia.
+    -->
+    <template id="portal_my_home_solicitudes" name="Solicitudes en Mi cuenta"
+              inherit_id="portal.portal_my_home" customize_show="True" priority="50">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="enteza_portal_pedidos_ok">
+                <div class="col-lg-3 col-md-4 col-6 mb-2">
+                    <a href="/my/solicitudes"
+                       class="o_portal_docs_entry d-flex flex-column align-items-center justify-content-center border rounded p-3 text-decoration-none h-100">
+                        <i class="fa fa-3x fa-shopping-cart mb-2" role="img"
+                           aria-label="Solicitudes" title="Solicitudes"/>
+                        <span>Solicitudes de pedido</span>
+                        <t t-if="solicitud_count">
+                            <span class="badge text-bg-primary mt-1" t-esc="solicitud_count"/>
+                        </t>
+                    </a>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!--
+        Lista de solicitudes (PRP §8.1, §9.4). Mismo idioma que las páginas nativas del
+        portal (`portal.portal_table` + `portal.pager`), para que se sienta parte del mismo
+        sitio y no un módulo aparte.
+    -->
+    <template id="portal_my_solicitudes" name="Mis solicitudes de pedido">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Mis solicitudes de pedido</h2>
+                <a href="/my/solicitud/nueva" class="btn btn-primary">
+                    <i class="fa fa-plus me-1"/> Nueva solicitud
+                </a>
+            </div>
+
+            <t t-if="not solicitudes">
+                <p class="text-muted">Todavía no has enviado ninguna solicitud.</p>
+            </t>
+
+            <t t-if="solicitudes" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Referencia</th>
+                        <th>Fecha del evento</th>
+                        <th>Enviada</th>
+                        <th class="text-end">Importe</th>
+                        <th class="text-end">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="solicitudes" t-as="solicitud">
+                        <tr>
+                            <td>
+                                <a t-attf-href="/my/solicitud/#{solicitud.id}#{'/resumen' if solicitud.enteza_portal_state != 'composing' else ''}">
+                                    <t t-esc="solicitud.enteza_portal_ref or solicitud.name"/>
+                                </a>
+                            </td>
+                            <td><span t-field="solicitud.event_date"/></td>
+                            <td><span t-field="solicitud.enteza_portal_submitted_on"/></td>
+                            <td class="text-end"><span t-field="solicitud.amount_total"/></td>
+                            <td class="text-end">
+                                <t t-esc="estados_portal.get(solicitud.enteza_portal_state)"/>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
+
+            <t t-if="pager">
+                <div class="o_portal_pager text-center">
+                    <t t-call="portal.pager"/>
+                </div>
+            </t>
+
+            <!-- Repetir un pedido anterior (PRP §9.4): copia las líneas con fechas vacías. -->
+            <t t-if="pedidos_repetibles">
+                <h3 class="mt-4">Repetir un pedido anterior</h3>
+                <div class="row">
+                    <t t-foreach="pedidos_repetibles" t-as="pedido">
+                        <div class="col-md-4 mb-2">
+                            <div class="card h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title" t-esc="pedido.name"/>
+                                    <p class="card-text text-muted">
+                                        <span t-field="pedido.event_date"/>
+                                    </p>
+                                    <form t-attf-action="/my/solicitudes/#{pedido.id}/repetir"
+                                          method="post" class="mt-auto">
+                                        <input type="hidden" name="csrf_token"
+                                               t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                            Repetir este pedido
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!--
+        Pantalla de edición (PRP §9). Solo monta el punto de anclaje del componente OWL: el
+        `orderId` viaja por un `<script type="application/json">` con un entero sin escapar
+        (nada que pueda romper el JSON), no por el mecanismo de `props` de `owl-component`
+        -cuyo contrato exacto de serialización no está verificado contra esta instancia- ni
+        por parámetros en la URL que un componente tendría que volver a parsear.
+    -->
+    <template id="portal_solicitud_grid" name="Solicitud de pedido">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <script type="application/json" id="enteza_portal_pedidos_data">{"orderId": <t t-esc="order.id"/>}</script>
+            <owl-component name="enteza_portal_pedidos.RequestGrid" class="d-block"/>
+        </t>
+    </template>
+
+    <!--
+        Resumen + diff de contrapropuesta (PRP §11). Estático: se renderiza en QWeb del lado
+        servidor, no en OWL.
+    -->
+    <template id="portal_solicitud_resumen" name="Resumen de la solicitud">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">
+                    <t t-esc="order.enteza_portal_ref or order.name"/>
+                </h2>
+                <span class="badge text-bg-secondary">
+                    <t t-esc="estados_portal.get(order.enteza_portal_state)"/>
+                </span>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Datos del evento</h5>
+                    <ul class="list-unstyled">
+                        <li>Fecha del evento: <span t-field="order.event_date"/></li>
+                        <li>Entrega: <span t-field="order.rental_start_date"/></li>
+                        <li>Retirada: <span t-field="order.rental_return_date"/></li>
+                        <li>Almacén: <t t-esc="order.warehouse_id.name"/></li>
+                        <li>Líneas: <t t-esc="order.enteza_portal_line_count"/></li>
+                        <li>Importe (sin IVA): <span t-field="order.amount_untaxed"/></li>
+                    </ul>
+                    <t t-if="order.enteza_portal_customer_note">
+                        <p>
+                            <strong>Tu comentario:</strong><br/>
+                            <t t-esc="order.enteza_portal_customer_note"/>
+                        </p>
+                    </t>
+                </div>
+                <div class="col-md-6">
+                    <h5>Seguimiento</h5>
+                    <ul class="list-unstyled">
+                        <t t-foreach="timeline" t-as="paso">
+                            <li>
+                                <a t-att-href="paso['url']" t-esc="paso['label']"/>
+                            </li>
+                        </t>
+                    </ul>
+                </div>
+            </div>
+
+            <t t-if="diff_rows">
+                <h5>Lo que propone el comercial</h5>
+                <p class="text-muted">
+                    En rojo lo que se ha quitado, en amarillo lo que ha cambiado de
+                    cantidad, en verde lo que se ha añadido.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Artículo</th>
+                                <th class="text-end">Solicitaste</th>
+                                <th class="text-end">Te proponemos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="diff_rows" t-as="fila">
+                                <tr t-attf-class="{{ 'table-warning' if fila['state'] == 'changed' else ('table-danger' if fila['state'] == 'removed' else ('table-success' if fila['state'] == 'added' else '')) }}">
+                                    <td t-esc="fila['product_name']"/>
+                                    <td class="text-end" t-esc="fila['qty_original']"/>
+                                    <td class="text-end" t-esc="fila['qty_actual']"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted">
+                    Revisa el presupuesto actualizado y, si estás de acuerdo, acéptalo y
+                    fírmalo desde ahí.
+                </p>
+            </t>
+
+            <t t-if="order.enteza_portal_state == 'composing'">
+                <a t-attf-href="/my/solicitud/#{order.id}" class="btn btn-primary">
+                    Seguir editando
+                </a>
+            </t>
+        </t>
+    </template>
+
+</odoo>
