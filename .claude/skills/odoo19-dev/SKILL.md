@@ -123,7 +123,11 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **Negocio**: alquiler de material para eventos (sillas, mesas, vajilla). Muy estacional y
   concentrado en fines de semana.
 - **Renombrados y cambios de la 19 que más muerden**: `product_uom`→`product_uom_id` (sólo en
-  `sale.order.line`; en `stock.move` sigue siendo `product_uom`) · `tax_id`→`tax_ids` ·
+  `sale.order.line`; en `stock.move` sigue siendo `product_uom`) ·
+  `stock.picking.move_ids_without_package` **eliminado** (usar `move_ids`; costó un
+  `AttributeError` en producción en `rental_custom` el 2026-08-08 porque el código nuevo copió
+  el nombre de un método antiguo del propio repo sin volver a comprobarlo por RPC — ese código
+  antiguo tampoco se había ejecutado nunca) · `tax_id`→`tax_ids` ·
   `type='product'`→`type='consu'` + `is_storable=True` · `detailed_type` y `uom_po_id`
   eliminados · `attrs`/`states` eliminados en vistas (usar `invisible="..."`, `readonly="..."`
   directos) · en `uom.uom` el factor es `relative_factor`, no `factor` · **`res.groups` ya no

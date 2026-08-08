@@ -30,7 +30,7 @@ class StockPicking(models.Model):
         if self.sale_order_id:
             raise UserError(_('Ya existe una orden de venta para este albarán.'))
 
-        if not self.move_ids_without_package:
+        if not self.move_ids:
             raise UserError(_('No hay líneas de productos en el albarán para crear una orden de venta.'))
 
         partner = self.sale_id.partner_invoice_id or self.partner_id
@@ -42,7 +42,7 @@ class StockPicking(models.Model):
             'product_uom_qty': move.product_uom_qty,
             'product_uom_id': move.product_uom.id,
             'price_unit': move.product_id.lst_price,
-        }) for move in self.move_ids_without_package]
+        }) for move in self.move_ids]
 
         sale_order = self.env['sale.order'].create({
             'partner_id': partner.id,
@@ -63,6 +63,19 @@ class StockPicking(models.Model):
         self.message_post(
             body=_('Creada la orden de venta %s por el material no devuelto.', sale_order._get_html_link())
         )
+
+        # Odoo sólo suma a `qty_returned` cuando un movimiento de devolución llega a "hecho"
+        # (stock_move._action_done, en sale_stock_renting). Como este backorder se cancela en
+        # vez de completarse, hay que cerrar ese hueco a mano para que el pedido deje de verse
+        # como "Recogido" (con material pendiente) y pase a "Devuelto": la falta ya no se
+        # espera de vuelta, se ha resuelto facturándola.
+        for move in self.move_ids:
+            sale_line = move.sale_line_id
+            if sale_line and sale_line.is_rental and move.product_id == sale_line.product_id:
+                qty_missing = move.product_uom._compute_quantity(
+                    move.product_uom_qty, sale_line.product_uom_id, rounding_method='HALF-UP'
+                )
+                sale_line.qty_returned += qty_missing
 
         self.action_cancel()
 
