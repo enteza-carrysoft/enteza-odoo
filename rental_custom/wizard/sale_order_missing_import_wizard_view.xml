@@ -32,6 +32,5 @@
         <field name="target">new</field>
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_view_types">list</field>
-        <field name="groups_id" eval="[(4, ref('rental_custom.group_faltas_alquiler'))]"/>
     </record>
 </odoo>
