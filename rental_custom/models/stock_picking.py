@@ -53,9 +53,11 @@ class StockPicking(models.Model):
             'company_id': self.company_id.id,
             'origin': self.sale_id.name or self.name,
             'order_line': order_line,
-            # El material ya salió por el albarán de alquiler original; esta venta sólo
-            # formaliza el cobro. Al confirmarla no debe generarse un albarán de salida nuevo.
-            'skip_delivery_creation': True,
+            # El material ya salió por el albarán de alquiler original y esta venta sólo
+            # formaliza el cobro, pero al confirmarla Odoo generará igualmente su albarán de
+            # salida: el pedido sigue el flujo nativo como cualquier otro (decisión del
+            # 12/08/2026). Ese albarán hay que cancelarlo a mano, o validarlo si se prefiere
+            # dejar constancia de que el material salió del almacén.
             'rental_order_id': self.sale_id.id,
             # Forzado explícito: el botón se pulsa desde un albarán de la app de Alquiler, y
             # ese contexto trae un `default_is_rental_order` ambiental que, si no se anula

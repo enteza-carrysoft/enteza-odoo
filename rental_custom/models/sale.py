@@ -26,14 +26,6 @@ class SaleOrder(models.Model):
 
     picking_id = fields.Many2one('stock.picking', string="Stock Picking", readonly=True, copy=False)
 
-    skip_delivery_creation = fields.Boolean(
-        string="No generar albarán de salida",
-        copy=False,
-        help="El material ya salió por otro albarán (por ejemplo, una venta que factura "
-             "material de alquiler no devuelto). Al confirmar este pedido no se genera ningún "
-             "envío nuevo.",
-    )
-
     rental_order_id = fields.Many2one(
         "sale.order",
         string="Pedido de alquiler de origen",
@@ -114,23 +106,21 @@ class SaleOrder(models.Model):
                 )
             )
 
-        # Pedidos que sólo formalizan el cobro de material que ya salió por otro albarán (por
-        # ejemplo, "Facturar las Faltas" en rental_custom): confirmarlos no debe generar un
-        # albarán de salida nuevo. `skip_procurement` es el contexto nativo que usa
-        # sale_stock para no lanzar la regla de stock al confirmar.
-        sin_envio = self.filtered("skip_delivery_creation")
-        con_envio = self - sin_envio
-        result = True
-        if sin_envio:
-            # `with_context` va ANTES de construir el super(): aplicado después del proxy de
-            # super(), devuelve un recordset normal (no limitado a partir de esta clase en el
-            # MRO) y el action_confirm() siguiente reentra desde el principio de toda la
-            # cadena de herencia — con más de un módulo tocando sale.order.action_confirm,
-            # eso es una recursión infinita, no solo un contexto que se pierde.
-            result = super(SaleOrder, sin_envio.with_context(skip_procurement=True)).action_confirm()
-        if con_envio:
-            result = super(SaleOrder, con_envio).action_confirm() and result
-        return result
+        # Confirmar es el flujo nativo de Odoo 19, sin excepciones: todo pedido genera los
+        # documentos de almacén que le correspondan.
+        #
+        # Aquí hubo un `skip_delivery_creation` que troceaba el recordset para que los pedidos
+        # de faltas no generasen albarán de salida, y **rompía el sistema entero**: combinaba
+        # los dos super() con `... and result`, de modo que cuando la cadena de herencia
+        # devolvía una ACCIÓN en vez de True —`enteza_prestamo_intercompania` devuelve el
+        # diálogo de "falta material" en cuanto una línea tiene déficit— el `and` la reducía a
+        # True. El diálogo no llegaba al navegador, el pedido se quedaba en presupuesto sin
+        # mensaje alguno y, al no confirmarse, no se generaba ningún movimiento de almacén.
+        #
+        # Regla que deja el incidente: el valor que devuelve `action_confirm` es parte del
+        # contrato —puede ser un `dict` de acción— y se propaga TAL CUAL. Nada de combinarlo
+        # con `and`/`or` ni de sustituirlo por un booleano propio.
+        return super().action_confirm()
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"

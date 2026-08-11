@@ -170,7 +170,6 @@ class RentalSaleOrderImportWizard(models.TransientModel):
                 current_order = sale_order_model.create({
                     "partner_id": row["partner"].id,
                     "company_id": self.company_id.id,
-                    "skip_delivery_creation": True,
                     "is_rental_order": False,
                 })
                 orders |= current_order

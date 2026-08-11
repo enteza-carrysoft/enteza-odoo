@@ -7,7 +7,7 @@ from odoo.tests.common import TransactionCase
 
 class TestSaleOrderMissingImport(TransactionCase):
 
-    def test_import_creates_compensation_sales_without_delivery(self):
+    def test_import_creates_compensation_sales(self):
         partner = self.env["res.partner"].create({
             "name": "Cliente de prueba de faltas",
             "vat": "B12345678",
@@ -32,16 +32,11 @@ class TestSaleOrderMissingImport(TransactionCase):
         order = self.env["sale.order"].browse(order_ids)
 
         self.assertEqual(order.partner_id, partner)
-        self.assertTrue(order.skip_delivery_creation)
         self.assertFalse(order.is_rental_order)
         self.assertEqual(len(order.order_line), 1)
         self.assertEqual(order.order_line.product_id, product)
         self.assertEqual(order.order_line.product_uom_qty, 2.0)
         self.assertFalse(order.order_line.is_rental)
-
-        order.action_confirm()
-
-        self.assertFalse(self.env["stock.picking"].search([("sale_id", "=", order.id)]))
 
     def test_import_accepts_excel_file(self):
         partner = self.env["res.partner"].create({
