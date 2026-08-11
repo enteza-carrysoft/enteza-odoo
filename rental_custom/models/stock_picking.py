@@ -11,21 +11,16 @@ class StockPicking(models.Model):
     def action_create_sale_order(self):
         """Genera un pedido de venta por el material de alquiler no devuelto.
 
-        Sólo tiene sentido sobre un albarán parcial (backorder) de una devolución de
-        alquiler: ese backorder lo crea Odoo de forma nativa cuando se valida con menos
-        unidades de las que constaban en la demanda, y su `product_uom_qty` es ya la
-        cantidad que falta, sin necesidad de restar nada a mano.
+        Factura las cantidades que figuran en las líneas del albarán (`product_uom_qty`).
+        El caso natural sigue siendo el albarán parcial (backorder) que Odoo crea al validar
+        una devolución con menos unidades de las que constaban: ahí esa cantidad ES ya la que
+        falta. Pero se puede usar sobre cualquier albarán, porque decidir cuándo procede
+        facturar unas faltas es criterio del almacén y no del módulo (12/08/2026).
+
+        Sólo quedan las dos comprobaciones que evitan un pedido incorrecto: no facturar dos
+        veces el mismo albarán y no crear un pedido vacío.
         """
         self.ensure_one()
-
-        if not self.is_rental_order:
-            raise UserError(_('Este albarán no pertenece a un pedido de alquiler.'))
-
-        if not self.backorder_id:
-            raise UserError(
-                _('Este botón sólo se usa sobre el albarán parcial (backorder) que Odoo '
-                  'crea cuando falta material por devolver, no sobre el albarán original.')
-            )
 
         if self.sale_order_id:
             raise UserError(_('Ya existe una orden de venta para este albarán.'))
@@ -71,35 +66,50 @@ class StockPicking(models.Model):
         })
         self.sale_order_id = sale_order.id
 
-        sale_order.message_post(
-            body=_('Generado desde el albarán de faltas %s, del pedido de alquiler %s.',
-                   self._get_html_link(), self.sale_id._get_html_link())
-        )
-        self.sale_id.message_post(
-            body=_('Material no devuelto facturado en %s, desde el albarán %s.',
-                   sale_order._get_html_link(), self._get_html_link())
-        )
+        # El albarán puede no venir de un pedido (ahora el botón está en todos), así que la
+        # traza al alquiler de origen sólo se escribe cuando lo hay: `_get_html_link()` y
+        # `message_post()` hacen `ensure_one()` y reventarían con el recordset vacío.
+        if self.sale_id:
+            sale_order.message_post(
+                body=_('Generado desde el albarán de faltas %s, del pedido de alquiler %s.',
+                       self._get_html_link(), self.sale_id._get_html_link())
+            )
+            self.sale_id.message_post(
+                body=_('Material no devuelto facturado en %s, desde el albarán %s.',
+                       sale_order._get_html_link(), self._get_html_link())
+            )
+        else:
+            sale_order.message_post(
+                body=_('Generado desde el albarán de faltas %s.', self._get_html_link())
+            )
         self.message_post(
             body=_('Creada la orden de venta %s por el material no devuelto.', sale_order._get_html_link())
         )
 
         # Odoo sólo suma a `qty_returned` cuando un movimiento de devolución llega a "hecho"
-        # (stock_move._action_done, en sale_stock_renting). Como este backorder se cancela en
-        # vez de completarse, hay que cerrar ese hueco a mano para que el pedido deje de verse
+        # (stock_move._action_done, en sale_stock_renting). Como este albarán se cancela en vez
+        # de completarse, hay que cerrar ese hueco a mano para que el pedido deje de verse
         # como "Recogido" (con material pendiente) y pase a "Devuelto": la falta ya no se
         # espera de vuelta, se ha resuelto facturándola. `qty_lost` deja anotado, sin tocar el
         # motor nativo de alquiler, cuántas de esas "devueltas" son en realidad una pérdida
         # facturada — para no confundirlo con una devolución física real.
-        for move in self.move_ids:
-            sale_line = move.sale_line_id
-            if sale_line and sale_line.is_rental and move.product_id == sale_line.product_id:
-                qty_missing = move.product_uom._compute_quantity(
-                    move.product_uom_qty, sale_line.product_uom_id, rounding_method='HALF-UP'
-                )
-                sale_line.qty_returned += qty_missing
-                sale_line.qty_lost += qty_missing
+        #
+        # Sobre un albarán ya validado no se toca nada de esto: sus movimientos llegaron a
+        # "hecho", así que `qty_returned` ya lo contabilizó Odoo y volver a sumarlo lo duplicaría.
+        if self.state != 'done':
+            for move in self.move_ids:
+                sale_line = move.sale_line_id
+                if sale_line and sale_line.is_rental and move.product_id == sale_line.product_id:
+                    qty_missing = move.product_uom._compute_quantity(
+                        move.product_uom_qty, sale_line.product_uom_id, rounding_method='HALF-UP'
+                    )
+                    sale_line.qty_returned += qty_missing
+                    sale_line.qty_lost += qty_missing
 
-        self.action_cancel()
+            # Cancelar cierra el albarán: esas unidades ya no se esperan de vuelta. Un albarán
+            # en "hecho" no se puede cancelar (ni debe: el movimiento físico ya ocurrió), de
+            # modo que ahí la venta de faltas se limita a facturar.
+            self.action_cancel()
 
         return {
             'type': 'ir.actions.act_window',

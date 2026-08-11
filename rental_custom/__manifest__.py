@@ -1,6 +1,6 @@
 {
     'name': 'Crear Orden de Venta desde Albarán',
-    'version': '19.0.1.12.0',
+    'version': '19.0.1.13.0',
     'category': 'Sales/Sales',
     'summary': 'Permite crear órdenes de venta a partir de albaranes',
     'author': 'Francisco Jose Carrion',
@@ -12,7 +12,6 @@
         'stock',
     ],
     'data': [
-        'security/security.xml',
         'security/ir.model.access.csv',
         'views/sale_order_views.xml',
         'wizard/rental_order_rename_wizard_view.xml',

@@ -6,17 +6,25 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
+                <!-- Sin `groups` y sin `invisible` a propósito (12/08/2026): el botón se ve
+                     SIEMPRE y es el almacén quien decide cuándo procede facturar las faltas.
+
+                     Antes estaba restringido al grupo "Gestión de faltas de alquiler", que no
+                     tenía ningún usuario asignado —ni el administrador—, así que el botón no
+                     aparecía a nadie en ningún albarán. Y aunque se hubiera asignado, las
+                     condiciones exigían que el albarán fuese un backorder sin validar: si
+                     almacén valida la recogida entera y las faltas se descubren después, no
+                     había forma de llegar a esta opción. -->
                 <button name="action_create_sale_order" type="object" string="Facturar las Faltas"
-                        class="btn-primary"
-                        groups="rental_custom.group_faltas_alquiler"
-                        invisible="not is_rental_order or not backorder_id or sale_order_id or state in ('done', 'cancel')"/>
+                        class="btn-primary"/>
             </xpath>
             <xpath expr="//field[@name='quantity']" position="after">
+                <!-- La columna acompaña al botón: visible en cualquier albarán mientras se
+                     pueda contar. En "hecho" o "cancelado" las cantidades ya no se editan. -->
                 <field name="qty_missing"
                        string="Faltas"
-                       column_invisible="parent.state in ('done', 'cancel') or not parent.is_rental_order or parent.picking_type_code != 'incoming'"/>
+                       column_invisible="parent.state in ('done', 'cancel')"/>
             </xpath>
         </field>
     </record>
 </odoo>
-
