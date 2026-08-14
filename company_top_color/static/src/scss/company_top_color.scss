@@ -1,0 +1,9 @@
+.o_company_top_color_strip {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 5px;
+    z-index: 1100;
+    pointer-events: none;
+    background: var(--company-top-color, transparent);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
