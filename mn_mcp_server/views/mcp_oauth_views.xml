@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_mcp_oauth_client_list" model="ir.ui.view">
+            <field name="name">mn.mcp.oauth.client.list</field>
+            <field name="model">mn.mcp.oauth.client</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="name"/>
+                    <field name="client_id"/>
+                    <field name="source"/>
+                    <field name="token_count" string="Active tokens"/>
+                    <field name="last_seen"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_mcp_oauth_client_form" model="ir.ui.view">
+            <field name="name">mn.mcp.oauth.client.form</field>
+            <field name="model">mn.mcp.oauth.client</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Application name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="client_id"
+                                       placeholder="https://example.com/mcp-client.json"/>
+                                <field name="source"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="last_seen"/>
+                                <field name="token_count"/>
+                            </group>
+                        </group>
+                        <group string="Redirect URIs">
+                            <field name="redirect_uris" nolabel="1"
+                                   placeholder="https://claude.ai/api/mcp/auth_callback"/>
+                        </group>
+                        <div class="text-muted">
+                            A redirect URI must match one of these <b>exactly</b>. Prefix
+                            matching is what turns an OAuth server into an open redirect.
+                        </div>
+                        <group string="Client metadata document" invisible="not metadata_json">
+                            <field name="metadata_json" nolabel="1" readonly="1"
+                                   widget="ace" options="{'mode': 'json'}"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_mcp_oauth_client" model="ir.actions.act_window">
+            <field name="name">OAuth Clients</field>
+            <field name="res_model">mn.mcp.oauth.client</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">No application has connected yet</p>
+                <p>
+                    Clients that authenticate with OAuth appear here on their own —
+                    a Client ID Metadata Document needs no pre-registration. Add one
+                    by hand only for a client that cannot publish its own metadata.
+                </p>
+            </field>
+        </record>
+
+        <record id="view_mcp_oauth_token_list" model="ir.ui.view">
+            <field name="name">mn.mcp.oauth.token.list</field>
+            <field name="model">mn.mcp.oauth.token</field>
+            <field name="arch" type="xml">
+                <list decoration-muted="revoked">
+                    <field name="client_id_ref"/>
+                    <field name="user_id"/>
+                    <field name="scope"/>
+                    <field name="audience"/>
+                    <field name="expires_at"/>
+                    <field name="revoked" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_mcp_oauth_token" model="ir.actions.act_window">
+            <field name="name">OAuth Tokens</field>
+            <field name="res_model">mn.mcp.oauth.token</field>
+            <field name="view_mode">list</field>
+        </record>
+
+    </data>
+</odoo>

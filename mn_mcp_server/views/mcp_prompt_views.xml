@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_prompt" model="ir.actions.act_window">
+            <field name="name">Prompts Library</field>
+            <field name="res_model">mn.mcp.prompt</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        <record id="view_prompt_list" model="ir.ui.view">
+            <field name="name">mn.mcp.prompt.list</field>
+            <field name="model">mn.mcp.prompt</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="title"/>
+                    <field name="category"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_prompt_form" model="ir.ui.view">
+            <field name="name">mn.mcp.prompt.form</field>
+            <field name="model">mn.mcp.prompt</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="title"/>
+                                <field name="category"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="description"/>
+                            </group>
+                        </group>
+                        <field name="arguments_json" widget="text" placeholder='[{"name":"...","description":"...","required":true}]'/>
+                        <field name="template" placeholder="Use {placeholders} that match argument names…"/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_webhook" model="ir.actions.act_window">
+            <field name="name">Security Webhooks</field>
+            <field name="res_model">mn.mcp.webhook</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        <record id="view_webhook_list" model="ir.ui.view">
+            <field name="name">mn.mcp.webhook.list</field>
+            <field name="model">mn.mcp.webhook</field>
+            <field name="arch" type="xml">
+                <list editable="bottom">
+                    <field name="name"/>
+                    <field name="url"/>
+                    <field name="event_types"/>
+                    <field name="fire_count" readonly="1"/>
+                    <field name="last_fired" readonly="1"/>
+                    <field name="last_error" readonly="1"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_dashboard" model="ir.actions.client">
+            <field name="name">Live Monitor</field>
+            <field name="tag">mn_mcp_dashboard</field>
+        </record>
+    </data>
+</odoo>

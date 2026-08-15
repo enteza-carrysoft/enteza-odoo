@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_api_key" model="ir.actions.act_window">
+            <field name="name">MCP API Keys</field>
+            <field name="res_model">mn.mcp.api_key</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        <record id="view_api_key_list" model="ir.ui.view">
+            <field name="name">mn.mcp.api_key.list</field>
+            <field name="model">mn.mcp.api_key</field>
+            <field name="arch" type="xml">
+                <list decoration-success="state == 'active'" decoration-muted="state == 'revoked'">
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <field name="allowed_models"/>
+                    <field name="perm_read" widget="boolean_toggle"/>
+                    <field name="perm_write" widget="boolean_toggle"/>
+                    <field name="perm_create" widget="boolean_toggle"/>
+                    <field name="perm_unlink" widget="boolean_toggle"/>
+                    <field name="daily_quota"/>
+                    <field name="usage_today"/>
+                    <field name="total_calls"/>
+                    <field name="last_used"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_api_key_form" model="ir.ui.view">
+            <field name="name">mn.mcp.api_key.form</field>
+            <field name="model">mn.mcp.api_key</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button name="action_reveal_token" type="object" string="Reveal token (one-time)"
+                                class="oe_highlight" invisible="not token"/>
+                        <button name="action_revoke" type="object" string="Revoke" invisible="state == 'revoked'"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title"><h1><field name="name" placeholder="e.g. Claude desktop · Moaz"/></h1></div>
+                        <group>
+                            <group string="Identity">
+                                <field name="user_id"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                                <field name="expiry_date"/>
+                                <field name="daily_quota"/>
+                                <field name="usage_today" readonly="1"/>
+                                <field name="total_calls" readonly="1"/>
+                                <field name="last_used" readonly="1"/>
+                                <field name="last_ip" readonly="1"/>
+                            </group>
+                            <group string="Scope">
+                                <field name="allow_all_models"/>
+                                <field name="allowed_model_ids" widget="many2many_tags"
+                                       invisible="allow_all_models" options="{'no_create': True}"
+                                       placeholder="Select the models this key may access…"/>
+                                <field name="allowed_methods"/>
+                                <field name="perm_read" widget="boolean_toggle"/>
+                                <field name="perm_write" widget="boolean_toggle"/>
+                                <field name="perm_create" widget="boolean_toggle"/>
+                                <field name="perm_unlink" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Connect to Claude" name="connect">
+                                <div class="alert alert-info" role="alert" invisible="not token">
+                                    Your key is embedded in the links below <strong>only until you leave or revoke this key</strong> — connect now, or copy them somewhere safe.
+                                </div>
+                                <div class="alert alert-warning" role="alert" invisible="token">
+                                    The key is hidden for security, so the links below show <code>PASTE-YOUR-TOKEN-HERE</code> — replace it with your saved key, or issue a new key to see it once more.
+                                </div>
+
+                                <separator string="★ Easiest — Claude / Cursor 'Custom connector' (needs an HTTPS Odoo)"/>
+                                <p>1. Copy this URL:</p>
+                                <field name="connect_url_key" widget="CopyClipboardChar" readonly="1"
+                                       style="font-family:monospace;"/>
+                                <p class="text-muted">2. In Claude → <code>Settings → Connectors → Add custom connector</code> → paste the URL → <b>Add</b>. (Cursor: <code>Settings → MCP</code>.) The key travels in the URL, so leave OAuth blank. Your Odoo must be reachable over <b>https</b> — set <i>Public MCP URL</i> in MCP&#160;Server → Settings if it is behind a proxy.</p>
+
+                                <separator string="Alternative — Claude Desktop config file (works even over http)"/>
+                                <p>Paste into <code>Settings → Developer → Edit Config</code> (the <code>claude_desktop_config.json</code> file), then fully quit &amp; reopen Claude:</p>
+                                <field name="claude_config" widget="CopyClipboardText" readonly="1"
+                                       style="font-family:monospace;"/>
+
+                                <separator string="Or run the bridge directly in a terminal"/>
+                                <field name="mcp_remote_cmd" widget="CopyClipboardChar" readonly="1"
+                                       style="font-family:monospace;"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

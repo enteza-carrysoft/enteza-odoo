@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="prompt_top_customers" model="mn.mcp.prompt">
+            <field name="name">top_customers</field>
+            <field name="title">Top customers by revenue this month</field>
+            <field name="description">Returns the top N customers by invoiced revenue MTD.</field>
+            <field name="category">Sales</field>
+            <field name="arguments_json">[{"name":"limit","description":"How many customers","required":false}]</field>
+            <field name="template">Use odoo.read_group on account.move with domain [('move_type','=','out_invoice'),('state','=','posted')] groupby partner_id, fields amount_total:sum. Sort descending, limit {limit} (default 10).</field>
+        </record>
+        <record id="prompt_overdue_invoices" model="mn.mcp.prompt">
+            <field name="name">overdue_invoices</field>
+            <field name="title">Overdue customer invoices</field>
+            <field name="category">Accounting</field>
+            <field name="arguments_json">[]</field>
+            <field name="template">Use odoo.search_read on account.move with domain [('move_type','=','out_invoice'),('payment_state','in',['not_paid','partial']),('invoice_date_due','&lt;',context_today)] and return partner, total, days overdue.</field>
+        </record>
+        <record id="prompt_create_lead" model="mn.mcp.prompt">
+            <field name="name">create_lead</field>
+            <field name="title">Create a CRM lead</field>
+            <field name="category">CRM</field>
+            <field name="arguments_json">[{"name":"name","description":"Lead name","required":true},{"name":"email","description":"Contact email","required":false},{"name":"phone","description":"Phone","required":false}]</field>
+            <field name="template">Use odoo.create on crm.lead with values: name="{name}", email_from="{email}", phone="{phone}", type="opportunity".</field>
+        </record>
+        <record id="prompt_recent_sales" model="mn.mcp.prompt">
+            <field name="name">recent_sales</field>
+            <field name="title">Recent sales orders</field>
+            <field name="category">Sales</field>
+            <field name="arguments_json">[{"name":"days","description":"Lookback window in days","required":false}]</field>
+            <field name="template">Use odoo.search_read on sale.order with domain [('date_order','&gt;=','today - {days} days')] ordered by date_order desc. Return partner, total, state.</field>
+        </record>
+        <record id="prompt_stock_alerts" model="mn.mcp.prompt">
+            <field name="name">low_stock</field>
+            <field name="title">Low-stock products</field>
+            <field name="category">Inventory</field>
+            <field name="arguments_json">[]</field>
+            <field name="template">Use odoo.search_read on product.product with domain [('qty_available','&lt;',5),('type','=','product')]. Return name, qty_available, reorder rules.</field>
+        </record>
+        <record id="prompt_schedule_followup" model="mn.mcp.prompt">
+            <field name="name">schedule_followup</field>
+            <field name="title">Schedule a follow-up activity</field>
+            <field name="category">CRM</field>
+            <field name="arguments_json">[{"name":"model","description":"Target model","required":true},{"name":"id","description":"Record id","required":true},{"name":"summary","description":"Activity summary","required":true},{"name":"date","description":"Deadline YYYY-MM-DD","required":false}]</field>
+            <field name="template">Use odoo.activity_schedule with model={model}, id={id}, summary="{summary}", date_deadline="{date}".</field>
+        </record>
+    </data>
+</odoo>

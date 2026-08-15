@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+mcp_key_user,mcp.key.u,model_mn_mcp_api_key,group_mcp_user,1,1,1,1
+mcp_key_mgr,mcp.key.m,model_mn_mcp_api_key,group_mcp_manager,1,1,1,1
+mcp_audit_user,mcp.audit.u,model_mn_mcp_audit,group_mcp_user,1,0,0,0
+mcp_audit_mgr,mcp.audit.m,model_mn_mcp_audit,group_mcp_manager,1,1,1,1
+mcp_prompt_u,mcp.prompt.u,model_mn_mcp_prompt,group_mcp_user,1,0,0,0
+mcp_prompt_m,mcp.prompt.m,model_mn_mcp_prompt,group_mcp_manager,1,1,1,1
+mcp_webhook_u,mcp.webhook.u,model_mn_mcp_webhook,group_mcp_user,1,0,0,0
+mcp_webhook_m,mcp.webhook.m,model_mn_mcp_webhook,group_mcp_manager,1,1,1,1
+mcp_dash_u,mcp.dash.u,model_mn_mcp_dashboard,group_mcp_user,1,1,1,1
+acc_mcp_oauth_client_mgr,mcp.oauth.client.mgr,model_mn_mcp_oauth_client,group_mcp_manager,1,1,1,1
+acc_mcp_oauth_grant_mgr,mcp.oauth.grant.mgr,model_mn_mcp_oauth_grant,group_mcp_manager,1,1,1,1
+acc_mcp_oauth_token_mgr,mcp.oauth.token.mgr,model_mn_mcp_oauth_token,group_mcp_manager,1,1,1,1
+acc_mcp_tool_mgr,mcp.tool.mgr,model_mn_mcp_tool,group_mcp_manager,1,1,1,1
+acc_mcp_tool_param_mgr,mcp.tool.param.mgr,model_mn_mcp_tool_param,group_mcp_manager,1,1,1,1

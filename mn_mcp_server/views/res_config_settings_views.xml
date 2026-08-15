@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_mcp_settings" model="ir.ui.view">
+            <field name="name">res.config.settings.mcp</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app data-string="MCP Server" string="MCP Server" name="mn_mcp_server"
+                         groups="mn_mcp_server.group_mcp_manager">
+                        <block title="Endpoint" name="mcp_endpoint">
+                            <setting id="mcp_on" string="MCP endpoint enabled">
+                                <field name="mcp_enabled"/>
+                            </setting>
+                            <setting id="mcp_pub" string="Public MCP URL"
+                                     help="Full HTTPS URL of the /mcp endpoint if Odoo is behind a reverse proxy. Used in the Connect-to-Claude links.">
+                                <field name="mcp_public_url" placeholder="https://erp.mycompany.com/mcp"/>
+                            </setting>
+                            <setting id="mcp_models" string="Default allowed models"
+                                     help="Models pre-selected when creating a new API key.">
+                                <field name="mcp_default_model_ids" widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       placeholder="Select models…"/>
+                            </setting>
+                            <setting id="mcp_cap" string="Max records per call">
+                                <field name="mcp_max_records"/>
+                            </setting>
+                            <setting id="mcp_ret" string="Audit retention (days)">
+                                <field name="mcp_audit_retention_days"/>
+                            </setting>
+                        </block>
+                        <block title="Guard rails"
+                               help="Odoo's access rules stop the AI doing what the user may not do. These stop it doing something the user could do but did not mean to.">
+                            <setting id="mcp_confirm" string="Ask before destructive actions"
+                                     help="Deleting, bulk edits and method calls stop until a human confirms. Clients that support elicitation show a prompt; the rest are told to re-call with confirm: true.">
+                                <field name="mcp_confirm_enabled"/>
+                            </setting>
+                            <setting id="mcp_confirm_write" string="Confirm updates over N records"
+                                     invisible="not mcp_confirm_enabled">
+                                <field name="mcp_confirm_write_over"/>
+                            </setting>
+                            <setting id="mcp_confirm_create" string="Confirm bulk create over N records"
+                                     invisible="not mcp_confirm_enabled">
+                                <field name="mcp_confirm_create_over"/>
+                            </setting>
+                            <setting id="mcp_confirm_exec" string="Confirm arbitrary method calls"
+                                     invisible="not mcp_confirm_enabled">
+                                <field name="mcp_confirm_execute"/>
+                            </setting>
+                        </block>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+        <record id="action_mcp_settings" model="ir.actions.act_window">
+            <field name="name">MCP Settings</field>
+            <field name="res_model">res.config.settings</field>
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+            <field name="context">{'module': 'mn_mcp_server'}</field>
+        </record>
+    </data>
+</odoo>

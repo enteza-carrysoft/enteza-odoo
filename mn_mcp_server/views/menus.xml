@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <menuitem id="menu_root" name="MCP Server"
+                  web_icon="mn_mcp_server,static/description/icon.png"
+                  sequence="60"/>
+        <menuitem id="menu_dashboard" name="Live Monitor" parent="menu_root"
+                  action="action_dashboard" sequence="5"/>
+        <menuitem id="menu_keys" name="API Keys" parent="menu_root"
+                  action="action_api_key" sequence="10"/>
+        <menuitem id="menu_custom_tools" name="Custom Tools" parent="menu_root"
+                  action="action_mcp_tool" sequence="20"/>
+
+        <menuitem id="menu_oauth_clients" name="OAuth Clients" parent="menu_root"
+                  action="action_mcp_oauth_client" sequence="25"/>
+        <menuitem id="menu_oauth_tokens" name="OAuth Tokens" parent="menu_root"
+                  action="action_mcp_oauth_token" sequence="26"/>
+
+        <menuitem id="menu_prompts" name="Prompts Library" parent="menu_root"
+                  action="action_prompt" sequence="15"/>
+        <menuitem id="menu_audit" name="Audit Log" parent="menu_root"
+                  action="action_audit" sequence="20"/>
+        <menuitem id="menu_webhooks" name="Security Webhooks" parent="menu_root"
+                  action="action_webhook" sequence="25"
+                  groups="group_mcp_manager"/>
+        <menuitem id="menu_settings" name="Settings" parent="menu_root"
+                  action="action_mcp_settings" sequence="90"
+                  groups="group_mcp_manager"/>
+    </data>
+</odoo>

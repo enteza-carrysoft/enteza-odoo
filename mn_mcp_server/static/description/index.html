@@ -1,0 +1,164 @@
+<!-- Odoo MCP Server — premium listing, light theme, screenshot-led. Non-ASCII as numeric entities. -->
+<section class="oe_container" itemscope="itemscope" itemtype="https://schema.org/SoftwareApplication"
+         style="background:#FFFFFF;font-family:Georgia,'Iowan Old Style',serif;color:#0A0A0C;">
+
+  <meta itemprop="name" content="Odoo MCP Server"/>
+  <meta itemprop="operatingSystem" content="Odoo 17 / 18 / 19"/>
+  <meta itemprop="applicationCategory" content="DeveloperTool"/>
+  <meta itemprop="softwareVersion" content="19.0.2.0.8"/>
+  <div itemprop="offers" itemscope="itemscope" itemtype="https://schema.org/Offer" style="display:none">
+    <meta itemprop="price" content="0.00"/><meta itemprop="priceCurrency" content="USD"/>
+  </div>
+
+  <!-- BANNER -->
+  <div style="padding:0;margin:0;">
+    <img src="banner.png" alt="Odoo MCP Server — Free LGPL-3" style="display:block;width:100%;"/>
+  </div>
+
+  <!-- HERO -->
+  <div style="padding:56px 60px 16px;text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:12px;letter-spacing:0.4em;color:#8B5CF6;font-weight:700;">CONNECT <span style="color:#D97757;">CLAUDE</span> &#183; CURSOR &#183; ANY MCP CLIENT</div>
+    <h1 style="font-family:Georgia,serif;font-size:54px;font-weight:400;color:#0A0A0C;margin:18px 0 10px;line-height:1.05;letter-spacing:-0.02em;">
+      Let <span style="color:#D97757;">Claude</span> talk to your Odoo.
+    </h1>
+    <p style="font-family:Georgia,serif;font-size:20px;font-style:italic;color:#8B5CF6;margin:0 0 24px;">
+      Paste one URL into Claude &#8212; it reads &amp; writes your Odoo, safely. Free. LGPL-3.
+    </p>
+    <div style="display:inline-block;padding:14px 36px;background:#8B5CF6;color:#FFFFFF;font-family:Georgia,serif;font-weight:700;font-size:16px;letter-spacing:0.28em;">
+      FREE  &#183;  LGPL-3  &#183;  SOURCE ON GITHUB
+    </div>
+  </div>
+
+  <!-- CONNECT TO CLAUDE (hero screenshot) -->
+  <div style="padding:48px 40px 8px;background:#FFFFFF;text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#D97757;font-weight:700;">&#9733; ONE-CLICK CONNECTOR</div>
+    <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;color:#0A0A0C;margin:14px 0 8px;letter-spacing:-0.01em;">Connect Claude by pasting one link.</h2>
+    <p style="font-family:Georgia,serif;font-size:17px;color:#1A1A1F;max-width:840px;margin:0 auto 24px;line-height:1.7;">
+      Each API key has a <strong>Connect to Claude</strong> tab that shows a ready-to-paste URL &#8212; the key is already embedded. Drop it into Claude&#8217;s <em>Add custom connector</em> dialog and you&#8217;re live. No config files, no terminal.
+    </p>
+    <div style="max-width:1100px;margin:0 auto;">
+      <img src="screenshot_01_connect_claude.png" alt="Connect to Claude" style="display:block;width:100%;border:1px solid #E5E5E5;"/>
+    </div>
+  </div>
+
+  <!-- LIVE MONITOR -->
+  <div style="padding:56px 40px 16px;background:#FAFAFA;text-align:center;border-top:1px solid #E5E5E5;">
+    <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#8B5CF6;font-weight:700;">&#9733; LIVE MONITOR</div>
+    <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;color:#0A0A0C;margin:14px 0 8px;letter-spacing:-0.01em;">Watch the AI work, in real time.</h2>
+    <p style="font-family:Georgia,serif;font-size:17px;color:#1A1A1F;max-width:820px;margin:0 auto 24px;line-height:1.7;">
+      Calls today, success rate, average latency, active keys, a 24-hour traffic chart, your most-called tools, and a live event feed &#8212; so you always know exactly what Claude is doing inside Odoo.
+    </p>
+    <div style="max-width:1100px;margin:0 auto;">
+      <img src="screenshot_00_live_monitor.png" alt="Live monitor" style="display:block;width:100%;border:1px solid #E5E5E5;"/>
+    </div>
+  </div>
+
+  <!-- WHAT IS MCP -->
+  <div style="padding:48px 40px;background:#FFFFFF;text-align:center;border-top:1px solid #E5E5E5;border-bottom:1px solid #E5E5E5;">
+    <div style="max-width:860px;margin:0 auto;">
+      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#8B5CF6;font-weight:700;">MCP = MODEL CONTEXT PROTOCOL</div>
+      <h2 style="font-family:Georgia,serif;font-size:34px;font-weight:400;color:#0A0A0C;margin:14px 0 12px;letter-spacing:-0.01em;">The open standard for connecting AI to live data.</h2>
+      <p style="font-family:Georgia,serif;font-size:17px;color:#1A1A1F;line-height:1.75;margin:0;">
+        This module exposes Odoo as an MCP server at <code style="background:#FAFAFA;padding:2px 8px;border:1px solid #E5E5E5;font-family:monospace;">POST /mcp</code>. Any MCP client (Claude, Cursor, custom agents) authenticates and can <strong>safely</strong> read &amp; write your Odoo &#8212; Sales, CRM, Inventory, Accounting, custom models &#8212; bounded by per-key scopes, permission flags and Odoo&#8217;s standard ACL.
+      </p>
+    </div>
+  </div>
+
+  <!-- API KEYS -->
+  <div style="padding:64px 40px 16px;background:#FFFFFF;text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#8B5CF6;font-weight:700;">&#9733; SCOPED API KEYS</div>
+    <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;color:#0A0A0C;margin:14px 0 8px;letter-spacing:-0.01em;">Issue. Limit. Audit. Revoke.</h2>
+    <p style="font-family:Georgia,serif;font-size:17px;color:#1A1A1F;max-width:820px;margin:0 auto 24px;line-height:1.7;">
+      Every key runs as a specific Odoo user (so ACLs apply). <strong>Pick the exact models</strong> from a dropdown, toggle read / write / create / delete, set a daily quota, an expiry, an IP allowlist. Tokens are stored SHA-256 &#8212; the clear value is shown once.
+    </p>
+    <div style="max-width:1100px;margin:0 auto;">
+      <img src="screenshot_02_key_form.png" alt="API key form with model picker" style="display:block;width:100%;border:1px solid #E5E5E5;"/>
+    </div>
+  </div>
+
+  <!-- SETTINGS + AUDIT (two-up) -->
+  <div style="padding:40px 40px 8px;background:#FFFFFF;text-align:center;font-size:0;">
+    <div style="max-width:1140px;margin:0 auto;">
+      <div style="display:inline-block;vertical-align:top;width:48%;min-width:300px;margin:0 0.8%;">
+        <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.3em;color:#8B5CF6;font-weight:700;">SETTINGS</div>
+        <h3 style="font-family:Georgia,serif;font-size:24px;font-weight:400;color:#0A0A0C;margin:6px 0 14px;">Default models, picked not typed.</h3>
+        <img src="screenshot_03_settings.png" alt="MCP settings" style="display:block;width:100%;border:1px solid #E5E5E5;"/>
+      </div>
+      <div style="display:inline-block;vertical-align:top;width:48%;min-width:300px;margin:0 0.8%;">
+        <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.3em;color:#8B5CF6;font-weight:700;">AUDIT LOG</div>
+        <h3 style="font-family:Georgia,serif;font-size:24px;font-weight:400;color:#0A0A0C;margin:6px 0 14px;">Every call, fully traceable.</h3>
+        <img src="screenshot_04_audit.png" alt="Audit log" style="display:block;width:100%;border:1px solid #E5E5E5;"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS BOARD -->
+  <div style="padding:72px 40px 24px;background:#FAFAFA;text-align:center;border-top:1px solid #E5E5E5;">
+    <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#8B5CF6;font-weight:700;">24 TOOLS &#183; ZERO CONFIG</div>
+    <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;color:#0A0A0C;margin:14px 0 8px;letter-spacing:-0.01em;">What Claude can call.</h2>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#3A3A3F;margin:0 auto 28px;">A few of the 24 built-in tools:</p>
+  </div>
+  <div style="padding:0 40px 72px;background:#FAFAFA;text-align:left;font-size:0;">
+    <div style="max-width:1160px;margin:0 auto;">
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_search_read</div><div style="color:#1A1A1F;margin-top:6px;">Search + read in one round-trip.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_read_group</div><div style="color:#1A1A1F;margin-top:6px;">Grouped aggregates &#8212; totals, counts, sums.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_create</div><div style="color:#1A1A1F;margin-top:6px;">Create a record. Gated by perm_create.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_write</div><div style="color:#1A1A1F;margin-top:6px;">Update records. Gated by perm_write.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_fields_get</div><div style="color:#1A1A1F;margin-top:6px;">Field schema &#8212; the AI discovers structure.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_message_post</div><div style="color:#1A1A1F;margin-top:6px;">Post to a record&#8217;s chatter.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_print_report</div><div style="color:#1A1A1F;margin-top:6px;">Render a QWeb/PDF report.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_send_email</div><div style="color:#1A1A1F;margin-top:6px;">Send a mail through Odoo.</div></div>
+      <div style="display:inline-block;vertical-align:top;width:31%;min-width:260px;margin:0 1% 12px;padding:18px;background:#FFFFFF;border-left:3px solid #8B5CF6;font-size:14px;line-height:1.6;"><div style="font-family:monospace;font-size:13px;color:#8B5CF6;font-weight:700;">odoo_execute</div><div style="color:#1A1A1F;margin-top:6px;">Call a model method &#8212; whitelist-gated.</div></div>
+    </div>
+  </div>
+
+  <!-- QUICKSTART -->
+  <div style="padding:72px 40px;background:#FFFFFF;text-align:center;border-top:1px solid #E5E5E5;">
+    <div style="max-width:900px;margin:0 auto;">
+      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#D97757;font-weight:700;">FIVE-MINUTE QUICKSTART</div>
+      <h2 style="font-family:Georgia,serif;font-size:36px;font-weight:400;color:#0A0A0C;margin:14px 0 24px;letter-spacing:-0.01em;">Connect Claude in five minutes.</h2>
+      <div style="text-align:left;background:#FAFAFA;border:1px solid #E5E5E5;padding:28px;font-size:15px;line-height:1.95;color:#1A1A1F;">
+        <div><strong style="color:#8B5CF6;">1.</strong> Install <code style="background:#FFFFFF;padding:2px 8px;font-family:monospace;">mn_mcp_server</code>.</div>
+        <div><strong style="color:#8B5CF6;">2.</strong> <strong>MCP Server &rarr; API Keys &rarr; New.</strong> Pick the Odoo user, choose the models, tick the permissions you want.</div>
+        <div><strong style="color:#8B5CF6;">3.</strong> Open the <strong>Connect to Claude</strong> tab &amp; copy the URL (your key is already in it).</div>
+        <div><strong style="color:#8B5CF6;">4.</strong> In Claude &rarr; <strong>Settings &rarr; Connectors &rarr; Add custom connector</strong> &rarr; paste the URL &rarr; <strong>Add</strong>. (Your Odoo must be reachable over https.)</div>
+        <div><strong style="color:#8B5CF6;">5.</strong> Ask: <em>&#8220;Find my top 5 customers by revenue this month.&#8221;</em></div>
+      </div>
+      <p style="font-family:Georgia,serif;font-size:14px;color:#3A3A3F;margin:16px 0 0;">Prefer the config-file route? A ready <code style="font-family:monospace;">claude_desktop_config.json</code> snippet and an <code style="font-family:monospace;">mcp-remote</code> command are on the same tab &#8212; they even work over http.</p>
+    </div>
+  </div>
+
+  <!-- WHY FREE -->
+  <div style="padding:64px 40px;background:#FAFAFA;text-align:center;border-top:1px solid #E5E5E5;">
+    <div style="max-width:780px;margin:0 auto;">
+      <h2 style="font-family:Georgia,serif;font-size:32px;font-weight:400;color:#0A0A0C;margin:0 0 18px;letter-spacing:-0.01em;">Why this one is free.</h2>
+      <p style="font-family:Georgia,serif;font-size:17px;color:#1A1A1F;line-height:1.75;">
+        Other Odoo MCP modules charge $200+. AI access shouldn&#8217;t be a paywall &#8212; every Odoo shop deserves to plug an assistant into their ERP without a second invoice. <strong>LGPL-3, source on GitHub, lifetime updates, Odoo 17 / 18 / 19.</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:88px 40px;background:#FFFFFF;text-align:center;border-top:1px solid #E5E5E5;">
+    <h2 style="font-family:Georgia,serif;font-size:80px;font-weight:400;color:#0A0A0C;margin:0;letter-spacing:-0.04em;line-height:0.95;">Free.</h2>
+    <p style="font-family:Georgia,serif;font-size:22px;color:#8B5CF6;font-style:italic;margin:12px 0 0;">Install. Issue a key. Connect Claude.</p>
+  </div>
+
+  <!-- COLOPHON -->
+  <div style="padding:32px 40px 56px;background:#FFFFFF;text-align:center;border-top:1px solid #E5E5E5;">
+    <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.32em;color:#3A3A3F;font-weight:700;">ODOO MCP SERVER &#183; v19.0.2.0.8 &#183; LGPL-3</div>
+    <p style="font-family:Georgia,serif;font-size:13px;color:#3A3A3F;margin:14px 0 0;">Built by <strong style="color:#0A0A0C;">Moaz Nabil</strong></p>
+  </div>
+</section>
+
+<!-- WHATSAPP CONTACT (store strips <a> links -> image button + plain text) -->
+<section style="background:#0F172A;color:#fff;padding:54px 40px;text-align:center;font-family:-apple-system,system-ui,Segoe UI,Arial,sans-serif;">
+  <div style="font-size:13px;letter-spacing:6px;color:#25D366;font-weight:700;margin-bottom:10px;">QUESTIONS &#183; PRE-SALES &#183; SUPPORT</div>
+  <h2 style="color:#fff;font-size:32px;margin:0 0 14px 0;">Talk to the developer on WhatsApp</h2>
+  <p style="color:#94A3B8;font-size:15px;margin:0 auto 26px;max-width:720px;line-height:1.7;">
+    Same-day reply with pricing, demo access, customisation quotes or installation help.
+  </p>
+  <div><img src="whatsapp_button.png" alt="Chat on WhatsApp" style="display:inline-block;width:360px;height:auto;"/></div>
+  <p style="font-size:22px;font-weight:800;color:#25D366;margin:16px 0 2px;direction:ltr;">&#43;966 59 621 7950</p>
+  <p style="margin:6px 0 0 0;color:#94A3B8;font-size:14px;">moaaznaabilali@gmail.com &#183; replies in English &amp; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</p>
+</section>

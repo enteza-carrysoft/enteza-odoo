@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_mcp_tool_list" model="ir.ui.view">
+            <field name="name">mn.mcp.tool.list</field>
+            <field name="model">mn.mcp.tool</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="kind"/>
+                    <field name="model_id"/>
+                    <field name="description" optional="show"/>
+                    <field name="call_count" string="Calls"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_mcp_tool_form" model="ir.ui.view">
+            <field name="name">mn.mcp.tool.form</field>
+            <field name="model">mn.mcp.tool</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" string="Tool name"/>
+                            <h1><field name="name" placeholder="overdue_invoices"/></h1>
+                            <div class="text-muted">
+                                Letters, digits, underscore and hyphen only — clients
+                                reject dots and spaces. Do not start with
+                                <code>odoo_</code>; that prefix is the built-ins'.
+                            </div>
+                        </div>
+
+                        <group>
+                            <field name="description" nolabel="1" colspan="2"
+                                   placeholder="Invoices past their due date that have not been paid. Use this when someone asks who owes money."/>
+                        </group>
+                        <div class="alert alert-info" role="alert">
+                            The AI decides whether to use this tool from the description
+                            alone. Write it for a new colleague: what it returns, and
+                            when to reach for it.
+                        </div>
+
+                        <group>
+                            <group>
+                                <field name="kind" widget="radio"/>
+                                <field name="model_id" options="{'no_create': True}"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="limit"/>
+                                <field name="order" placeholder="invoice_date_due asc"
+                                       invisible="kind == 'group'"/>
+                                <field name="call_count" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Which records" invisible="kind == 'action'">
+                            <field name="domain" nolabel="1"
+                                   placeholder="[(&quot;move_type&quot;,&quot;=&quot;,&quot;out_invoice&quot;), (&quot;invoice_date_due&quot;,&quot;&lt;&quot;,{as_of})]"/>
+                        </group>
+                        <group string="Which records" invisible="kind != 'action'">
+                            <field name="domain" nolabel="1"/>
+                            <field name="action_id" options="{'no_create': True}"/>
+                        </group>
+
+                        <group string="What to return" invisible="kind != 'query'">
+                            <field name="field_names" nolabel="1"
+                                   placeholder="name, partner_id, amount_total, invoice_date_due"/>
+                            <div class="text-muted" colspan="2">
+                                Leave empty to return just the name. Every extra field
+                                costs the model tokens on every call.
+                            </div>
+                        </group>
+
+                        <group invisible="kind != 'group'">
+                            <field name="groupby" placeholder="partner_id"/>
+                            <field name="aggregates" placeholder="amount_total:sum, id:count"/>
+                        </group>
+
+                        <notebook>
+                            <page string="Parameters" name="params">
+                                <field name="param_ids">
+                                    <list editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="name"/>
+                                        <field name="param_type"/>
+                                        <field name="description"/>
+                                        <field name="required"/>
+                                        <field name="default_value"/>
+                                    </list>
+                                </field>
+                                <div class="text-muted mt-2">
+                                    Reference a parameter in the domain as
+                                    <code>{name}</code>. Values are inserted as typed
+                                    literals, so a parameter can never inject its own
+                                    clause into the domain. A date parameter accepts
+                                    <code>today</code> as its default.
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_mcp_tool" model="ir.actions.act_window">
+            <field name="name">Custom Tools</field>
+            <field name="res_model">mn.mcp.tool</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Teach the AI your business</p>
+                <p>
+                    The built-in tools are primitives — search, read, write — so the
+                    model has to work out what "overdue" or "at risk" means in your
+                    Odoo. A custom tool encodes that once, with a name and a
+                    description it reads, and answers become consistent.
+                </p>
+                <p>
+                    Custom tools still run as the API key's user, inside that key's
+                    allowed models. They can narrow what the AI sees. They cannot
+                    widen it.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

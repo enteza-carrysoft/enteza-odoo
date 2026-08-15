@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="cfg_enabled" model="ir.config_parameter">
+            <field name="key">mn_mcp.enabled</field>
+            <field name="value">True</field>
+        </record>
+        <record id="cfg_default_models" model="ir.config_parameter">
+            <field name="key">mn_mcp.default_models</field>
+            <field name="value">res.partner,product.template,sale.order,crm.lead,account.move,project.task</field>
+        </record>
+        <record id="cfg_max_records" model="ir.config_parameter">
+            <field name="key">mn_mcp.max_records</field>
+            <field name="value">100</field>
+        </record>
+        <record id="cfg_audit_retention" model="ir.config_parameter">
+            <field name="key">mn_mcp.audit_retention</field>
+            <field name="value">90</field>
+        </record>
+    </data>
+</odoo>

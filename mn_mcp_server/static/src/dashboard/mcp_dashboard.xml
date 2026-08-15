@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="mn_mcp_server.Dashboard">
+        <div style="background:#0A0A0C;color:#FAFAFA;min-height:100vh;padding:28px;font-family:Georgia,serif;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #1F1F22;padding-bottom:18px;margin-bottom:24px;flex-wrap:wrap;gap:18px;">
+                <div>
+                    <div style="font-size:11px;letter-spacing:.4em;color:#8B5CF6;">ODOO MCP SERVER · LIVE MONITOR</div>
+                    <div t-if="!state.loading" style="font-size:30px;color:#FAFAFA;font-weight:400;margin-top:6px;">Real-time AI traffic</div>
+                </div>
+                <div t-if="!state.loading" style="text-align:right;font-size:13px;color:#71717A;">
+                    Refreshed <t t-esc="state.data.now"/> · auto every 8 s
+                </div>
+            </div>
+
+            <t t-if="state.loading"><div style="color:#8B5CF6;">Loading…</div></t>
+            <t t-if="!state.loading">
+                <div style="display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;background:#161618;padding:22px;border-left:3px solid #8B5CF6;">
+                        <div style="font-size:10px;letter-spacing:.32em;color:#8B5CF6;">CALLS TODAY</div>
+                        <div style="font-size:34px;color:#FAFAFA;margin-top:6px;"><t t-esc="state.data.calls_today"/></div>
+                    </div>
+                    <div style="flex:1;min-width:200px;background:#161618;padding:22px;border-left:3px solid #10B981;">
+                        <div style="font-size:10px;letter-spacing:.32em;color:#10B981;">SUCCESS RATE</div>
+                        <div style="font-size:34px;color:#FAFAFA;margin-top:6px;"><t t-esc="state.data.success_pct"/>%</div>
+                    </div>
+                    <div style="flex:1;min-width:200px;background:#161618;padding:22px;border-left:3px solid #F87171;">
+                        <div style="font-size:10px;letter-spacing:.32em;color:#F87171;">ERRORS</div>
+                        <div style="font-size:34px;color:#FAFAFA;margin-top:6px;"><t t-esc="state.data.errors_today"/></div>
+                    </div>
+                    <div style="flex:1;min-width:200px;background:#161618;padding:22px;border-left:3px solid #67E8F9;">
+                        <div style="font-size:10px;letter-spacing:.32em;color:#67E8F9;">AVG LATENCY</div>
+                        <div style="font-size:34px;color:#FAFAFA;margin-top:6px;"><t t-esc="state.data.avg_latency"/> ms</div>
+                    </div>
+                    <div style="flex:1;min-width:200px;background:#161618;padding:22px;border-left:3px solid #FDE68A;">
+                        <div style="font-size:10px;letter-spacing:.32em;color:#FDE68A;">ACTIVE KEYS</div>
+                        <div style="font-size:34px;color:#FAFAFA;margin-top:6px;"><t t-esc="state.data.active_keys"/></div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:18px;margin-bottom:24px;flex-wrap:wrap;">
+                    <div style="flex:2;min-width:400px;background:#161618;padding:24px;">
+                        <div style="font-size:11px;letter-spacing:.4em;color:#8B5CF6;margin-bottom:14px;">CALLS · LAST 24 HOURS</div>
+                        <div style="height:280px;"><canvas t-ref="trend"/></div>
+                    </div>
+                    <div style="flex:1;min-width:280px;background:#161618;padding:24px;">
+                        <div style="font-size:11px;letter-spacing:.4em;color:#8B5CF6;margin-bottom:14px;">TOP TOOLS</div>
+                        <t t-foreach="state.data.top_tools" t-as="t" t-key="t.name">
+                            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1F1F22;font-size:13px;">
+                                <span style="color:#FAFAFA;font-family:monospace;"><t t-esc="t.name"/></span>
+                                <span style="color:#A78BFA;"><t t-esc="t.count"/></span>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <div style="background:#161618;padding:24px;">
+                    <div style="font-size:11px;letter-spacing:.4em;color:#8B5CF6;margin-bottom:14px;">RECENT EVENTS</div>
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;color:#A1A1AA;">
+                        <thead><tr style="color:#71717A;font-size:11px;letter-spacing:.2em;">
+                            <th style="text-align:left;padding:8px 0;">WHEN</th>
+                            <th style="text-align:left;">METHOD</th>
+                            <th style="text-align:left;">TARGET</th>
+                            <th style="text-align:left;">KEY</th>
+                            <th style="text-align:right;">LATENCY</th>
+                            <th style="text-align:left;">STATUS</th>
+                        </tr></thead>
+                        <tbody>
+                            <t t-foreach="state.data.recent_events" t-as="e" t-key="e.id">
+                                <tr style="border-top:1px solid #1F1F22;">
+                                    <td style="padding:8px 0;"><t t-esc="e.when"/></td>
+                                    <td style="font-family:monospace;color:#FAFAFA;"><t t-esc="e.method"/></td>
+                                    <td><t t-esc="e.target"/></td>
+                                    <td><t t-esc="e.key"/></td>
+                                    <td style="text-align:right;"><t t-esc="e.latency"/> ms</td>
+                                    <td>
+                                        <span t-if="e.status === 'ok'" style="color:#10B981;">● OK</span>
+                                        <span t-if="e.status !== 'ok'" style="color:#F87171;">● <t t-esc="e.status"/></span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>
