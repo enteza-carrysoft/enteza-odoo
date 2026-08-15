@@ -1,68 +1,42 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
 
-const COMPANY_COLORS = {
-    0: "transparent",
-    1: "#F06050",
-    2: "#F4A460",
-    3: "#F7CD1F",
-    4: "#6CC1ED",
-    5: "#814968",
-    6: "#EB7E7F",
-    7: "#2C8397",
-    8: "#475577",
-    9: "#D6145F",
-    10: "#30C381",
-    11: "#9365B8",
-};
-
-function ensureStrip() {
-    let strip = document.querySelector(".o_company_top_color_strip");
-    if (!strip) {
-        strip = document.createElement("div");
-        strip.className = "o_company_top_color_strip";
-        strip.setAttribute("aria-hidden", "true");
-        document.body.appendChild(strip);
-    }
-    return strip;
-}
-
-function applyColor(companyName, colorIndex) {
-    const strip = ensureStrip();
-    const color = COMPANY_COLORS[colorIndex] || "transparent";
-    strip.style.setProperty("--company-top-color", color);
-    strip.title = companyName ? `Empresa activa: ${companyName}` : "";
-}
-
+/**
+ * Marca en `<html>` el índice de color de la compañía activa.
+ *
+ * El color en sí no se decide aquí: lo pinta el SCSS a partir del atributo
+ * `data-company-color`, para no duplicar la paleta de Odoo en JavaScript y para no
+ * añadir nodos al DOM que monta el cliente web.
+ *
+ * 🔴 En Odoo 19 **no existe el servicio `user`** (desapareció en la 17): `user` se importa
+ * de `@web/core/user`. Declararlo como dependencia hace que `startServices` lance
+ * "Some services could not be started ... Missing dependencies: user" antes de montar el
+ * cliente web, y el backend entero se queda **en blanco**. Verificado en el bundle de
+ * `enteza` el 2026-08-15.
+ */
 export const companyTopColorService = {
-    dependencies: ["orm", "user"],
+    dependencies: ["orm"],
 
-    async start(env, { orm, user }) {
-        const ids = user.context.allowed_company_ids || [];
-        const companyId = ids[0];
-
-        if (!companyId) {
-            applyColor("", 0);
-            return {};
-        }
-
+    async start(env, { orm }) {
+        // Un fallo aquí abortaría el arranque del cliente web, así que nada sale de este
+        // try: la franja es decorativa y nunca debe impedir trabajar.
         try {
-            const companies = await orm.read(
-                "res.company",
-                [companyId],
-                ["name", "top_bar_color"]
-            );
-            const company = companies[0];
-            if (company) {
-                applyColor(company.name, company.top_bar_color || 0);
+            const company = user.activeCompany;
+            if (!company) {
+                return;
+            }
+            const [record] = await orm.read("res.company", [company.id], ["color"]);
+            const colorIndex = record && record.color;
+            if (colorIndex) {
+                document.documentElement.dataset.companyColor = String(colorIndex);
+            } else {
+                delete document.documentElement.dataset.companyColor;
             }
         } catch (error) {
-            console.warn("Company Top Color: could not load company color.", error);
-            applyColor("", 0);
+            console.warn("company_top_color: no se pudo leer el color de la compañía.", error);
         }
-
-        return {};
     },
 };
 

@@ -1,9 +1,42 @@
-.o_company_top_color_strip {
+// Paleta de la lista de colores de Odoo 19, extraída de `web.assets_web.min.css` de la
+// instancia (`.o_colorlist > button.o_colorlist_item_color_N`) el 2026-08-15. Esos
+// selectores no se pueden reutilizar porque están acotados a `.o_colorlist > button`, así
+// que se copian los valores; son los mismos que muestra el selector del formulario de la
+// compañía, para que la franja coincida con lo que el usuario ha elegido.
+//
+// 🔴 No es la paleta clásica (#F06050, #F4A460...): cambió en versiones recientes.
+$o-company-top-colors: (
+    1: rgb(238, 45, 45),
+    2: rgb(220, 133, 52),
+    3: rgb(232, 187, 29),
+    4: rgb(87, 148, 221),
+    5: rgb(159, 98, 143),
+    6: rgb(219, 136, 101),
+    7: rgb(65, 169, 162),
+    8: rgb(48, 75, 224),
+    9: rgb(238, 47, 138),
+    10: rgb(97, 195, 110),
+    11: rgb(152, 114, 230),
+);
+
+// Pseudoelemento sobre `body` en vez de un `<div>` propio: el cliente web monta su
+// aplicación OWL sobre `body`, y un nodo hermano añadido a mano queda a merced de ese
+// montaje. Un `::before` no vive en el DOM y no puede estorbarle.
+//
+// El atributo sólo lo pone el JS cuando hay color (índice 1-11), así que si la compañía
+// no tiene color no se genera ninguna regla ni ninguna franja.
+html[data-company-color] body::before {
+    content: "";
     position: fixed;
     inset: 0 0 auto 0;
     height: 5px;
     z-index: 1100;
     pointer-events: none;
-    background: var(--company-top-color, transparent);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+@each $index, $color in $o-company-top-colors {
+    html[data-company-color="#{$index}"] body::before {
+        background-color: $color;
+    }
 }
