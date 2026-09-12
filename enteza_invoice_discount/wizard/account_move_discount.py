@@ -25,4 +25,6 @@ class AccountMoveDiscount(models.TransientModel):
         # ('product', 'line_section', 'line_subsection', 'line_note'), así que basta con
         # excluir las secciones/notas quedándonos solo con 'product'.
         lines = self.move_id.invoice_line_ids.filtered(lambda line: line.display_type == "product")
+        if not lines:
+            raise ValidationError(_("La factura no tiene líneas de producto a las que aplicar el descuento."))
         lines.write({"discount": self.discount_percentage * 100})

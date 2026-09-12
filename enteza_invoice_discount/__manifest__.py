@@ -1,6 +1,6 @@
 {
     "name": "Enteza - Descuento en factura",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "summary": "Botón para aplicar un descuento a todas las líneas de una factura de cliente",
     "category": "Accounting/Accounting",
     "author": "Enteza",
