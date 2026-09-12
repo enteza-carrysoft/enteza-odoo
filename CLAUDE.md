@@ -24,12 +24,14 @@ que ser reversible y trazable. Eso pesa más que la automatización.
 
 1. **`enteza26` es producción**, con la contabilidad migrada y cuadrada al céntimo. No hay
    staging. Confirmar con el usuario antes de cualquier escritura.
-2. **El despliegue es por `git pull`**: Xtendoo sincroniza la rama `19.0` de este repositorio
-   contra el addons path de `enteza26`. Commit → push → `git pull` → Actualizar lista de
-   aplicaciones → Instalar. Que un módulo **aparezca** en la lista no quiere decir que esté
-   instalado: comprobar el `state` por RPC. Sigue sin haber acceso a `odoo -u` ni a
-   `odoo-bin --test-enable`. El camino alternativo del zip por `base.import.module` tiene dos
-   trampas con fallo silencioso — están documentadas en el skill.
+2. **El hosting es Doodba, no un `git pull` plano**: el addons path se rellena con
+   `git-aggregate` a partir de `repos.yaml`, y ese paso **no se dispara solo con el push** —
+   hay que invocar `invoke git-aggregate` en el servidor. Commit → push → `invoke
+   git-aggregate` → Actualizar lista de aplicaciones → Instalar. Que un módulo **aparezca**
+   en la lista no quiere decir que esté instalado: comprobar el `state` por RPC. Sigue sin
+   haber acceso a `odoo -u` ni a `odoo-bin --test-enable`. El camino alternativo del zip por
+   `base.import.module` tiene dos trampas con fallo silencioso — están documentadas en el
+   skill, igual que el detalle completo de este fallo (medido el 2026-09-13).
 3. **No se pueden ejecutar pruebas automatizadas.** Se escriben igualmente, pero al entregar
    hay que decir siempre que están validadas por sintaxis y **no ejecutadas**.
 4. **Apenas hay existencias.** La carga de inventario empezó a primeros de agosto de 2026: el

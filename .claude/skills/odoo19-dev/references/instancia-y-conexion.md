@@ -67,14 +67,30 @@ campo exacto que falla**. Merece la pena leerlo antes de suponer nada.
 
 ## Cómo se instala un módulo
 
-### La vía real: `git pull` de Xtendoo (confirmado el 2026-08-01)
+### La vía real: es Doodba, no un `git pull` plano (corregido el 2026-09-13)
 
-**Este repositorio se despliega en el servidor por `git pull`.** Xtendoo sincroniza la rama
-`19.0` contra el addons path de `enteza26`. El flujo es:
+**El hosting es Doodba.** Lo que hasta ahora se documentaba aquí como "Xtendoo hace `git
+pull`" es incompleto y llevó a dar por perdido un fix que en realidad solo estaba a un paso
+de aplicarse: en Doodba los addons de este repositorio no se clonan sin más, se traen a
+`odoo/custom/src/` a partir de `repos.yaml` mediante **`git-aggregate`**, y ese paso **no se
+dispara solo con un `git pull`** al remoto — hace falta invocarlo, con `invoke
+git-aggregate`. Medido el 2026-09-13 con `enteza_invoice_discount`: dos commits de fix se
+subieron a `origin/19.0`, y por RPC `installed_version` (el manifiesto tal cual está en el
+disco del servidor) siguió leyendo la versión vieja durante **dos rondas completas** de
+"Actualizar lista de aplicaciones" + Actualizar módulo, porque el árbol que Doodba monta en
+el contenedor no se había refrescado. Solo cambió al lanzar `invoke git-aggregate`.
+
+El flujo real es:
 
 1. Commit y push a la rama `19.0`.
-2. Xtendoo hace `git pull` en el servidor.
+2. En el servidor (Xtendoo o quien tenga acceso a ese panel): `invoke git-aggregate` — **no
+   basta con que el repo remoto tenga los commits nuevos**, hace falta este paso para que
+   Doodba los traiga al árbol que usa el contenedor.
 3. En Odoo: Aplicaciones → **Actualizar lista de aplicaciones**, y luego Instalar o Actualizar.
+
+Antes de dar por buena una actualización que no surtió efecto, comprobar primero si el
+`invoke git-aggregate` se ha ejecutado de verdad — es la causa más probable, por delante de
+cualquier sospecha sobre el código o sobre el botón Actualizar de Odoo.
 
 Cómo distinguirlo por RPC: en `ir.module.module`, el campo **`imported`** vale `False` cuando
 Odoo leyó el manifiesto **del filesystem** (llegó por `git pull`) y `True` cuando entró por

@@ -65,13 +65,20 @@ Requiere `.env.local` en la raíz del repo con `ODOO19_URL`, `ODOO19_DB`, `ODOO1
 
 ## Cómo se instala un módulo aquí
 
-**La vía real es `git pull`** (confirmado el 2026-08-01): Xtendoo sincroniza la rama `19.0` de
-este repositorio contra el addons path de `enteza26`. Commit → push → `git pull` de Xtendoo →
-Aplicaciones → Actualizar lista de aplicaciones → Instalar/Actualizar.
+**El hosting es Doodba** (corregido el 2026-09-13; hasta ahora esto decía "Xtendoo hace
+`git pull`", y esa versión incompleta hizo perder dos rondas enteras dando por buena una
+actualización que no había llegado al servidor). Los addons no se clonan sin más: Doodba los
+trae a `odoo/custom/src/` a partir de `repos.yaml` mediante `git-aggregate`, y ese paso **no
+se dispara solo con el push a `19.0`** — hace falta invocar `invoke git-aggregate` en el
+servidor. El flujo real: Commit → push → `invoke git-aggregate` → Aplicaciones → Actualizar
+lista de aplicaciones → Instalar/Actualizar. Detalle completo, con la medición de
+`enteza_invoice_discount`, en `references/instancia-y-conexion.md`.
 
-🔴 **Ojo:** que un módulo aparezca en la lista **no significa que esté instalado**. `git pull`
-solo deja los ficheros. Comprobar siempre el `state` por RPC antes de dar por buena una
-instalación. En `ir.module.module`, `imported = False` indica que llegó por filesystem.
+🔴 **Ojo:** que un módulo aparezca en la lista **no significa que esté instalado**. Que el
+paso de sincronización se haya ejecutado tampoco significa que haya llegado nada nuevo si
+antes no se corrió `invoke git-aggregate`. Comprobar siempre el `state` por RPC antes de dar
+por buena una instalación. En `ir.module.module`, `imported = False` indica que llegó por
+filesystem.
 
 Sigue sin haber acceso a `odoo -u`, así que **no se pueden ejecutar pruebas**.
 
