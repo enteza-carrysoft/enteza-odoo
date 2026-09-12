@@ -32,6 +32,15 @@ a la columna Descuento de **todas** las líneas de la factura de una vez.
 - El wizard calca `sale.order.discount` (`addons/sale/wizard/sale_order_discount.py`) en su
   variante "On All Order Lines": mismo campo `discount_percentage` con `widget="percentage"`
   (se guarda como fracción 0–1, no como 0–100) y la misma validación de que no supere 1.0.
+- 🔴 **`account.move.line.display_type` no es como `sale.order.line.display_type`.** En
+  `sale.order.line` es `False` para una línea de producto normal, y por eso el wizard nativo
+  filtra con `not line.display_type`. En `account.move.line` es un `Selection`
+  **`required=True`**: una línea de producto vale `'product'`, nunca `False`. Copiar el
+  filtro tal cual (`not line.display_type`) deja el recordset vacío y el wizard no escribe
+  nada — sin ningún error, el botón "Aplicar" simplemente no hace efecto. El filtro correcto
+  es `line.display_type == 'product'` (dentro de `invoice_line_ids`, que ya viene acotado
+  por dominio a `('product', 'line_section', 'line_subsection', 'line_note')`, así que
+  equivale a excluir solo secciones y notas).
 - El botón se inserta con un xpath sobre `//group[hasclass('oe_invoice_lines_tab')]`, que es
   el grupo que envuelve narración + totales en `account.view_move_form`. Si Odoo cambia esa
   clase en una futura versión, el xpath deja de encontrar el nodo y la vista falla al

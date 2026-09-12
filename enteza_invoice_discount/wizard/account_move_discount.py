@@ -19,5 +19,10 @@ class AccountMoveDiscount(models.TransientModel):
 
     def action_apply_discount(self):
         self.ensure_one()
-        lines = self.move_id.invoice_line_ids.filtered(lambda line: not line.display_type)
+        # 🔴 A diferencia de sale.order.line, account.move.line.display_type es un
+        # Selection `required=True`: una línea de producto normal vale 'product', nunca
+        # False. `invoice_line_ids` ya viene filtrado por dominio a
+        # ('product', 'line_section', 'line_subsection', 'line_note'), así que basta con
+        # excluir las secciones/notas quedándonos solo con 'product'.
+        lines = self.move_id.invoice_line_ids.filtered(lambda line: line.display_type == "product")
         lines.write({"discount": self.discount_percentage * 100})
