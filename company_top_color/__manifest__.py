@@ -1,6 +1,6 @@
 {
     "name": "Company Top Color",
-    "version": "19.0.2.0.0",
+    "version": "19.0.3.0.0",
     "summary": "Identifica la compañía activa con una franja de color en la parte superior",
     "category": "Productivity",
     "author": "Enteza",

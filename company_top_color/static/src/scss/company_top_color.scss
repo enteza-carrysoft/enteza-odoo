@@ -19,12 +19,19 @@ $o-company-top-colors: (
     11: rgb(152, 114, 230),
 );
 
+// Rojo fijo cuando hay 2+ compañías seleccionadas a la vez (no es el color de ninguna
+// compañía en particular, por eso no vive en el mapa de arriba: pedido explícito del
+// cliente, para que la franja avise igual aunque ninguna de las compañías activas use el
+// rojo de su paleta).
+$o-company-top-color-multi: rgb(238, 45, 45);
+
 // Pseudoelemento sobre `body` en vez de un `<div>` propio: el cliente web monta su
 // aplicación OWL sobre `body`, y un nodo hermano añadido a mano queda a merced de ese
 // montaje. Un `::before` no vive en el DOM y no puede estorbarle.
 //
-// El atributo sólo lo pone el JS cuando hay color (índice 1-11), así que si la compañía
-// no tiene color no se genera ninguna regla ni ninguna franja.
+// El atributo sólo lo pone el JS cuando hay color (índice 1-11) o cuando hay varias
+// compañías activas ("multi"), así que si la compañía activa no tiene color no se genera
+// ninguna regla ni ninguna franja.
 html[data-company-color] body::before {
     content: "";
     position: fixed;
@@ -39,4 +46,8 @@ html[data-company-color] body::before {
     html[data-company-color="#{$index}"] body::before {
         background-color: $color;
     }
+}
+
+html[data-company-color="multi"] body::before {
+    background-color: $o-company-top-color-multi;
 }

@@ -14,6 +14,11 @@ compañía se está trabajando. No toca el modo Claro/Oscuro de cada usuario.
 - Si la compañía no tiene color (índice 0), no se pinta nada.
 - El color es el de la **compañía activa principal** (`user.activeCompany`). Al cambiar de
   compañía Odoo recarga la página, así que la franja se actualiza sola.
+- **Si hay 2 o más compañías seleccionadas a la vez** (`user.activeCompanies.length > 1`),
+  la franja se pinta **en rojo fijo**, sin mirar el color de ninguna compañía en concreto.
+  Confirmar una selección múltiple en el selector de compañías recarga la página (lo hace el
+  propio `CompanySelector.apply()` del core de Odoo), así que este caso también se
+  actualiza solo.
 - No modifica `color_scheme`, ni cookies de apariencia, ni los assets del modo oscuro.
 
 En `enteza` las dos compañías ya tienen color asignado (Visueña = 1 rojo, Stileum = 2
