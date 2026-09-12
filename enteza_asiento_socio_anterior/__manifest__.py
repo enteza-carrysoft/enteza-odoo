@@ -1,6 +1,6 @@
 {
     "name": "Enteza - Arrastrar socio en asientos varios",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "summary": "Al añadir una línea nueva en un asiento manual, precarga el socio de la línea anterior",
     "category": "Accounting/Accounting",
     "author": "Enteza",

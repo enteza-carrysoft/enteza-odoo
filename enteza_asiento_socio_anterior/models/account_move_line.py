@@ -1,4 +1,4 @@
-from odoo import models
+from odoo import api, models
 
 # Tipos de línea que no son un apunte de datos real (secciones y notas): nunca llevan socio.
 _NON_DATA_DISPLAY_TYPES = ("line_section", "line_subsection", "line_note")
@@ -7,25 +7,24 @@ _NON_DATA_DISPLAY_TYPES = ("line_section", "line_subsection", "line_note")
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
-    def _compute_partner_id(self):
-        # account.move.line._compute_partner_id (núcleo) solo copia el socio de la
-        # cabecera del asiento (move_id.partner_id), que en un asiento manual
-        # (move_type='entry') casi nunca está rellena. Aquí, solo para ese caso, si la
-        # línea sigue sin socio tras el compute nativo, se copia el de la última línea
-        # de datos anterior del mismo asiento — el mismo momento en que Odoo ya
-        # autocompleta otros campos (cantidad, UoM…) al añadir una línea nueva.
-        super()._compute_partner_id()
-        for line in self:
-            if (
-                line.partner_id
-                or line.move_id.move_type != "entry"
-                or line.display_type in _NON_DATA_DISPLAY_TYPES
-            ):
-                continue
-            lineas_anteriores = line.move_id.line_ids.filtered(
-                lambda l: l.id != line.id
-                and l.partner_id
-                and l.display_type not in _NON_DATA_DISPLAY_TYPES
-            )
-            if lineas_anteriores:
-                line.partner_id = lineas_anteriores[-1].partner_id
+    # 🔴 La primera versión heredaba _compute_partner_id (compute='...', precompute=True,
+    # sin @api.depends). El precompute nativo solo se garantiza en create(), no al ir
+    # tabulando por la rejilla editable sin guardar todavía, así que en el flujo real
+    # (añadir línea → tabular) nunca llegaba a dispararse. El onchange sí está garantizado
+    # por Odoo para ver las líneas hermanas ya escritas en pantalla aunque el asiento no se
+    # haya guardado — es el mecanismo correcto para este caso.
+    @api.onchange("account_id")
+    def _onchange_account_id_socio_anterior(self):
+        if (
+            self.partner_id
+            or self.move_id.move_type != "entry"
+            or self.display_type in _NON_DATA_DISPLAY_TYPES
+        ):
+            return
+        lineas_anteriores = self.move_id.line_ids.filtered(
+            lambda l: l.id != self.id
+            and l.partner_id
+            and l.display_type not in _NON_DATA_DISPLAY_TYPES
+        )
+        if lineas_anteriores:
+            self.partner_id = lineas_anteriores[-1].partner_id
