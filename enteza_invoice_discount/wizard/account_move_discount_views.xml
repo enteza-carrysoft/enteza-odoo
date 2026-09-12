@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="account_move_discount_form" model="ir.ui.view">
+        <field name="name">account.move.discount.form</field>
+        <field name="model">account.move.discount</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="move_id" invisible="1"/>
+                <group>
+                    <field name="discount_percentage" widget="percentage" string="Descuento"/>
+                </group>
+                <footer>
+                    <button type="object" string="Aplicar" name="action_apply_discount" class="btn btn-primary" data-hotkey="q"/>
+                    <button special="cancel" string="Descartar" class="btn btn-secondary" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
