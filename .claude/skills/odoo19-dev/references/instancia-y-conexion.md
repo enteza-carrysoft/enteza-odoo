@@ -4,7 +4,7 @@
 
 | Dato | Valor |
 |---|---|
-| Nombre | `enteza26` |
+| Nombre | `enteza` |
 | Versión | Odoo 19 **Enterprise** |
 | Hosting | Xtendoo (`enteza19.xtendoo.es`) |
 | Entorno | **Producción**, con la contabilidad migrada desde Odoo 15 y cuadrada al céntimo |
@@ -23,7 +23,7 @@ En `.env.local` en la raíz del repositorio, **nunca versionado ni impreso**:
 
 ```
 ODOO19_URL=https://enteza19.xtendoo.es
-ODOO19_DB=enteza26
+ODOO19_DB=enteza
 ODOO19_USER=...
 ODOO19_API_KEY=...
 ```
@@ -64,6 +64,55 @@ python ... search sale.order '[["is_rental_order","=",true],["state","=","sale"]
 
 Ante un error de Odoo, el cliente saca el mensaje y el `debug`: **casi siempre nombra el
 campo exacto que falla**. Merece la pena leerlo antes de suponer nada.
+
+## Alternativa: sesión web para RPC
+
+El cliente anterior usa el login de `/jsonrpc`. Algunos módulos de auditoría de accesos esperan
+un contexto HTTP y pueden fallar en esa ruta al leer `request.httprequest`, con un error como
+`RuntimeError: object is not bound`. No hace falta desactivar el módulo para integrar con esa
+instancia: autenticar por sesión web y conservar la cookie recibida.
+
+Procedimiento verificado el 2026-08-13 en Jocar 19 (`prod`) y Stateresa:
+
+1. Hacer `POST /web/session/authenticate` con el cuerpo JSON-RPC siguiente. La respuesta
+   correcta contiene `result.uid` y establece una cookie `session_id`.
+2. Usar el mismo almacén de cookies en cada llamada posterior a
+   `/web/dataset/call_kw/<modelo>/<método>`.
+3. Enviar a esa ruta un cuerpo JSON-RPC con `model`, `method`, `args` y `kwargs` dentro de
+   `params`.
+
+```python
+import http.cookiejar
+import json
+import urllib.request
+
+base_url = "https://odoo.ejemplo.com"
+cookies = http.cookiejar.CookieJar()
+cliente = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
+
+def post(path, params):
+    request = urllib.request.Request(
+        base_url + path,
+        data=json.dumps({"jsonrpc": "2.0", "method": "call", "params": params}).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    return json.loads(cliente.open(request, timeout=30).read().decode())
+
+login = post("/web/session/authenticate", {
+    "db": database, "login": username, "password": password_or_api_key,
+})
+uid = login["result"]["uid"]
+
+companies = post("/web/dataset/call_kw/res.company/search_read", {
+    "model": "res.company", "method": "search_read", "args": [[]],
+    "kwargs": {"fields": ["id", "name"], "limit": 100},
+})["result"]
+```
+
+Mantener el mismo `cliente` durante todo el proceso de migración; recrearlo pierde la sesión.
+La autenticación web soluciona el contexto que necesita el auditor y permite tanto lecturas como
+escrituras autorizadas. Para cualquier escritura en producción, pedir confirmación explícita al
+usuario y conservar una traza reversible de lo ejecutado.
 
 ## Cómo se instala un módulo
 
@@ -156,7 +205,7 @@ interfaz a veces se traga.
 
 ### 🔴 El botón "Actualizar" también puede dar por buena una actualización que no aplicó nada
 
-Medido el 2026-08-04 en `enteza26`, con un campo nuevo en `res.company`
+Medido el 2026-08-04 en `enteza`, con un campo nuevo en `res.company`
 (`enteza_prestamo_intercompania`). El botón dio dos errores reales (una lectura de
 `res.company` que rompía por una columna que aún no existía, y un xpath con `@string` como
 selector), se arreglaron los dos, y a la **tercera** el usuario pulsó Actualizar, no vio

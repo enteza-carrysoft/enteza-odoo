@@ -16,7 +16,7 @@ El problema de las plantillas de Enterprise, y cómo se resuelve
 ---------------------------------------------------------------
 Para heredar de `sale_stock_renting`, `web_gantt` o cualquier módulo Enterprise hace falta su
 plantilla **de la 19**, y ese código no es público. Pero **la instancia lo sirve**: los
-bundles de assets llevan las plantillas dentro, así que se pueden leer de `enteza26` con
+bundles de assets llevan las plantillas dentro, así que se pueden leer de `enteza` con
 `--del-bundle`. Es la única forma verificada de leer código Enterprise de la 19.
 
 Uso

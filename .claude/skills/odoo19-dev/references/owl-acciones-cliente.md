@@ -4,7 +4,7 @@ Cuando lo que pide el negocio **no encaja en ninguna vista de Odoo** (list, form
 calendar, pivot), la salida es una **acción cliente**: un componente OWL propio que ocupa toda
 la pantalla.
 
-Verificado escribiendo `enteza_panel_eventos`, que funcionó a la primera en `enteza26`
+Verificado escribiendo `enteza_panel_eventos`, que funcionó a la primera en `enteza`
 (Odoo 19.0.1.3) el 2026-08-01. Ese módulo es la referencia viva: copiar de ahí.
 
 > Para **extender un widget que ya existe** en vez de crear una pantalla nueva, ir al final:
@@ -132,6 +132,41 @@ function aClaveDia(fecha) {
 ### `getDay()` empieza en domingo
 
 Para una rejilla que empieza en lunes: `(fecha.getDay() + 6) % 7`.
+
+### 🔴 El servicio `user` no existe en la 19
+
+Se retiró en la **17**: ahora `user` es un objeto que se importa, no un servicio.
+
+```js
+import { user } from "@web/core/user";   // ✅
+// dependencies: ["user"]                // ❌ tumba el cliente web entero
+```
+
+Un servicio propio que lo declare en `dependencies` hace que `startServices` lance
+`Some services could not be started: <el tuyo>. Missing dependencies: user` **antes** de
+montar el cliente web: **backend en blanco en todas las pantallas**, y ni una línea en el log
+del servidor. Costó una instalación y una desinstalación de `company_top_color` el
+2026-08-14; verificado el 15 buscando `services").add("user"` en el bundle de `enteza` (cero
+resultados) y leyendo el `throw` de `startServices` en ese mismo bundle.
+
+Lo que sí trae el objeto `user`, y evita un RPC: `userId`, `name`, `login`, `context`,
+`settings`, `hasGroup()`, `checkAccessRight()`, `defaultCompany`, `allowedCompanies`,
+`activeCompanies` y **`activeCompany`** (la principal). Cambiar de compañía con
+`activateCompanies()` recarga la página, así que no hace falta escuchar `userBus`.
+
+Corolario general: **el `start()` de un servicio propio va entero dentro de un `try/catch`**.
+`startServices` hace `await Promise.all(...)` sobre los `start()`, así que cualquier excepción
+—incluida una `orm.read` que falle por permisos— deja el backend en blanco.
+
+### La paleta de colores cambió
+
+`o_colorlist_item_color_N` ya **no** es `#F06050 / #F4A460 / #F7CD1F…`. En la 19 son
+`rgb(238,45,45)`, `rgb(220,133,52)`, `rgb(232,187,29)`, `rgb(87,148,221)`, `rgb(159,98,143)`,
+`rgb(219,136,101)`, `rgb(65,169,162)`, `rgb(48,75,224)`, `rgb(238,47,138)`, `rgb(97,195,110)`,
+`rgb(152,114,230)` (índices 1-11; el 0 es transparente). Los selectores del CSS están acotados
+a `.o_colorlist > button`, así que no se pueden reutilizar fuera de una lista de colores: hay
+que copiar los valores. Se leen igual que las plantillas, del bundle de la instancia, pero
+pidiendo `web.assets_web.min.css` en vez del `.js`.
 
 ### Un error de JS deja la pantalla en blanco
 

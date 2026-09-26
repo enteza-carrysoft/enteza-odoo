@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cliente JSON-RPC autónomo contra la instancia Odoo 19 de Enteza (`enteza26`).
+"""Cliente JSON-RPC autónomo contra la instancia Odoo 19 de Enteza (`enteza`).
 
 Solo biblioteca estándar: no hay que instalar nada ni hay proyecto Node en este repo.
 
@@ -11,7 +11,7 @@ repositorio (que NO se commitea). Variables necesarias:
     ODOO19_USER=...
     ODOO19_API_KEY=...
 
-🔴 `enteza26` es PRODUCCIÓN, con la contabilidad migrada y cuadrada al céntimo. Por eso
+🔴 `enteza` es PRODUCCIÓN, con la contabilidad migrada y cuadrada al céntimo. Por eso
 las operaciones de escritura exigen `--execute`: sin ese flag se muestra lo que se haría
 y no se toca nada.
 

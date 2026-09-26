@@ -1,6 +1,6 @@
 # Catálogo de módulos del repositorio
 
-Estado verificado contra `enteza26` el **2026-08-01**, y los tres módulos propios de Enteza
+Estado verificado contra `enteza` el **2026-08-01**, y los tres módulos propios de Enteza
 reverificados el **2026-08-04**. Para refrescarlo:
 
 ```bash
@@ -55,6 +55,9 @@ funcionalidad existe:
 | `no_publisher_warranty_contract` | Quita el aviso de garantía del editor |
 | `rental_custom` | Ver arriba |
 | `sale_rental_income_account` | Ver arriba |
+| `company_top_color` | Franja de color en el borde superior del backend según la compañía activa; en rojo fijo si hay 2+ compañías seleccionadas a la vez (`19.0.3.0.0`, 2026-09-13) |
+| `enteza_invoice_discount` | Botón "Descuento" en facturas de cliente en borrador (`out_invoice`/`out_refund`), igual que el nativo de `sale.order.discount` pero para `account.move` — Odoo no trae ninguno para facturas (`19.0.1.1.0`, 2026-09-13) |
+| `enteza_asiento_socio_anterior` | En asientos manuales (`move_type='entry'`), al elegir la cuenta de una línea nueva copia el socio de la línea de datos anterior del mismo asiento (`19.0.1.1.0`, 2026-09-13) |
 
 ## Operaciones de datos verificadas
 
@@ -71,6 +74,13 @@ funcionalidad existe:
 accesos) · `app_common` y `app_odoo_customize` (utilidades de personalización) ·
 `eg_shopify_integration_lite` · `rental_portal_change_request` (cambios desde el portal) ·
 `stock_picking_batch_report` · más los de alquiler/stock de la tabla de arriba.
+
+**Digitalización de facturas (OCR), desinstalada a propósito el 2026-09-13:**
+`account_invoice_extract` · `account_extract` · `account_bank_statement_extract` ·
+`account_invoice_extract_purchase`. El cliente exigía subir un documento para poder
+contabilizar una factura de proveedor y, aun subiéndolo, no extraía ningún dato — la causa
+era saldo IAP del servicio `invoice_ocr` a cero. Si se plantea reinstalarlo, avisar de que
+hace falta recargar ese saldo (coste externo a Odoo) antes de que sirva de algo.
 
 ### Uninstallable (heredados de la 15, no cargan)
 

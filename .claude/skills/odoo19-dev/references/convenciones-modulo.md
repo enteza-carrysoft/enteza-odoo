@@ -90,7 +90,7 @@ está en `base/rng/common.rng` y solo acepta `position`, `groups`, `colspan`, `r
 `fill`, `height`, `width`, `name`, `color`, `invisible` y `col`.
 
 Comprobado el 2026-08-02 validando en local contra el esquema real (`expand` y `string`
-rechazados los dos, `name` aceptado) y contra `enteza26`: de todas las vistas de búsqueda de
+rechazados los dos, `name` aceptado) y contra `enteza`: de todas las vistas de búsqueda de
 la instancia, **ninguna** usa `expand` en un `<group>`.
 
 Lo que sí sigue siendo válido dentro de un dominio de filtro, y parece sospechoso pero no lo
@@ -102,7 +102,7 @@ Están en la lista blanca `IGNORED_IN_EXPRESSION` de `view_validation.py`.
 🔴 **Rompe la actualización del módulo entero**, no solo la vista, y `validar_vistas.py` **no
 lo detecta**: es una regla de herencia de vistas, no de esquema RELAX NG, así que pasa la
 validación local y solo revienta contra el servidor real. Comprobado el 2026-08-04
-actualizando `enteza_prestamo_intercompania` en `enteza26`:
+actualizando `enteza_prestamo_intercompania` en `enteza`:
 
 ```xml
 <!-- MAL: el servidor lo rechaza con «View inheritance may not use attribute 'string' as a

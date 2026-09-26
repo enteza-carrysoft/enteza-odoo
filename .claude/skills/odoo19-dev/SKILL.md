@@ -1,6 +1,6 @@
 ---
 name: odoo19-dev
-description: Conocimiento y operativa para desarrollar módulos en la instancia Odoo 19 EE de Enteza (`enteza26`). Activar al crear o modificar módulos de este repositorio, investigar modelos y campos de la 19, consultar o escribir datos por RPC, resolver dudas sobre el alquiler nativo (sale_renting / sale_stock_renting), decidir dependencias de un manifiesto, o depurar por qué un módulo no instala. Cubre el catálogo de módulos del repo y su estado real de instalación, las convenciones de la 19, el motor de disponibilidad de alquiler y dónde está el código fuente de Odoo Enterprise.
+description: Conocimiento y operativa para desarrollar módulos en la instancia Odoo 19 EE de Enteza (`enteza`). Activar al crear o modificar módulos de este repositorio, investigar modelos y campos de la 19, consultar o escribir datos por RPC, resolver dudas sobre el alquiler nativo (sale_renting / sale_stock_renting), decidir dependencias de un manifiesto, o depurar por qué un módulo no instala. Cubre el catálogo de módulos del repo y su estado real de instalación, las convenciones de la 19, el motor de disponibilidad de alquiler y dónde está el código fuente de Odoo Enterprise.
 license: MIT
 ---
 
@@ -31,7 +31,7 @@ escritas**.
 
 ## Reglas de oro
 
-1. **`enteza26` es PRODUCCIÓN** con la contabilidad migrada y cuadrada al céntimo. Antes de
+1. **`enteza` es PRODUCCIÓN** con la contabilidad migrada y cuadrada al céntimo. Antes de
    escribir, confirmar con el usuario. `archive` antes que `unlink`.
 2. **No hay instancia de pruebas ni acceso al filesystem del servidor** (hosting Xtendoo).
    No se pueden ejecutar pruebas con `odoo-bin --test-enable`. Todo lo que se entregue está
@@ -62,6 +62,12 @@ company-dependent como el código de `account.account`), `--filtro` (solo en `fi
 
 Requiere `.env.local` en la raíz del repo con `ODOO19_URL`, `ODOO19_DB`, `ODOO19_USER`,
 `ODOO19_API_KEY`. Detalle en `references/instancia-y-conexion.md`.
+
+Si un servidor falla al autenticar por `/jsonrpc` porque un módulo propio necesita el contexto
+HTTP, usar sesión web: `POST /web/session/authenticate` y mantener su cookie para las llamadas
+posteriores a `/web/dataset/call_kw/<modelo>/<método>`. Está verificado en las instancias Jocar
+19 y Stateresa el 2026-08-13. El procedimiento y el formato están en
+`references/instancia-y-conexion.md`.
 
 ## Cómo se instala un módulo aquí
 
@@ -113,7 +119,7 @@ concluir que "Odoo no trae esto", que es el error clásico documentado más abaj
 
 ⚠️ **El repositorio del cliente es la 18, no la 19.** Para los módulos de alquiler la
 diferencia es mínima y sirve para entender la mecánica, pero **lo que se lea ahí hay que
-confirmarlo contra `enteza26`** antes de darlo por bueno. Los métodos privados (`_get_...`) no
+confirmarlo contra `enteza`** antes de darlo por bueno. Los métodos privados (`_get_...`) no
 se pueden llamar por RPC, así que de esos la 18 es la única referencia disponible: cuando un
 desarrollo dependa de uno, **decirlo al entregar**.
 
@@ -122,7 +128,7 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 
 ## Conocimiento crítico (detalle en references/)
 
-- **Instancia**: `enteza26`, Odoo 19 EE, hosting Xtendoo. Dos compañías **sin jerarquía**:
+- **Instancia**: `enteza`, Odoo 19 EE, hosting Xtendoo. Dos compañías **sin jerarquía**:
   `1` Visueña de Material Plegable ("Vimaple") y `2` Stileum.
 - **Productos compartidos**: 1.908 plantillas con `company_id = False`, 1.054 con
   `rent_ok = True`. **No romper esto**: que un mismo producto tenga existencias en las dos
@@ -167,7 +173,7 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
   desplegar — ese mismo fichero tiene los gotchas que ese validador NO detecta (`@string`
   como selector de xpath, campos nuevos en `res.company` sin `prefetch=False`).
 - **`rent_ok` no basta para saber si una línea es material físico.** De 1.060 productos con
-  `rent_ok=True` en `enteza26`, 6 son `type == 'service'` (fianza, anticipo de cliente,
+  `rent_ok=True` en `enteza`, 6 son `type == 'service'` (fianza, anticipo de cliente,
   portes, alquiler de ambiente, precio por plaza, hasta una furgoneta). Para agregados de
   "material de alquiler" filtrar **`type == 'consu'` (Bienes) Y `rent_ok`**. Detalle en
   `references/alquiler-en-19.md`.

@@ -1,6 +1,6 @@
 # El alquiler en Odoo 19 — lo que hay que saber antes de tocarlo
 
-Todo lo de este documento está **verificado por RPC contra `enteza26` y contra el código
+Todo lo de este documento está **verificado por RPC contra `enteza` y contra el código
 fuente de Odoo 19/18 Enterprise** (2026-08-01). Donde el código y la intuición chocan, manda
 el código.
 
@@ -68,7 +68,7 @@ Sin ese contexto las líneas **no serán de alquiler** aunque el producto tenga 
 | `res.company.padding_time` | compañía | **horas** | Solo el **valor por defecto**. Al instalar se copia a un `ir.default` de `product.template.preparation_time` |
 | `product.template.preparation_time` | producto, `company_dependent` | **horas** | **El que manda de verdad** |
 
-Hoy ambos valen **0** en `enteza26`.
+Hoy ambos valen **0** en `enteza`.
 
 `sale_stock_renting` **sobrescribe** el cálculo de `reservation_begin`:
 
@@ -166,7 +166,7 @@ día 15?".
 
 ## `rent_ok` no es lo mismo que "es material físico"
 
-Verificado por RPC contra `enteza26` el 2026-08-04: de **1.060** productos con `rent_ok=True`,
+Verificado por RPC contra `enteza` el 2026-08-04: de **1.060** productos con `rent_ok=True`,
 **6 son `type == 'service'`** — FIANZA, ANTICIPO DE CLIENTES, DESCARGA COMPLICADA SEVILLA,
 ALQUILER DE AMBIENTE, PRECIO POR PLAZA y hasta una furgoneta de reparto (FURGON NISSAN
 NV400). Son líneas legítimas de un pedido de alquiler, pero no son material que se cargue en
@@ -214,7 +214,7 @@ que el número aparezca — sin tocar el widget JS ni el `name_search`.
 **Pero solo tiene sentido en el contexto de una línea de alquiler**: fuera de eso no hay
 periodo ni almacén que consultar, y no hay que tocar el nombre en ningún otro sitio de Odoo
 por accidente. Eso llega por el `context=` del campo `product_id`/`product_template_id` en la
-vista de la línea, que hay que **añadir a mano**: comprobado por RPC contra `enteza26` que en
+vista de la línea, que hay que **añadir a mano**: comprobado por RPC contra `enteza` que en
 la 19 ninguna vista de `sale_renting`/`sale_stock_renting` manda ya el periodo del alquiler en
 ese contexto (sí lo hacía en la 18 EE, y se perdió al pasar a la 19). Hay que heredar
 `sale.view_order_form` (la vista base) con un `<xpath>` que reproduzca el `context` ENTERO del
@@ -232,7 +232,7 @@ medida detrás, se salía del ancho de la columna del desplegable casi siempre.
 El grupo `sale_stock_renting.group_rental_stock_picking` decide si los alquileres generan
 albaranes reales o si solo se manejan cantidades a mano.
 
-**En `enteza26` está implicado por `base.group_user`**, así que lo tienen todos los usuarios
+**En `enteza` está implicado por `base.group_user`**, así que lo tienen todos los usuarios
 internos: los alquileres **sí** generan albaranes, por la ruta `route_rental`
 (`rental_loc → lot_stock` del almacén).
 

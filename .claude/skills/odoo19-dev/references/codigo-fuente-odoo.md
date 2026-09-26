@@ -21,7 +21,7 @@ proyecto. Y los métodos del motor son **privados** (`_get_unavailable_qty`,
 repositorio es la única forma de leerlos.
 
 Es la **18**, no la 19, pero para los módulos de alquiler la diferencia es mínima y sirve para
-entender la mecánica. Lo que se lea ahí **hay que confirmarlo contra `enteza26`** con
+entender la mecánica. Lo que se lea ahí **hay que confirmarlo contra `enteza`** con
 `odoo19.py fields ...` antes de darlo por bueno en la 19 — y donde no se pueda confirmar
 (métodos privados), **decirlo al entregar** en vez de presentarlo como verificado.
 

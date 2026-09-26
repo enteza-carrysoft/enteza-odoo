@@ -1,7 +1,7 @@
 # enteza-odoo
 
 Directorio de **addons de Odoo 19 Enterprise** de Enteza. Cada carpeta de la raíz es un
-módulo que se instala en la instancia `enteza26`.
+módulo que se instala en la instancia `enteza`.
 
 ## Lo primero
 
@@ -22,7 +22,7 @@ que ser reversible y trazable. Eso pesa más que la automatización.
 
 ## Restricciones que condicionan todo
 
-1. **`enteza26` es producción**, con la contabilidad migrada y cuadrada al céntimo. No hay
+1. **`enteza` es producción**, con la contabilidad migrada y cuadrada al céntimo. No hay
    staging. Confirmar con el usuario antes de cualquier escritura.
 2. **El hosting es Doodba, no un `git pull` plano**: el addons path se rellena con
    `git-aggregate` a partir de `repos.yaml`, y ese paso **no se dispara solo con el push** —
