@@ -12,11 +12,11 @@
                         groups="account.group_account_invoice"/>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_enteza_ic_ver_ventas" type="object"
+                <button name="action_enteza_ic_ver_facturas" type="object"
                         class="oe_stat_button" icon="fa-exchange"
-                        invisible="enteza_ic_sale_order_count == 0">
-                    <field name="enteza_ic_sale_order_count" widget="statinfo"
-                           string="Venta intercompañía"/>
+                        invisible="enteza_ic_invoice_count == 0">
+                    <field name="enteza_ic_invoice_count" widget="statinfo"
+                           string="Factura intercompañía"/>
                 </button>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="after">

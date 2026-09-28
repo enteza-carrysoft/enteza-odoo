@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Venta intercompañía de material perdido',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Sales/Sales',
     'summary': 'Material cedido entre compañías: al facturar sus faltas al cliente, la '
                'compañía dueña le vende esas unidades a la receptora',
@@ -10,10 +10,11 @@ Venta intercompañía de material perdido
 
 Una compañía del grupo cede material a otra con un pedido de alquiler marcado como
 «Cesión intercompañía». Cuando la receptora publica la factura de faltas a su cliente final,
-este módulo prepara en la compañía dueña un presupuesto de venta a la receptora por las mismas
-unidades, con el precio de su tarifa, y las descuenta del alquiler de cesión.
+este módulo crea en la compañía dueña una venta a la receptora por las mismas
+unidades, con el precio de su tarifa, su factura en borrador, y las descuenta del alquiler
+de cesión.
 
-Nada se confirma ni se mueve solo: el presupuesto lo revisa y confirma una persona. Ver README.
+Ninguna factura se publica sola ni se valida ningún albarán: lo revisa una persona. Ver README.
 """,
     'author': 'Enteza',
     'license': 'OPL-1',

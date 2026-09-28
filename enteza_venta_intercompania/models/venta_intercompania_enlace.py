@@ -30,6 +30,8 @@ class VentaIntercompaniaEnlace(models.Model):
     sale_order_id = fields.Many2one(
         'sale.order', string="Venta intercompañía", required=True, readonly=True,
         ondelete='restrict')
+    invoice_id = fields.Many2one(
+        'account.move', string="Factura intercompañía", readonly=True, ondelete='set null')
     product_id = fields.Many2one('product.product', string="Producto", required=True, readonly=True)
     quantity = fields.Float(string="Cantidad", digits='Product Unit', readonly=True)
 

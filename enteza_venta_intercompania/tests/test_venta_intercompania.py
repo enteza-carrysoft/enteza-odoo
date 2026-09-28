@@ -38,6 +38,10 @@ class TestVentaIntercompania(TransactionCase):
             'rental_start_date': now,
             'rental_return_date': fields.Datetime.add(now, days=90),
             'enteza_cesion_intercompania': True,
+            'enteza_cesion_warehouse_dest_id': cls.env['stock.warehouse'].search(
+                [('company_id', '=', cls.receiver.id)], limit=1).id,
+            'enteza_cesion_journal_id': cls.env['account.journal'].search(
+                [('type', '=', 'sale'), ('company_id', '=', cls.owner.id)], limit=1).id,
             'order_line': [(0, 0, {'product_id': cls.product.id, 'product_uom_qty': 10})],
         })
         cls.cesion.action_confirm()
@@ -83,8 +87,15 @@ class TestVentaIntercompania(TransactionCase):
         self.assertEqual(len(venta), 1)
         self.assertEqual(venta.company_id, self.owner)
         self.assertEqual(venta.partner_id.commercial_partner_id, self.receiver.partner_id)
-        self.assertEqual(venta.state, 'draft', 'nada se confirma solo')
+        self.assertEqual(venta.state, 'sale')
         self.assertEqual(venta.order_line.product_uom_qty, 2)
+
+        factura_ic = invoice.enteza_ic_enlace_ids.invoice_id
+        self.assertEqual(len(factura_ic), 1)
+        self.assertEqual(factura_ic.state, 'draft', 'no se publica sola')
+        self.assertEqual(factura_ic.company_id, self.owner)
+        self.assertEqual(factura_ic.journal_id, self.cesion.enteza_cesion_journal_id)
+        self.assertEqual(factura_ic.invoice_line_ids.quantity, 2)
         self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 8)
         self.assertEqual(self.cesion.order_line.qty_lost, 2)
 
@@ -109,3 +120,28 @@ class TestVentaIntercompania(TransactionCase):
         self._factura_de_faltas(2).action_post()
         self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 7)
         self.assertEqual(self.cesion.order_line.qty_lost, 3)
+
+    def test_lineas_de_material_de_la_cesion_a_cero(self):
+        self.assertEqual(self.cesion.order_line.price_unit, 0.0)
+
+    def test_entrega_de_la_cesion_prepara_la_recepcion_en_la_receptora(self):
+        recepcion = self.env['stock.picking'].search([
+            ('enteza_cesion_origen_picking_id', 'in', self.cesion.picking_ids.ids)])
+        self.assertEqual(len(recepcion), 1)
+        self.assertEqual(recepcion.company_id, self.receiver)
+        self.assertEqual(recepcion.picking_type_code, 'incoming')
+        self.assertEqual(recepcion.owner_id, self.owner.partner_id)
+        self.assertEqual(recepcion.move_ids.product_uom_qty, 10)
+        self.assertNotEqual(recepcion.state, 'done', 'lo valida el almacén de la receptora')
+
+    def test_devolucion_de_la_cesion_prepara_la_salida_en_la_receptora(self):
+        self.cesion_return.move_ids.quantity = 3
+        self.cesion_return.move_ids.picked = True
+        self.cesion_return.with_context(cancel_backorder=False)._action_done()
+
+        salida = self.env['stock.picking'].search([
+            ('enteza_cesion_origen_picking_id', '=', self.cesion_return.id)])
+        self.assertEqual(salida.company_id, self.receiver)
+        self.assertEqual(salida.picking_type_code, 'outgoing')
+        self.assertFalse(salida.owner_id)
+        self.assertEqual(salida.move_ids.product_uom_qty, 3)

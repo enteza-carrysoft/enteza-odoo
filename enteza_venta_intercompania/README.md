@@ -2,7 +2,7 @@
 
 Vimaple cede material a Stileum con un **alquiler de cesión** (meses, precio simbólico).
 Stileum lo alquila a sus clientes. Cuando un cliente no devuelve algo y Stileum le factura
-las faltas, este módulo prepara **en Vimaple un presupuesto de venta a Stileum** por las
+las faltas, este módulo prepara **en Vimaple la factura a Stileum, en borrador**, por las
 mismas unidades, con el precio de la tarifa que Vimaple tenga para Stileum, y las descuenta
 del alquiler de cesión.
 
@@ -15,21 +15,31 @@ propietario, porque Stileum no tiene material propio de esos productos.
 
 | # | Qué pasa | Quién |
 |---|---|---|
-| 1 | Pedido de alquiler en Vimaple, cliente Stileum, marcado **«Cesión intercompañía»**. Líneas de material a 0 € y una línea de servicio «Cuota de cesión» con el importe simbólico | Persona, Vimaple |
+| 1 | Pedido de alquiler en Vimaple, cliente Stileum, marcado **«Cesión intercompañía»** con su almacén receptor. Las líneas de material salen solas a 0 €; se añade a mano una línea de servicio «Cuota de cesión» con el importe simbólico | Persona, Vimaple |
 | 2 | Entrega del alquiler de cesión (Stock → Alquiler de Vimaple) | Persona, Vimaple |
-| 3 | Recepción en Stileum con propietario = Vimaple | Persona, Stileum |
+| 3 | **Al validar la entrega**: recepción preparada en el almacén receptor, con propietario = Vimaple | **Este módulo** (la valida una persona de Stileum) |
 | 4 | Stileum alquila, entrega y recoge como siempre | Stileum |
 | 5 | Faltas: «Facturar las Faltas» y factura al cliente | Persona, Stileum |
-| 6 | **Al publicar esa factura**: presupuesto de Vimaple a Stileum en borrador y descuento en el alquiler de cesión | **Este módulo** |
-| 7 | Revisar, confirmar y facturar el presupuesto; validar su albarán (sale de Alquiler) | Persona, Vimaple |
+| 6 | **Al publicar esa factura**: venta de Vimaple a Stileum confirmada, su **factura en borrador** en el diario de faltas intercompañía de la cesión, y descuento en el alquiler de cesión | **Este módulo** |
+| 7 | Revisar y **publicar** la factura; validar el albarán de la venta (sale de Alquiler) | Persona, Vimaple |
 | 8 | Factura de proveedor en Stileum | Inter-Company Transactions (nativo) |
+| 9 | Fin de la cesión (total o parcial): Vimaple valida la devolución del alquiler de cesión | Persona, Vimaple |
+| 10 | **Al validarla**: salida preparada en Stileum por las unidades devueltas | **Este módulo** (la valida una persona de Stileum) |
 
-Nada se confirma, se publica ni se mueve solo.
+Ninguna factura se publica sola y ningún albarán se valida solo. Lo único que se confirma
+sin intervención es la venta de Vimaple a Stileum, y solo para poder crear su factura.
 
 ## Qué hace el módulo
 
 - **`sale.order.enteza_cesion_intercompania`**: marca el alquiler de cesión. El cliente tiene
-  que ser el contacto de otra compañía del grupo (`enteza_cesion_company_dest_id`).
+  que ser el contacto de otra compañía del grupo (`enteza_cesion_company_dest_id`), y al
+  confirmar hace falta el almacén receptor (`enteza_cesion_warehouse_dest_id`).
+- **Precio**: las líneas de material de una cesión van a 0 € y no generan recargo por retraso.
+- **Albaranes espejo** (`stock.picking.enteza_cesion_origen_picking_id`): al validar la
+  entrega o una devolución de la cesión, se prepara en la receptora la recepción (desde
+  Proveedores, con propietario la dueña) o la salida (hacia Clientes). Uno por albarán de
+  origen, confirmado y sin validar. No usan el tránsito intercompañía: en la 19 exige
+  existencias para reservar, y la dueña no deja nada en él.
 - **Al publicar una factura de cliente** (`account.move._post`), toma las líneas de material
   que vienen de una venta de faltas (su pedido lleva `rental_order_id`), busca devoluciones
   pendientes de alquileres de cesión hacia esa compañía y las reparte por fecha.
@@ -37,7 +47,9 @@ Nada se confirma, se publica ni se mueve solo.
   «Facturar las Faltas» de `rental_custom`, que crea el presupuesto, descuenta la demanda y
   deja el resto pendiente.
 - **Enlaces** (`enteza.venta.intercompania.enlace`): línea de factura → alquiler de cesión →
-  presupuesto. Botón «Venta intercompañía» en la factura.
+  venta → factura intercompañía. Botón «Factura intercompañía» en la factura de faltas.
+- **Diario**: el de «Diario de faltas intercompañía» de la cesión (en Enteza, «Facturas
+  STILEUM»). Obligatorio al confirmar la cesión.
 
 ### Casos límite
 

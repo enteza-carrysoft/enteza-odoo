@@ -1,6 +1,8 @@
 import logging
 from collections import defaultdict
 
+from markupsafe import Markup
+
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
@@ -23,12 +25,12 @@ class AccountMove(models.Model):
     enteza_ic_enlace_ids = fields.One2many(
         'enteza.venta.intercompania.enlace', 'source_move_id',
         string="Enlaces de venta intercompañía", readonly=True)
-    enteza_ic_sale_order_count = fields.Integer(compute='_compute_enteza_ic_sale_order_count')
+    enteza_ic_invoice_count = fields.Integer(compute='_compute_enteza_ic_invoice_count')
 
-    def _compute_enteza_ic_sale_order_count(self):
+    def _compute_enteza_ic_invoice_count(self):
         for move in self:
-            # sudo(): los presupuestos son de la compañía dueña; sólo se cuentan.
-            move.enteza_ic_sale_order_count = len(move.sudo().enteza_ic_enlace_ids.sale_order_id)
+            # sudo(): las facturas son de la compañía dueña; sólo se cuentan.
+            move.enteza_ic_invoice_count = len(move.sudo().enteza_ic_enlace_ids.invoice_id)
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)
@@ -38,18 +40,18 @@ class AccountMove(models.Model):
     def action_enteza_ic_procesar(self):
         self._enteza_ic_procesar()
 
-    def action_enteza_ic_ver_ventas(self):
+    def action_enteza_ic_ver_facturas(self):
         self.ensure_one()
-        orders = self.sudo().enteza_ic_enlace_ids.sale_order_id
+        invoices = self.sudo().enteza_ic_enlace_ids.invoice_id
         action = {
             'type': 'ir.actions.act_window',
-            'name': _("Venta intercompañía"),
-            'res_model': 'sale.order',
-            'domain': [('id', 'in', orders.ids)],
+            'name': _("Factura intercompañía"),
+            'res_model': 'account.move',
+            'domain': [('id', 'in', invoices.ids)],
             'view_mode': 'list,form',
         }
-        if len(orders) == 1:
-            action.update(view_mode='form', res_id=orders.id)
+        if len(invoices) == 1:
+            action.update(view_mode='form', res_id=invoices.id)
         return action
 
     # ------------------------------------------------------------------
@@ -87,9 +89,9 @@ class AccountMove(models.Model):
             self.enteza_ic_estado = 'generada'
             return
         try:
-            # Todo o nada: presupuestos, descuentos en los alquileres de cesión y enlaces.
+            # Todo o nada: ventas, factura, descuentos en los alquileres de cesión y enlaces.
             with self.env.cr.savepoint():
-                orders = self._enteza_ic_generar(lines)
+                invoices = self._enteza_ic_generar(lines)
         except Exception as error:  # noqa: BLE001 - no se bloquea la factura al cliente
             # La factura de la receptora ya está publicada y así se queda: un problema
             # interno entre compañías no puede impedir facturar al cliente. Queda pendiente,
@@ -101,13 +103,14 @@ class AccountMove(models.Model):
                 "No se ha podido preparar la venta intercompañía del material perdido: %s",
                 message))
             return
-        if not orders:
+        if not invoices:
             return
         self.enteza_ic_estado = 'generada'
+        # En borrador la factura no tiene número todavía: se enlaza por su nombre visible.
         self.message_post(body=_(
-            "Preparada la venta intercompañía del material perdido: %s",
-            ", ".join(orders.mapped('name'))))
-        _logger.info("Venta intercompañía %s generada desde %s", orders.mapped('name'), self.name)
+            "Preparada en borrador la factura intercompañía del material perdido: %s",
+            Markup(", ").join(invoice._get_html_link() for invoice in invoices)))
+        _logger.info("Factura intercompañía %s generada desde %s", invoices.ids, self.name)
 
     def _enteza_ic_movimientos_cesion(self, product):
         """Devoluciones pendientes de alquileres de cesión hacia esta compañía.
@@ -170,6 +173,7 @@ class AccountMove(models.Model):
             qty_by_picking[stock_move.picking_id][stock_move] += qty
 
         order_by_picking = {}
+        orders = self.env['sale.order'].sudo()
         for picking, qty_by_move in qty_by_picking.items():
             for stock_move, qty in qty_by_move.items():
                 stock_move.qty_missing = stock_move.product_id.uom_id._compute_quantity(
@@ -181,7 +185,11 @@ class AccountMove(models.Model):
             order.message_post(body=_(
                 "Generado automáticamente al publicar %s, factura de faltas de %s.",
                 self._get_html_link(), self.company_id.name))
+            order.journal_id = picking.sale_id.enteza_cesion_journal_id
             order_by_picking[picking] = order
+            orders |= order
+
+        invoices = self._enteza_ic_facturar(orders)
 
         # sudo(): el usuario que publica sólo puede leer los enlaces (ir.model.access.csv).
         self.env['enteza.venta.intercompania.enlace'].sudo().create([{
@@ -190,8 +198,32 @@ class AccountMove(models.Model):
             'cesion_order_id': stock_move.sale_line_id.order_id.id,
             'cesion_stock_move_id': stock_move.id,
             'sale_order_id': order_by_picking[stock_move.picking_id].id,
+            'invoice_id': order_by_picking[stock_move.picking_id].invoice_ids[:1].id,
             'product_id': line.product_id.id,
             'quantity': qty,
         } for line, stock_move, qty in allocations])
-        return self.env['sale.order'].sudo().browse(
-            [order.id for order in order_by_picking.values()])
+        return invoices
+
+    def _enteza_ic_facturar(self, orders):
+        """Confirma las ventas de la dueña y crea su factura a la receptora, SIN publicarla.
+
+        Confirmar sólo prepara el albarán de salida desde Alquiler (lo valida el almacén).
+        Los artículos de alquiler se facturan por lo pedido (1.101 de 1.101, RPC del
+        2026-09-28), así que se puede facturar sin esperar al albarán. La factura la revisa y
+        publica una persona; al publicarla, Inter-Company Transactions crea la de proveedor
+        en la receptora.
+        """
+        for order in orders:
+            # El valor de `action_confirm` puede ser una acción (diálogo de otro módulo): si
+            # el pedido no ha quedado confirmado, se dice en vez de facturar a medias.
+            order.action_confirm()
+            if order.state != 'sale':
+                raise UserError(_(
+                    "No se ha podido confirmar %s sin intervención: hay que revisarlo a mano.",
+                    order.name))
+        invoices = orders._create_invoices()
+        for invoice in invoices:
+            invoice.message_post(body=_(
+                "Factura intercompañía por el material perdido facturado en %s (%s). "
+                "Revisarla y publicarla.", self._get_html_link(), self.company_id.name))
+        return invoices
