@@ -30,6 +30,7 @@ Estos son los que solapan con desarrollos nuevos. Aquí es donde se duplica trab
 | `eg_warehouse_restriction` | uninstalled | Restricción de almacenes por usuario |
 | `enteza_calendario_eventos` | **installed** (`19.0.1.2.0`) | Vista calendario nativa pivotada en `event_date`, con el nombre del cliente como etiqueta |
 | `enteza_panel_eventos` | **installed** (`19.0.4.0.0`; hay `19.0.5.0.0` en el repo sin desplegar) | Panel OWL de tres bloques: calendario del mes, material del día (columna «Prestados», solo Bienes/alquilables) y pedidos del día. **Depende de** `enteza_prestamo_intercompania` desde su `19.0.4.0.0` |
+| `enteza_venta_intercompania` | uninstalled (`19.0.1.0.0` en el repo, 2026-09-28, sin desplegar) | Cesión de material Vimaple → Stileum como alquiler marcado «Cesión intercompañía». Al publicar Stileum una factura de faltas, prepara en Vimaple un presupuesto de venta a Stileum y descuenta la cesión. **Necesita `rental_custom` 19.0.1.14.0** (faltas parciales, precio por tarifa, salida desde Alquiler). No depende del préstamo |
 | `enteza_prestamo_intercompania` | **installed** (`19.0.10.0.2`; hay `19.0.10.0.3` en el repo sin desplegar) | Préstamo de material entre Vimaple y Stileum: las cinco fases del PRP desplegadas — motor de disponibilidad, documento con ciclo de vida, widget de aviso + diálogo de confirmación, albaranes vía tránsito, devolución inteligente, casos límite. Día de traslado configurable por compañía en Ajustes → Ventas → Alquiler |
 
 `enteza_calendario_eventos` y `enteza_panel_eventos` **conviven sin problema**: uno es una

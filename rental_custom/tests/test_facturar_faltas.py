@@ -71,3 +71,44 @@ class TestFacturarFaltas(TransactionCase):
         })
         with self.assertRaises(UserError):
             picking.action_create_sale_order()
+
+    def test_faltas_parciales_dejan_el_resto_pendiente(self):
+        """Con la columna «Faltas» rellena, sólo se facturan esas unidades (2026-09-28)."""
+        picking = self._crear_albaran(qty=10)
+        picking.action_confirm()
+        picking.move_ids.qty_missing = 2
+
+        picking.action_create_sale_order()
+
+        pedido = self.env['sale.order'].search([('origin', '=', picking.name)])
+        self.assertEqual(len(pedido), 1)
+        self.assertEqual(pedido.order_line.product_uom_qty, 2)
+        self.assertEqual(picking.move_ids.product_uom_qty, 8)
+        self.assertEqual(picking.move_ids.qty_missing, 0)
+        self.assertNotEqual(picking.state, 'cancel')
+        self.assertEqual(picking.sale_order_id, pedido)
+
+        # Otra tanda de faltas anotada en la columna sí se puede facturar.
+
+        picking.move_ids.qty_missing = 1
+        picking.action_create_sale_order()
+        self.assertEqual(picking.move_ids.product_uom_qty, 7)
+
+    def test_precio_sale_de_la_tarifa_y_no_se_fuerza(self):
+        """Sin tarifas, el precio es el de venta del producto, como antes."""
+        picking = self._crear_albaran(qty=1)
+        picking.action_create_sale_order()
+        self.assertEqual(picking.sale_order_id.order_line.price_unit, 30.0)
+
+    def test_albaran_pendiente_con_faltas_copiadas_no_se_factura_dos_veces(self):
+        """Backorder de 5 faltas (la columna llega copiada): se factura una sola vez."""
+        picking = self._crear_albaran(qty=5)
+        picking.action_confirm()
+        picking.move_ids.qty_missing = 5
+
+        picking.action_create_sale_order()
+
+        self.assertEqual(picking.state, 'cancel')
+        self.assertTrue(picking.sale_order_id)
+        with self.assertRaises(UserError):
+            picking.action_create_sale_order()

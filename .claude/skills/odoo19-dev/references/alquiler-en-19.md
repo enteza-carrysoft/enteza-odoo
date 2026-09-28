@@ -262,3 +262,21 @@ de fiarse de esta lista. Última verificación, **2026-08-01**:
 7. Razonar por compañía cuando el nativo razona **por almacén**.
 8. Dar por hecho que `rent_ok=True` significa "es material físico" → hay artículos de
    servicio (fianzas, portes) también marcados como alquilables.
+
+## Tarifas y alquiler: dos trampas antes de activar «Tarifas» (2026-09-28)
+
+1. **Activar Tarifas con una sola tarifa activa se la aplica a todos los clientes.**
+   `product.pricelist._get_partner_pricelist_multi` (Community 19.0, `product_pricelist.py:334`)
+   elige: la tarifa específica del cliente → la de su grupo de países → la genérica → **la
+   primera activa que encuentre**. Si la única activa es una tarifa especial (p. ej. la de
+   Stileum), acaba en todos los pedidos. Antes de activar el grupo
+   `product.group_product_pricelist`, crear una **tarifa general sin reglas y con secuencia
+   más baja**, y asignar la especial solo en la ficha del cliente concreto.
+2. **Las reglas de tarifa (`product.pricelist.item`) no tocan el precio de alquiler.** En EE18
+   (`sale_renting/models/product_pricelist.py:25-69`, no legible en 19) el precio de alquiler
+   sale de `product.pricing` —la tabla de precios de alquiler del producto—: primero las filas
+   con `pricelist_id` = la tarifa del pedido, y si no hay, las filas sin tarifa. Un «-90 %» en
+   la tarifa **no** rebaja el alquiler; hace falta una fila de `product.pricing` por producto
+   con esa tarifa. En `enteza` hay 782 filas de `product.pricing` y **ninguna** con tarifa
+   (RPC, 2026-09-28). Las líneas que no son de alquiler (p. ej. la venta de faltas) sí usan las
+   reglas normales.

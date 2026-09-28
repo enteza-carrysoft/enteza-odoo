@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- El enlace une dos compañías: lo ve la que facturó al cliente y la dueña del
+             material. Con la regla clásica por `company_id` desaparecería para la dueña. -->
+        <record id="rule_enlace_multicompania" model="ir.rule">
+            <field name="name">Venta intercompañía: visible para receptora y dueña</field>
+            <field name="model_id" ref="model_enteza_venta_intercompania_enlace"/>
+            <field name="domain_force">
+                ['|', ('company_id', 'in', company_ids), ('owner_company_id', 'in', company_ids)]
+            </field>
+        </record>
+    </data>
+</odoo>

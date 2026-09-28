@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_enteza_venta_ic_enlace_usuario,enteza.venta.intercompania.enlace usuario,model_enteza_venta_intercompania_enlace,base.group_user,1,0,0,0
+access_enteza_venta_ic_enlace_gestor,enteza.venta.intercompania.enlace gestor,model_enteza_venta_intercompania_enlace,account.group_account_manager,1,1,1,1

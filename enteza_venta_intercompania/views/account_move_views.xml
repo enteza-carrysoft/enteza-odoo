@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_venta_intercompania" model="ir.ui.view">
+        <field name="name">account.move.form.enteza.venta.intercompania</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_enteza_ic_procesar" type="object"
+                        string="Procesar venta intercompañía"
+                        invisible="enteza_ic_estado != 'pendiente'"
+                        groups="account.group_account_invoice"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_enteza_ic_ver_ventas" type="object"
+                        class="oe_stat_button" icon="fa-exchange"
+                        invisible="enteza_ic_sale_order_count == 0">
+                    <field name="enteza_ic_sale_order_count" widget="statinfo"
+                           string="Venta intercompañía"/>
+                </button>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <field name="enteza_ic_estado" invisible="1"/>
+                <div class="alert alert-warning" role="alert"
+                     invisible="enteza_ic_estado != 'pendiente'">
+                    La venta intercompañía del material perdido está pendiente. El motivo está
+                    en el historial; cuando esté corregido, pulsa «Procesar venta
+                    intercompañía».
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

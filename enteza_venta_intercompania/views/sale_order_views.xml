@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_cesion_intercompania" model="ir.ui.view">
+        <field name="name">sale.order.form.enteza.cesion.intercompania</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='partner_details']/field[@name='partner_id']" position="after">
+                <field name="is_rental_order" invisible="1"/>
+                <field name="enteza_cesion_intercompania"
+                       invisible="not is_rental_order"
+                       readonly="state == 'cancel'"/>
+                <field name="enteza_cesion_company_dest_id"
+                       invisible="not enteza_cesion_intercompania"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

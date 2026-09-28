@@ -32,6 +32,16 @@ class SaleOrder(models.Model):
         copy=False,
         help="Este pedido factura material de alquiler no devuelto de este otro pedido.",
     )
+    missing_from_rental_location = fields.Boolean(
+        string="Faltas desde Alquiler",
+        copy=False,
+        # Entre que el servidor carga este código y que Actualizar crea la columna, cualquier
+        # lectura de pedidos la pediría por prefetch y fallaría (UndefinedColumn).
+        prefetch=False,
+        readonly=True,
+        help="Venta de material no devuelto cuyas unidades siguen en la ubicación de "
+             "Alquiler: el albarán de salida sale de ahí y no de Stock.",
+    )
     compensation_order_ids = fields.One2many(
         "sale.order",
         "rental_order_id",
