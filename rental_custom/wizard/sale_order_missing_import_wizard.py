@@ -171,6 +171,7 @@ class RentalSaleOrderImportWizard(models.TransientModel):
                     "partner_id": row["partner"].id,
                     "company_id": self.company_id.id,
                     "is_rental_order": False,
+                    "journal_id": self.company_id.rental_missing_journal_id.id,
                 })
                 orders |= current_order
                 previous_vat = row["vat"]

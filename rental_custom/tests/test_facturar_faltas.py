@@ -56,6 +56,14 @@ class TestFacturarFaltas(TransactionCase):
         self.assertEqual(pedido.order_line.product_uom_qty, 4)
         self.assertFalse(pedido.order_line.is_rental)
 
+    def test_pedido_de_faltas_lleva_el_diario_de_faltas_de_la_compania(self):
+        journal = self.env['account.journal'].search([
+            ('type', '=', 'sale'), ('company_id', '=', self.env.company.id)], limit=1)
+        self.env.company.rental_missing_journal_id = journal
+        picking = self._crear_albaran()
+        picking.action_create_sale_order()
+        self.assertEqual(picking.sale_order_id.journal_id, journal)
+
     def test_no_factura_dos_veces_el_mismo_albaran(self):
         picking = self._crear_albaran()
         picking.action_create_sale_order()

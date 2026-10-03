@@ -97,6 +97,9 @@ class StockPicking(models.Model):
             'origin': self.sale_id.name or self.name,
             'order_line': order_line,
             'rental_order_id': self.sale_id.id,
+            # Vacío si la compañía no lo tiene configurado: Odoo usa entonces su diario de
+            # ventas por defecto, que en Enteza es el de alquiler (2026-10-03).
+            'journal_id': self.company_id.rental_missing_journal_id.id,
             # Al confirmar, el albarán de salida sale de Alquiler y no de Stock (ver
             # `stock_rule.py`): las unidades perdidas dejan de figurar en existencias al
             # validarlo. Antes salía de Stock y había que cancelarlo a mano (12/08/2026).
