@@ -23,8 +23,8 @@
                 <field name="enteza_ic_estado" invisible="1"/>
                 <div class="alert alert-warning" role="alert"
                      invisible="enteza_ic_estado != 'pendiente'">
-                    La venta intercompañía del material perdido está pendiente. El motivo está
-                    en el historial; cuando esté corregido, pulsa «Procesar venta
+                    La factura intercompañía del material perdido está pendiente. El motivo
+                    está en el historial; cuando esté corregido, pulsa «Procesar venta
                     intercompañía».
                 </div>
             </xpath>

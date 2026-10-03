@@ -2,10 +2,10 @@ from odoo import fields, models
 
 
 class VentaIntercompaniaEnlace(models.Model):
-    """Una fila por cada tramo de línea de factura de faltas atribuido a una cesión.
+    """Una fila por cada línea de factura de faltas que se ha facturado a la dueña.
 
-    Es la trazabilidad de ida y vuelta: factura de faltas de la receptora → alquiler de
-    cesión de la dueña → presupuesto de venta de la dueña a la receptora.
+    Es la trazabilidad de ida y vuelta: línea de la factura de faltas de la receptora →
+    línea de la factura intercompañía de la dueña.
     """
     _name = 'enteza.venta.intercompania.enlace'
     _description = 'Venta intercompañía de material perdido'
@@ -20,21 +20,15 @@ class VentaIntercompaniaEnlace(models.Model):
         related='source_move_id.company_id', string="Compañía receptora", store=True)
     owner_company_id = fields.Many2one(
         'res.company', string="Compañía dueña", required=True, readonly=True)
-    cesion_order_id = fields.Many2one(
-        'sale.order', string="Alquiler de cesión", readonly=True)
-    cesion_stock_move_id = fields.Many2one(
-        'stock.move', string="Movimiento de devolución de la cesión", required=True,
-        readonly=True, ondelete='restrict')
-    # 'restrict': borrar el presupuesto no puede dejar la factura como no procesada, porque
-    # la demanda del alquiler de cesión ya se descontó. Se cancela, no se borra.
-    sale_order_id = fields.Many2one(
-        'sale.order', string="Venta intercompañía", required=True, readonly=True,
-        ondelete='restrict')
+    # 'restrict': borrar la factura intercompañía dejaría la de faltas como procesada sin
+    # nada al otro lado. Se rectifica, no se borra.
+    invoice_line_id = fields.Many2one(
+        'account.move.line', string="Línea de la factura intercompañía", readonly=True,
+        index=True, ondelete='restrict')
     invoice_id = fields.Many2one(
-        'account.move', string="Factura intercompañía", readonly=True, ondelete='set null')
+        related='invoice_line_id.move_id', string="Factura intercompañía", store=True)
     product_id = fields.Many2one('product.product', string="Producto", required=True, readonly=True)
     quantity = fields.Float(string="Cantidad", digits='Product Unit', readonly=True)
 
-    _enlace_uniq = models.UniqueIndex(
-        '(source_line_id, cesion_stock_move_id)',
-        "Esta línea de factura ya se atribuyó a ese alquiler de cesión.")
+    _source_line_uniq = models.UniqueIndex(
+        '(source_line_id)', "Esta línea de factura ya se facturó a la compañía dueña.")

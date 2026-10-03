@@ -1,67 +1,43 @@
 from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
-from odoo.tests.common import TransactionCase
+
+from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 
 
 @tagged('post_install', '-at_install')
-class TestVentaIntercompania(TransactionCase):
+class TestVentaIntercompania(AccountTestInvoicingCommon):
     """Escritas pero NO ejecutadas: en este hosting no hay `--test-enable`."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.owner = cls.env.company
-        cls.receiver = cls.env['res.company'].create({'name': 'Receptora de prueba'})
-        cls.env.user.company_ids |= cls.receiver
+        cls.receiver_data = cls.setup_other_company(name='Receptora de prueba')
+        cls.receiver = cls.receiver_data['company']
+        cls.receiver.write({
+            'enteza_ic_owner_company_id': cls.owner.id,
+            'enteza_ic_journal_id': cls.company_data['default_journal_sale'].id,
+        })
         cls.product = cls.env['product.product'].create({
-            'name': 'Silla de prueba',
+            'name': 'Copa de prueba',
             'type': 'consu',
             'is_storable': True,
             'rent_ok': True,
-            'lst_price': 100.0,
+            'lst_price': 3.0,
         })
-        warehouse = cls.env['stock.warehouse'].search([('company_id', '=', cls.owner.id)], limit=1)
-        quant = cls.env['stock.quant'].create({
-            'product_id': cls.product.id,
-            'location_id': warehouse.lot_stock_id.id,
-            'inventory_quantity': 10,
-        })
-        quant.action_apply_inventory()
-
-        # Cesión: la dueña alquila 10 a la receptora y las entrega.
-        now = fields.Datetime.now()
-        cls.cesion = cls.env['sale.order'].with_context(in_rental_app=True).create({
-            'partner_id': cls.receiver.partner_id.id,
-            'company_id': cls.owner.id,
-            'event_date': fields.Date.today(),
-            'rental_start_date': now,
-            'rental_return_date': fields.Datetime.add(now, days=90),
-            'enteza_cesion_intercompania': True,
-            'enteza_cesion_warehouse_dest_id': cls.env['stock.warehouse'].search(
-                [('company_id', '=', cls.receiver.id)], limit=1).id,
-            'enteza_cesion_journal_id': cls.env['account.journal'].search(
-                [('type', '=', 'sale'), ('company_id', '=', cls.owner.id)], limit=1).id,
-            'order_line': [(0, 0, {'product_id': cls.product.id, 'product_uom_qty': 10})],
-        })
-        cls.cesion.action_confirm()
-        delivery = cls.cesion.picking_ids.filtered(lambda p: p.picking_type_code == 'outgoing')
-        delivery.move_ids.quantity = 10
-        delivery.move_ids.picked = True
-        delivery.button_validate()
-        cls.cesion_return = cls.cesion.picking_ids.filtered(
-            lambda p: p.state not in ('done', 'cancel') and p != delivery)
+        cls.product.with_company(cls.owner).standard_price = 1.5
+        cls.customer = cls.env['res.partner'].create({'name': 'Cliente final'})
 
     def _factura_de_faltas(self, qty):
-        """Factura de la receptora a su cliente por `qty` unidades perdidas."""
+        """Factura de la receptora a su cliente por `qty` unidades perdidas, sin publicar."""
         env = self.env(context=dict(self.env.context, allowed_company_ids=[self.receiver.id]))
-        customer = env['res.partner'].create({'name': 'Cliente final'})
         rental = env['sale.order'].with_context(in_rental_app=True).create({
-            'partner_id': customer.id, 'company_id': self.receiver.id,
+            'partner_id': self.customer.id, 'company_id': self.receiver.id,
             'event_date': fields.Date.today(),
         })
         faltas = env['sale.order'].create({
-            'partner_id': customer.id,
+            'partner_id': self.customer.id,
             'company_id': self.receiver.id,
             'rental_order_id': rental.id,
             'is_rental_order': False,
@@ -73,75 +49,78 @@ class TestVentaIntercompania(TransactionCase):
         faltas.order_line.qty_delivered = qty
         return faltas._create_invoices()
 
-    def test_cesion_exige_que_el_cliente_sea_otra_compania(self):
-        with self.assertRaises(ValidationError):
-            self.cesion.copy({'partner_id': self.env['res.partner'].create({'name': 'X'}).id,
-                              'enteza_cesion_intercompania': True})
+    def _rectificar(self, invoice, qty):
+        refund = invoice._reverse_moves()
+        refund.invoice_line_ids.quantity = qty
+        refund.action_post()
+        return refund
 
-    def test_publicar_faltas_prepara_la_venta_y_descuenta_la_cesion(self):
+    def test_publicar_faltas_factura_a_coste_en_la_duena(self):
         invoice = self._factura_de_faltas(2)
         invoice.action_post()
 
         self.assertEqual(invoice.enteza_ic_estado, 'generada')
-        venta = invoice.enteza_ic_enlace_ids.sale_order_id
-        self.assertEqual(len(venta), 1)
-        self.assertEqual(venta.company_id, self.owner)
-        self.assertEqual(venta.partner_id.commercial_partner_id, self.receiver.partner_id)
-        self.assertEqual(venta.state, 'sale')
-        self.assertEqual(venta.order_line.product_uom_qty, 2)
-
         factura_ic = invoice.enteza_ic_enlace_ids.invoice_id
         self.assertEqual(len(factura_ic), 1)
-        self.assertEqual(factura_ic.state, 'draft', 'no se publica sola')
+        self.assertEqual(factura_ic.state, 'posted')
+        self.assertEqual(factura_ic.move_type, 'out_invoice')
         self.assertEqual(factura_ic.company_id, self.owner)
-        self.assertEqual(factura_ic.journal_id, self.cesion.enteza_cesion_journal_id)
+        self.assertEqual(factura_ic.partner_id, self.receiver.partner_id)
+        self.assertEqual(factura_ic.journal_id, self.company_data['default_journal_sale'])
         self.assertEqual(factura_ic.invoice_line_ids.quantity, 2)
-        self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 8)
-        self.assertEqual(self.cesion.order_line.qty_lost, 2)
+        self.assertEqual(factura_ic.invoice_line_ids.price_unit, 1.5, 'a coste de la dueña')
+
+    def test_sin_configuracion_no_hace_nada(self):
+        self.receiver.enteza_ic_owner_company_id = False
+        invoice = self._factura_de_faltas(2)
+        invoice.action_post()
+        self.assertFalse(invoice.enteza_ic_estado)
+        self.assertFalse(invoice.enteza_ic_enlace_ids)
+
+    def test_sin_coste_queda_pendiente_sin_bloquear_la_factura(self):
+        self.product.with_company(self.owner).standard_price = 0.0
+        invoice = self._factura_de_faltas(2)
+        invoice.action_post()
+        self.assertEqual(invoice.state, 'posted', 'la factura al cliente no se bloquea')
+        self.assertEqual(invoice.enteza_ic_estado, 'pendiente')
+        self.assertFalse(invoice.enteza_ic_enlace_ids)
+
+        self.product.with_company(self.owner).standard_price = 1.5
+        invoice.action_enteza_ic_procesar()
+        self.assertEqual(invoice.enteza_ic_estado, 'generada')
 
     def test_reprocesar_no_duplica(self):
         invoice = self._factura_de_faltas(2)
         invoice.action_post()
         invoice._enteza_ic_procesar_una()
         invoice.action_enteza_ic_procesar()
-        self.assertEqual(len(invoice.enteza_ic_enlace_ids.sale_order_id), 1)
-        self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 8)
+        self.assertEqual(len(invoice.enteza_ic_enlace_ids.invoice_id), 1)
 
-    def test_mas_faltas_que_pendiente_queda_pendiente_sin_crear_nada(self):
-        invoice = self._factura_de_faltas(20)
+    def test_rectificativa_en_espejo_al_precio_original(self):
+        invoice = self._factura_de_faltas(5)
         invoice.action_post()
-        self.assertEqual(invoice.state, 'posted', 'la factura al cliente no se bloquea')
-        self.assertEqual(invoice.enteza_ic_estado, 'pendiente')
-        self.assertFalse(invoice.enteza_ic_enlace_ids)
-        self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 10)
+        factura_ic = invoice.enteza_ic_enlace_ids.invoice_id
+        self.product.with_company(self.owner).standard_price = 9.0
 
-    def test_facturacion_acumulativa(self):
-        self._factura_de_faltas(1).action_post()
-        self._factura_de_faltas(2).action_post()
-        self.assertEqual(self.cesion_return.move_ids.product_uom_qty, 7)
-        self.assertEqual(self.cesion.order_line.qty_lost, 3)
+        refund = self._rectificar(invoice, 2)
 
-    def test_lineas_de_material_de_la_cesion_a_cero(self):
-        self.assertEqual(self.cesion.order_line.price_unit, 0.0)
+        rectificativa_ic = refund.enteza_ic_enlace_ids.invoice_id
+        self.assertEqual(rectificativa_ic.move_type, 'out_refund')
+        self.assertEqual(rectificativa_ic.state, 'posted')
+        self.assertEqual(rectificativa_ic.reversed_entry_id, factura_ic)
+        self.assertEqual(rectificativa_ic.invoice_line_ids.quantity, 2)
+        self.assertEqual(rectificativa_ic.invoice_line_ids.price_unit, 1.5)
 
-    def test_entrega_de_la_cesion_prepara_la_recepcion_en_la_receptora(self):
-        recepcion = self.env['stock.picking'].search([
-            ('enteza_cesion_origen_picking_id', 'in', self.cesion.picking_ids.ids)])
-        self.assertEqual(len(recepcion), 1)
-        self.assertEqual(recepcion.company_id, self.receiver)
-        self.assertEqual(recepcion.picking_type_code, 'incoming')
-        self.assertEqual(recepcion.owner_id, self.owner.partner_id)
-        self.assertEqual(recepcion.move_ids.product_uom_qty, 10)
-        self.assertNotEqual(recepcion.state, 'done', 'lo valida el almacén de la receptora')
+    def test_rectificativa_de_factura_no_procesada_no_hace_nada(self):
+        self.receiver.enteza_ic_owner_company_id = False
+        invoice = self._factura_de_faltas(2)
+        invoice.action_post()
+        self.receiver.enteza_ic_owner_company_id = self.owner
 
-    def test_devolucion_de_la_cesion_prepara_la_salida_en_la_receptora(self):
-        self.cesion_return.move_ids.quantity = 3
-        self.cesion_return.move_ids.picked = True
-        self.cesion_return.with_context(cancel_backorder=False)._action_done()
+        refund = self._rectificar(invoice, 2)
+        self.assertFalse(refund.enteza_ic_estado)
+        self.assertFalse(refund.enteza_ic_enlace_ids)
 
-        salida = self.env['stock.picking'].search([
-            ('enteza_cesion_origen_picking_id', '=', self.cesion_return.id)])
-        self.assertEqual(salida.company_id, self.receiver)
-        self.assertEqual(salida.picking_type_code, 'outgoing')
-        self.assertFalse(salida.owner_id)
-        self.assertEqual(salida.move_ids.product_uom_qty, 3)
+    def test_diario_de_otra_compania_no_se_acepta(self):
+        with self.assertRaises(ValidationError):
+            self.receiver.enteza_ic_journal_id = self.receiver_data['default_journal_sale']

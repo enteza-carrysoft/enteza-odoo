@@ -12,9 +12,10 @@ class SaleOrder(models.Model):
         copy=False,
         tracking=True,
         prefetch=False,
-        help="Alquiler con el que esta compañía cede material a otra del grupo. Cuando la "
-             "receptora factura faltas de ese material a su cliente, se prepara aquí un "
-             "presupuesto de venta a la receptora por las mismas unidades.",
+        help="Alquiler con el que esta compañía cede material a otra del grupo: sus líneas de "
+             "material van a 0 € y, al validar sus albaranes, se preparan los de la receptora. "
+             "La factura de faltas a la receptora no depende de esto: ver la ficha de la "
+             "compañía receptora.",
     )
     enteza_cesion_company_dest_id = fields.Many2one(
         'res.company',
@@ -37,16 +38,6 @@ class SaleOrder(models.Model):
         help="Almacén de la compañía receptora donde entra el material cedido. Al validar la "
              "entrega de la cesión se le prepara ahí la recepción, y al validar una "
              "devolución, la salida.",
-    )
-
-    enteza_cesion_journal_id = fields.Many2one(
-        'account.journal',
-        string="Diario de faltas intercompañía",
-        prefetch=False,
-        check_company=True,
-        domain="[('type', '=', 'sale'), ('company_id', '=', company_id)]",
-        help="Diario en el que se crea, en borrador, la factura a la compañía receptora "
-             "cuando esta factura faltas de este material a sus clientes.",
     )
 
     @api.depends('enteza_cesion_intercompania', 'partner_id')
@@ -73,7 +64,7 @@ class SaleOrder(models.Model):
                 [('company_id', '=', dest.id)], limit=1).id or False
 
     @api.constrains('enteza_cesion_intercompania', 'partner_id', 'company_id', 'is_rental_order',
-                    'enteza_cesion_warehouse_dest_id', 'enteza_cesion_journal_id', 'state')
+                    'enteza_cesion_warehouse_dest_id', 'state')
     def _check_enteza_cesion_intercompania(self):
         for order in self.filtered('enteza_cesion_intercompania'):
             if not order.is_rental_order:
@@ -93,6 +84,3 @@ class SaleOrder(models.Model):
             if order.state == 'sale' and not warehouse:
                 raise ValidationError(_(
                     "Falta el almacén receptor de la cesión %s.", order.name))
-            if order.state == 'sale' and not order.enteza_cesion_journal_id:
-                raise ValidationError(_(
-                    "Falta el diario de faltas intercompañía de la cesión %s.", order.name))

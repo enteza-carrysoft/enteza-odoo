@@ -1,106 +1,99 @@
 # Enteza - Venta intercompañía de material perdido
 
-Vimaple cede material a Stileum con un **alquiler de cesión** (meses, precio simbólico).
-Stileum lo alquila a sus clientes. Cuando un cliente no devuelve algo y Stileum le factura
-las faltas, este módulo prepara **en Vimaple la factura a Stileum, en borrador**, por las
-mismas unidades, con el precio de la tarifa que Vimaple tenga para Stileum, y las descuenta
-del alquiler de cesión.
+Stileum no tiene material propio: alquila el que le cede Vimaple. Cuando un cliente de
+Stileum no devuelve algo, Stileum le factura las faltas. Este módulo hace que, **al publicar
+esa factura de faltas**, Vimaple facture a Stileum las mismas unidades **a coste**, y que
+Stileum tenga su factura de proveedor, sin que nadie tenga que hacerlo a mano.
 
-Enfoque decidido el 2026-09-28 en lugar de la consigna pura que describe
-`docs/FASE1_ANALISIS.md`: con el alquiler, Vimaple sigue teniendo el material en su
-inventario valorado (la ubicación de Alquiler es suya) y no hace falta repartir pérdidas por
-propietario, porque Stileum no tiene material propio de esos productos.
+## Cambio de la 19.0.2.0.0 (2026-10-03)
+
+La 19.0.1.x exigía un alquiler de «Cesión intercompañía» con su devolución pendiente y creaba
+una venta con albarán. En la práctica los albaranes no se procesan (solo se usa el de
+recogida para «Facturar las Faltas»), así que nunca había devolución pendiente y no se
+generaba nada. Ahora la factura **no depende de albaranes, existencias ni alquiler de
+cesión**: basta con la configuración de la compañía. Decisiones del usuario: precio = coste
+del artículo en Vimaple; factura publicada sola; solo facturas de faltas nuevas (las 17
+FAJ ya publicadas no se tocan); rectificativas en espejo.
 
 ## Flujo
 
 | # | Qué pasa | Quién |
 |---|---|---|
-| 1 | Pedido de alquiler en Vimaple, cliente Stileum, marcado **«Cesión intercompañía»** con su almacén receptor. Las líneas de material salen solas a 0 €; se añade a mano una línea de servicio «Cuota de cesión» con el importe simbólico | Persona, Vimaple |
-| 2 | Entrega del alquiler de cesión (Stock → Alquiler de Vimaple) | Persona, Vimaple |
-| 3 | **Al validar la entrega**: recepción preparada en el almacén receptor, con propietario = Vimaple | **Este módulo** (la valida una persona de Stileum) |
-| 4 | Stileum alquila, entrega y recoge como siempre | Stileum |
-| 5 | Faltas: «Facturar las Faltas» y factura al cliente | Persona, Stileum |
-| 6 | **Al publicar esa factura**: venta de Vimaple a Stileum confirmada, su **factura en borrador** en el diario de faltas intercompañía de la cesión, y descuento en el alquiler de cesión | **Este módulo** |
-| 7 | Revisar y **publicar** la factura; validar el albarán de la venta (sale de Alquiler) | Persona, Vimaple |
-| 8 | Factura de proveedor en Stileum | Inter-Company Transactions (nativo) |
-| 9 | Fin de la cesión (total o parcial): Vimaple valida la devolución del alquiler de cesión | Persona, Vimaple |
-| 10 | **Al validarla**: salida preparada en Stileum por las unidades devueltas | **Este módulo** (la valida una persona de Stileum) |
+| 1 | Recogida del alquiler en Stileum: el almacén anota las faltas y pulsa «Facturar las Faltas» | Persona, Stileum |
+| 2 | Se publica la factura de faltas al cliente | Persona, Stileum |
+| 3 | **Al publicarla**: factura de Vimaple a Stileum por las mismas unidades de material, a coste, **publicada**, en el diario configurado | **Este módulo** |
+| 4 | **Al publicarse esa**: factura de proveedor en Stileum | Inter-Company Transactions (nativo) |
+| 5 | Si se emite una rectificativa de la factura de faltas («Revertir»), lo mismo en espejo: rectificativa de Vimaple al precio original y rectificativa de proveedor en Stileum | **Este módulo** + nativo |
 
-Ninguna factura se publica sola y ningún albarán se valida solo. Lo único que se confirma
-sin intervención es la venta de Vimaple a Stileum, y solo para poder crear su factura.
+## Qué entra y qué no
 
-## Qué hace el módulo
+- **Entran** las líneas de **material físico** (`is_storable`) que vienen de una venta de
+  faltas (su pedido lleva `rental_order_id`, que pone «Facturar las Faltas»). Se copian las
+  unidades **aunque la línea vaya a 0 €** al cliente (en las FAJ reales es habitual: se cobra
+  una «Valoración de artículos soportados» global).
+- **No entran** servicios (portes, fianza, «Valoración de artículos soportados»), facturas
+  que no son de faltas, faltas creadas con el importador de hoja de cálculo (no llevan
+  `rental_order_id`), ni rectificativas de facturas que no generaron factura intercompañía.
 
-- **`sale.order.enteza_cesion_intercompania`**: marca el alquiler de cesión. El cliente tiene
-  que ser el contacto de otra compañía del grupo (`enteza_cesion_company_dest_id`), y al
-  confirmar hace falta el almacén receptor (`enteza_cesion_warehouse_dest_id`).
-- **Precio**: las líneas de material de una cesión van a 0 € y no generan recargo por retraso.
-- **Albaranes espejo** (`stock.picking.enteza_cesion_origen_picking_id`): al validar la
-  entrega o una devolución de la cesión, se prepara en la receptora la recepción (desde
-  Proveedores, con propietario la dueña) o la salida (hacia Clientes). Uno por albarán de
-  origen, confirmado y sin validar. No usan el tránsito intercompañía: en la 19 exige
-  existencias para reservar, y la dueña no deja nada en él.
-- **Al publicar una factura de cliente** (`account.move._post`), toma las líneas de material
-  que vienen de una venta de faltas (su pedido lleva `rental_order_id`), busca devoluciones
-  pendientes de alquileres de cesión hacia esa compañía y las reparte por fecha.
-- Anota esas unidades en la columna «Faltas» de la devolución de la cesión y llama a
-  «Facturar las Faltas» de `rental_custom`, que crea el presupuesto, descuenta la demanda y
-  deja el resto pendiente.
-- **Enlaces** (`enteza.venta.intercompania.enlace`): línea de factura → alquiler de cesión →
-  venta → factura intercompañía. Botón «Factura intercompañía» en la factura de faltas.
-- **Diario**: el de «Diario de faltas intercompañía» de la cesión (en Enteza, «Facturas
-  STILEUM»). Obligatorio al confirmar la cesión.
-
-### Casos límite
+## Casos límite
 
 | Caso | Comportamiento |
 |---|---|
-| Producto sin ninguna cesión hacia esa compañía | Se ignora: es material propio |
-| Se factura más de lo que queda pendiente en las cesiones | La factura se publica igual y queda **«Pendiente»**, con el motivo en el historial y el botón «Procesar venta intercompañía». No se crea nada |
-| Faltas anotadas a mano en la devolución de la cesión | Pendiente, hasta que se facturen o se borren |
-| Publicar o procesar dos veces | Una sola venta: bloqueo de la factura y comprobación de enlaces antes de crear |
-| Nota de crédito al cliente o devolución física posterior | Nada automático. Se corrige a mano con el enlace a la vista |
-| Faltas creadas con el importador de hoja de cálculo | No llevan enlace al alquiler y no entran |
+| Artículo sin coste en Vimaple | La factura al cliente se publica igual y queda **«Pendiente»**, con el motivo en el historial y el botón «Procesar venta intercompañía». No se crea nada |
+| Falta el diario en la configuración, periodo cerrado en Vimaple o cualquier otro error al publicar | Igual: pendiente, con el motivo |
+| Publicar o procesar dos veces | Una sola factura: bloqueo de la factura y comprobación de enlaces antes de crear |
+| Rectificativa por más unidades de las facturadas, o de un artículo que no estaba | Pendiente |
+| Rectificativa creada a mano, sin «Revertir» | No lleva el enlace a la factura original: no se hace nada |
 
-## Configuración antes de instalar
+## Configuración
 
-1. **Actualizar `rental_custom` a 19.0.1.14.0** antes que este módulo. Aporta la facturación
-   de faltas parcial, el precio por tarifa y la salida de lo perdido desde Alquiler.
-2. **Inter-Company Transactions** (`account_inter_company_rules`): instalarlo, activar
-   «Generar facturas de proveedor» en borrador en las dos compañías y elegir el usuario.
-   🔴 Desde ese momento la factura mensual de reparto de gastos Vimaple → Stileum generará
-   sola su factura de proveedor: **dejar de hacerla a mano** o saldrá duplicada.
-3. **Tarifas**, en este orden:
-   1. Crear «Tarifa general», sin reglas y con la secuencia más baja.
-   2. Activar Tarifas en Ajustes. 🔴 Si se activan con solo la tarifa especial, Odoo se la
-      aplica a **todos** los clientes (`product.pricelist._get_partner_pricelist_multi`).
-   3. Crear «Intercompañía Stileum» con las reglas de venta del material perdido.
-   4. Con la compañía Vimaple activa, asignarla en la ficha del contacto Stileum → Ventas.
+1. **Ficha de la compañía Stileum** (Ajustes → Compañías), pestaña de información general,
+   bloque «Material perdido de otra compañía»:
+   - **Material cedido por**: Visueña de Material Plegable.
+   - **Diario de la factura intercompañía**: «Facturas STILEUM» (ST) de Vimaple. Para
+     verlo en el desplegable hay que tener **las dos compañías activas** en el selector.
+2. **Inter-Company Transactions** (`account_inter_company_rules`, ya instalado). En Ajustes
+   → Contabilidad, **con Stileum activa**: activar «Generar facturas de proveedor y
+   rectificativas», elegir el diario de compras y si se crean en borrador o publicadas. La
+   regla se lee en la compañía que **recibe** la factura (código de la 18 EE:
+   `company_sudo.intercompany_generate_bills_refund` del partner de la factura).
+   🔴 Desde ese momento **cualquier** factura de Vimaple a Stileum (por ejemplo, la mensual
+   de reparto de gastos) creará sola su factura de proveedor: **dejar de hacerla a mano** o
+   saldrá duplicada.
+3. Revisar con la primera factura que la cuenta de ingresos y el IVA que pone Odoo son los
+   que quiere la contable (salen de la ficha del producto en Vimaple; en la vajilla, p. ej.,
+   70300200 y 21 %).
 
-   Las reglas de tarifa no cambian el precio de alquiler: por eso la cuota simbólica va en
-   una línea de servicio (decisión A del 2026-09-28).
-4. **Consigna** (propietarios de stock) en Ajustes de Inventario, para recibir en Stileum con
-   propietario Vimaple y que Stileum no lo valore como existencia suya.
-5. La asesoría tiene que validar el precio simbólico de la cesión (operación vinculada).
+🔴 **VeriFactu** está instalado y desactivado en las dos compañías (RPC del 2026-10-03). Si
+se activa, estas facturas de Vimaple se enviarán a la AEAT al publicarse solas, como
+cualquier otra.
 
-Para abrir la venta de Vimaple desde una factura de Stileum hay que tener **las dos
-compañías activas** en el selector.
+## Alquiler de «Cesión intercompañía» (opcional)
+
+Sigue disponible para cuando se lleve el stock en Odoo, pero **la factura intercompañía no
+lo necesita**. Un alquiler en Vimaple con cliente Stileum marcado como cesión:
+
+- Calcula la compañía receptora a partir del cliente (tiene que ser el contacto de otra
+  compañía del grupo) y propone su almacén. Para elegir el almacén hay que tener las dos
+  compañías activas en el selector.
+- Pone a 0 € las líneas de material y no genera recargo por retraso.
+- Al validar su entrega o su devolución, prepara en la receptora la recepción (con
+  propietario Vimaple) o la salida, confirmadas y sin validar.
 
 ## Despliegue
 
-Commit → push → `invoke git-aggregate` → Actualizar lista de aplicaciones → actualizar
-`rental_custom` → instalar este módulo. Comprobar por RPC `state` y `latest_version`.
+Commit → push → `invoke git-aggregate` → Actualizar lista de aplicaciones → actualizar este
+módulo. Comprobar por RPC `latest_version` = 19.0.2.0.0. Después, configuración y prueba
+con una factura de faltas de un artículo.
 
 ## Pruebas
 
-`tests/test_venta_intercompania.py` y `rental_custom/tests/test_facturar_faltas.py`.
-**Validadas por sintaxis, no ejecutadas**: en este hosting no hay `--test-enable`. Antes de
-darlo por bueno, hacer una prueba real guiada con una cesión de 1 artículo.
+`tests/test_venta_intercompania.py` (factura) y `tests/test_cesion.py` (alquiler de cesión).
+**Validadas por sintaxis, no ejecutadas**: en este hosting no hay `--test-enable`.
 
 ## Qué no se ha podido verificar en la 19
 
-- El motor de alquiler Enterprise (`sale_stock_renting`) sólo se ha leído en la 18: que la
-  devolución de alquiler sale de `rental_loc_id` y que `_action_done` sólo suma a
-  `qty_returned` los movimientos con línea de alquiler.
-- Los campos de `account_inter_company_rules`: el módulo no depende de ellos para no fallar
-  si cambiaron de nombre.
+- `account_inter_company_rules` solo se ha leído en la 18 EE. Este módulo no depende de él:
+  si cambiara, la factura de Vimaple se crea igual y la de proveedor se haría a mano.
+- El motor de alquiler Enterprise (`sale_stock_renting`), del que dependen los albaranes
+  espejo de la cesión, solo se ha leído en la 18.

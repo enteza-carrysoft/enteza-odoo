@@ -17,10 +17,6 @@
                        required="enteza_cesion_intercompania"
                        readonly="state in ('sale', 'cancel')"
                        options="{'no_create': True}"/>
-                <field name="enteza_cesion_journal_id"
-                       invisible="not enteza_cesion_intercompania"
-                       required="enteza_cesion_intercompania"
-                       options="{'no_create': True}"/>
             </xpath>
         </field>
     </record>

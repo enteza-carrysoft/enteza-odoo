@@ -1,9 +1,7 @@
 import logging
 from collections import defaultdict
 
-from markupsafe import Markup
-
-from odoo import _, fields, models
+from odoo import Command, _, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -20,7 +18,8 @@ class AccountMove(models.Model):
         tracking=True,
         prefetch=False,
         help="Vacío: la factura no tiene material cedido por otra compañía. Pendiente: lo "
-             "tiene, pero no se pudo preparar la venta (el motivo está en el historial).",
+             "tiene, pero no se pudo crear la factura intercompañía (el motivo está en el "
+             "historial).",
     )
     enteza_ic_enlace_ids = fields.One2many(
         'enteza.venta.intercompania.enlace', 'source_move_id',
@@ -34,7 +33,8 @@ class AccountMove(models.Model):
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)
-        posted.filtered(lambda m: m.move_type == 'out_invoice')._enteza_ic_procesar()
+        posted.filtered(
+            lambda m: m.move_type in ('out_invoice', 'out_refund'))._enteza_ic_procesar()
         return posted
 
     def action_enteza_ic_procesar(self):
@@ -60,16 +60,20 @@ class AccountMove(models.Model):
 
     def _enteza_ic_procesar(self):
         for move in self:
-            if move.move_type == 'out_invoice' and move.state == 'posted' \
-                    and move.enteza_ic_estado != 'generada':
+            # sudo(): la configuración es de la compañía; el usuario sólo factura.
+            if move.move_type in ('out_invoice', 'out_refund') and move.state == 'posted' \
+                    and move.enteza_ic_estado != 'generada' \
+                    and move.company_id.sudo().enteza_ic_owner_company_id:
                 move._enteza_ic_procesar_una()
 
     def _enteza_ic_lineas_faltas(self):
         """Líneas de material físico que vienen de una venta de faltas de un alquiler.
 
         Se identifican por datos, no por texto: la línea de pedido no es de alquiler y su
-        pedido lleva `rental_order_id` (lo pone «Facturar las Faltas» de rental_custom). Las
-        faltas creadas con el importador de hoja de cálculo no llevan ese enlace y no entran.
+        pedido lleva `rental_order_id` (lo pone «Facturar las Faltas» de rental_custom). Una
+        rectificativa creada con «Revertir» conserva ese enlace (`sale`
+        `_copy_data_extend_business_fields`). Las faltas creadas con el importador de hoja
+        de cálculo no lo llevan y no entran.
         """
         self.ensure_one()
         return self.invoice_line_ids.filtered(
@@ -81,6 +85,13 @@ class AccountMove(models.Model):
         lines = self._enteza_ic_lineas_faltas()
         if not lines:
             return
+        origin_lines = self.env['account.move.line']
+        if self.move_type == 'out_refund':
+            # Sólo se rectifica lo que se facturó: una rectificativa de una factura de faltas
+            # anterior al módulo (o que no generó nada) no tiene nada que rectificar en la dueña.
+            origin_lines = self.reversed_entry_id.sudo().enteza_ic_enlace_ids.invoice_line_id
+            if not origin_lines:
+                return
         # Serializa dos procesos sobre la misma factura (publicación y botón a la vez). Tras
         # obtener el bloqueo se vuelve a mirar en la base de datos si otro ya la procesó.
         self.lock_for_update()
@@ -89,141 +100,110 @@ class AccountMove(models.Model):
             self.enteza_ic_estado = 'generada'
             return
         try:
-            # Todo o nada: ventas, factura, descuentos en los alquileres de cesión y enlaces.
+            # Todo o nada: factura de la dueña, su publicación y los enlaces.
             with self.env.cr.savepoint():
-                invoices = self._enteza_ic_generar(lines)
+                invoice = self._enteza_ic_generar(lines, origin_lines)
         except Exception as error:  # noqa: BLE001 - no se bloquea la factura al cliente
             # La factura de la receptora ya está publicada y así se queda: un problema
             # interno entre compañías no puede impedir facturar al cliente. Queda pendiente,
             # con el motivo en el historial y un botón para reintentarlo.
-            _logger.exception("Venta intercompañía pendiente en %s", self.name)
+            _logger.exception("Factura intercompañía pendiente en %s", self.name)
             message = error.args[0] if isinstance(error, UserError) else repr(error)
             self.enteza_ic_estado = 'pendiente'
             self.message_post(body=_(
-                "No se ha podido preparar la venta intercompañía del material perdido: %s",
+                "No se ha podido crear la factura intercompañía del material perdido: %s",
                 message))
             return
-        if not invoices:
-            return
         self.enteza_ic_estado = 'generada'
-        # En borrador la factura no tiene número todavía: se enlaza por su nombre visible.
         self.message_post(body=_(
-            "Preparada en borrador la factura intercompañía del material perdido: %s",
-            Markup(", ").join(invoice._get_html_link() for invoice in invoices)))
-        _logger.info("Factura intercompañía %s generada desde %s", invoices.ids, self.name)
+            "Creada y publicada la factura intercompañía del material perdido: %s",
+            invoice._get_html_link()))
+        _logger.info("Factura intercompañía %s generada desde %s", invoice.id, self.name)
 
-    def _enteza_ic_movimientos_cesion(self, product):
-        """Devoluciones pendientes de alquileres de cesión hacia esta compañía.
+    def _enteza_ic_precio(self, product, owner, origin_lines):
+        """Precio por unidad del producto (en su unidad de medida) para la dueña.
 
-        sudo(): son movimientos de la compañía dueña, a la que el usuario que publica puede
-        no tener acceso.
+        En una rectificativa, el de la factura intercompañía original, para que se anule lo
+        mismo que se cobró aunque el coste haya cambiado después. Si no, el coste del
+        producto en la dueña (decisión del 2026-10-03).
         """
-        moves = self.env['stock.move'].sudo().search([
-            ('product_id', '=', product.id),
-            ('state', 'not in', ('draft', 'done', 'cancel')),
-            ('picking_id', '!=', False),
-            ('sale_line_id.is_rental', '=', True),
-            ('sale_line_id.order_id.enteza_cesion_company_dest_id', '=', self.company_id.id),
-        ], order='date, id')
-        return moves.filtered(lambda m: m.location_id == m.company_id.rental_loc_id)
-
-    def _enteza_ic_repartir(self, lines):
-        """Atribuye cada línea de faltas a devoluciones pendientes de cesión, por fecha.
-
-        :return: lista de (línea de factura, movimiento de cesión, cantidad en la unidad del
-            producto). Una línea cuyo producto no tiene ninguna cesión no se reparte: es
-            material propio de la receptora.
-        """
-        allocations = []
-        taken = defaultdict(float)
-        for line in lines:
-            candidates = self._enteza_ic_movimientos_cesion(line.product_id)
-            if not candidates:
-                continue
-            uom = line.product_id.uom_id
-            pending = line.product_uom_id._compute_quantity(line.quantity, uom)
-            for stock_move in candidates:
-                if uom.compare(pending, 0.0) <= 0:
-                    break
-                if stock_move.product_uom.compare(stock_move.qty_missing, 0.0) > 0:
-                    raise UserError(_(
-                        "El albarán %s de la cesión tiene faltas anotadas a mano sin facturar. "
-                        "Hay que facturarlas o borrarlas antes.", stock_move.picking_id.name))
-                free = stock_move.product_uom._compute_quantity(
-                    stock_move.product_uom_qty, uom) - taken[stock_move]
-                take = min(free, pending)
-                if uom.compare(take, 0.0) > 0:
-                    allocations.append((line, stock_move, take))
-                    taken[stock_move] += take
-                    pending -= take
-            if uom.compare(pending, 0.0) > 0:
+        if self.move_type == 'out_refund':
+            origin = origin_lines.filtered(lambda line: line.product_id == product)[:1]
+            if not origin:
                 raise UserError(_(
-                    "Se facturan %(qty)s %(uom)s de %(product)s más de las que quedan "
-                    "pendientes en los alquileres de cesión.",
-                    qty=pending, uom=uom.name, product=line.product_id.display_name))
-        return allocations
+                    "%s no estaba en la factura intercompañía original: no hay nada que "
+                    "rectificar.", product.display_name))
+            return origin.product_uom_id._compute_price(origin.price_unit, product.uom_id)
+        cost = product.with_company(owner).standard_price
+        if owner.currency_id.compare_amounts(cost, 0.0) <= 0:
+            raise UserError(_(
+                "%(product)s no tiene coste en %(company)s.",
+                product=product.display_name, company=owner.name))
+        return cost
 
-    def _enteza_ic_generar(self, lines):
-        allocations = self._enteza_ic_repartir(lines)
-        if not allocations:
-            return self.env['sale.order']
+    def _enteza_ic_cantidades(self, lines):
+        """Cantidad por producto, en su unidad de medida."""
+        qty_by_product = defaultdict(float)
+        for line in lines:
+            qty_by_product[line.product_id] += line.product_uom_id._compute_quantity(
+                line.quantity, line.product_id.uom_id)
+        return qty_by_product
 
-        qty_by_picking = defaultdict(lambda: defaultdict(float))
-        for _line, stock_move, qty in allocations:
-            qty_by_picking[stock_move.picking_id][stock_move] += qty
+    def _enteza_ic_generar(self, lines, origin_lines):
+        """Crea y publica en la dueña la factura (o rectificativa) a esta compañía.
 
-        order_by_picking = {}
-        orders = self.env['sale.order'].sudo()
-        for picking, qty_by_move in qty_by_picking.items():
-            for stock_move, qty in qty_by_move.items():
-                stock_move.qty_missing = stock_move.product_id.uom_id._compute_quantity(
-                    qty, stock_move.product_uom)
-            # El picking viene en sudo (ver `_enteza_ic_movimientos_cesion`): el presupuesto
-            # se crea en la compañía dueña por el camino normal de «Facturar las Faltas», con
-            # la tarifa que esa compañía tenga para la receptora.
-            order = picking.with_company(picking.company_id)._create_missing_sale_order()
-            order.message_post(body=_(
-                "Generado automáticamente al publicar %s, factura de faltas de %s.",
-                self._get_html_link(), self.company_id.name))
-            order.journal_id = picking.sale_id.enteza_cesion_journal_id
-            order_by_picking[picking] = order
-            orders |= order
+        Al publicarla, Inter-Company Transactions crea la de proveedor en esta compañía si
+        aquí está activado «Generar facturas de proveedor».
+        """
+        company = self.company_id.sudo()
+        owner = company.enteza_ic_owner_company_id
+        journal = company.enteza_ic_journal_id
+        if not journal or journal.company_id != owner:
+            raise UserError(_(
+                "Falta en la ficha de %(company)s el diario de ventas de %(owner)s para la "
+                "factura intercompañía.", company=company.name, owner=owner.name))
 
-        invoices = self._enteza_ic_facturar(orders)
+        if self.move_type == 'out_refund':
+            invoiced = self._enteza_ic_cantidades(origin_lines)
+            for product, qty in self._enteza_ic_cantidades(lines).items():
+                if product.uom_id.compare(qty, invoiced.get(product, 0.0)) > 0:
+                    raise UserError(_(
+                        "Se rectifican %(qty)s %(uom)s de %(product)s, más de las que se "
+                        "facturaron a %(company)s.", qty=qty, uom=product.uom_id.name,
+                        product=product.display_name, company=company.name))
 
-        # sudo(): el usuario que publica sólo puede leer los enlaces (ir.model.access.csv).
+        # sudo(): la factura es de la compañía dueña, a la que el usuario que publica puede no
+        # tener acceso.
+        invoice = self.env['account.move'].sudo().with_company(owner).create({
+            'move_type': self.move_type,
+            'company_id': owner.id,
+            'journal_id': journal.id,
+            'partner_id': company.partner_id.id,
+            'invoice_date': self.invoice_date,
+            'ref': self.name,
+            'invoice_origin': self.name,
+            'reversed_entry_id': origin_lines.move_id[:1].id,
+            'invoice_line_ids': [Command.create({
+                'sequence': sequence,
+                'product_id': line.product_id.id,
+                'quantity': line.product_uom_id._compute_quantity(
+                    line.quantity, line.product_id.uom_id),
+                'product_uom_id': line.product_id.uom_id.id,
+                'price_unit': self._enteza_ic_precio(line.product_id, owner, origin_lines),
+            }) for sequence, line in enumerate(lines, start=1)],
+        })
+        invoice.message_post(body=_(
+            "Material perdido facturado por %(company)s en %(move)s.",
+            company=company.name, move=self._get_html_link()))
+        invoice.action_post()
+
+        # La línea N de la factura es la línea N de `lines` (secuencia asignada arriba).
+        invoice_lines = invoice.invoice_line_ids.sorted('sequence')
         self.env['enteza.venta.intercompania.enlace'].sudo().create([{
             'source_line_id': line.id,
-            'owner_company_id': stock_move.company_id.id,
-            'cesion_order_id': stock_move.sale_line_id.order_id.id,
-            'cesion_stock_move_id': stock_move.id,
-            'sale_order_id': order_by_picking[stock_move.picking_id].id,
-            'invoice_id': order_by_picking[stock_move.picking_id].invoice_ids[:1].id,
+            'owner_company_id': owner.id,
+            'invoice_line_id': invoice_line.id,
             'product_id': line.product_id.id,
-            'quantity': qty,
-        } for line, stock_move, qty in allocations])
-        return invoices
-
-    def _enteza_ic_facturar(self, orders):
-        """Confirma las ventas de la dueña y crea su factura a la receptora, SIN publicarla.
-
-        Confirmar sólo prepara el albarán de salida desde Alquiler (lo valida el almacén).
-        Los artículos de alquiler se facturan por lo pedido (1.101 de 1.101, RPC del
-        2026-09-28), así que se puede facturar sin esperar al albarán. La factura la revisa y
-        publica una persona; al publicarla, Inter-Company Transactions crea la de proveedor
-        en la receptora.
-        """
-        for order in orders:
-            # El valor de `action_confirm` puede ser una acción (diálogo de otro módulo): si
-            # el pedido no ha quedado confirmado, se dice en vez de facturar a medias.
-            order.action_confirm()
-            if order.state != 'sale':
-                raise UserError(_(
-                    "No se ha podido confirmar %s sin intervención: hay que revisarlo a mano.",
-                    order.name))
-        invoices = orders._create_invoices()
-        for invoice in invoices:
-            invoice.message_post(body=_(
-                "Factura intercompañía por el material perdido facturado en %s (%s). "
-                "Revisarla y publicarla.", self._get_html_link(), self.company_id.name))
-        return invoices
+            'quantity': invoice_line.quantity,
+        } for line, invoice_line in zip(lines, invoice_lines, strict=True)])
+        return invoice
