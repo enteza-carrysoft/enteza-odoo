@@ -14,6 +14,9 @@ documento en el mismo commit:**
    añadir parches del tipo «antes era… ahora es…».
 2. Añadir una fila al **Historial de cambios** (versión, fecha, qué cambia).
 3. Actualizar la versión y la fecha de la cabecera.
+4. Regenerar el PDF desde `docs/`:
+   `python md2pdf.py FUNCIONALIDAD.md FUNCIONALIDAD.pdf "Venta intercompañía de material perdido" --sin-saltos`
+   y revisar las páginas (fuentes Segoe de Windows; reportlab).
 
 Un cambio puramente interno (refactor sin efecto visible) no necesita fila, pero si cambia
 algo que el usuario ve o una regla de cálculo, sí. El `README.md` es la referencia
