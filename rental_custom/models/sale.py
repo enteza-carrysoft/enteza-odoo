@@ -60,6 +60,10 @@ class SaleOrder(models.Model):
         "sale.order",
         "rental_order_id",
         string="Ventas por material no devuelto",
+        # Sin los cancelados (19.0.1.16.1): el aviso del formulario seguía mostrando un
+        # pedido de faltas anulado (41255027 con S00379, 2026-10-07). El enlace
+        # `rental_order_id` del cancelado se conserva; solo deja de contar aquí.
+        domain=[("state", "!=", "cancel")],
         help="Pedidos de venta que facturan material de este alquiler que no se devolvió.",
     )
 

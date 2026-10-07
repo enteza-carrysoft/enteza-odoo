@@ -145,6 +145,24 @@ class TestFaltasDesdePedido(TransactionCase):
             self.assertEqual(linea.qty_returned, linea.product_uom_qty)
         self.assertEqual(pedido.rental_status, 'returned')
 
+    def test_aviso_ignora_faltas_canceladas(self):
+        """Spec 003: un pedido de faltas cancelado deja de contar en el aviso del alquiler."""
+        pedido = self._alquiler(10)
+        primero = self.env['sale.order'].browse(
+            self._asistente(pedido, 2).action_confirm()['res_id'])
+        segundo = self.env['sale.order'].browse(
+            self._asistente(pedido, 1).action_confirm()['res_id'])
+        self.assertEqual(pedido.compensation_order_ids, primero | segundo)
+
+        primero.action_cancel()
+        pedido.invalidate_recordset(['compensation_order_ids'])
+        self.assertEqual(pedido.compensation_order_ids, segundo)
+        self.assertEqual(primero.rental_order_id, pedido, 'el enlace se conserva')
+
+        segundo.action_cancel()
+        pedido.invalidate_recordset(['compensation_order_ids'])
+        self.assertFalse(pedido.compensation_order_ids)
+
     # AC6 --------------------------------------------------------------
 
     def test_confirmar_faltas_valida_la_salida(self):
