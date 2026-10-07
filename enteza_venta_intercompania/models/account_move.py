@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from odoo import Command, _, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -40,6 +40,21 @@ class AccountMove(models.Model):
     def action_enteza_ic_procesar(self):
         self._enteza_ic_procesar()
 
+    def action_enteza_ic_generar_historico(self, invoice_date):
+        """Factura intercompañía de facturas de faltas anteriores al módulo, con otra fecha.
+
+        Se lanza a mano por RPC (petición del cliente del 2026-10-07: las 17 FAJ anteriores,
+        a 30-09-2026). Sus pedidos de faltas pueden no llevar `rental_order_id` porque se
+        crearon antes de que «Facturar las Faltas» lo guardara; por eso aquí basta con que
+        la factura esté en el diario de faltas de su compañía.
+        """
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise AccessError(_("Sólo un administrador de contabilidad puede hacer esto."))
+        fields.Date.to_date(invoice_date)  # falla aquí si la fecha no es válida
+        self.with_context(
+            enteza_ic_historico=True, enteza_ic_invoice_date=invoice_date,
+        )._enteza_ic_procesar()
+
     def action_enteza_ic_ver_facturas(self):
         self.ensure_one()
         invoices = self.sudo().enteza_ic_enlace_ids.invoice_id
@@ -73,9 +88,15 @@ class AccountMove(models.Model):
         pedido lleva `rental_order_id` (lo pone «Facturar las Faltas» de rental_custom). Una
         rectificativa creada con «Revertir» conserva ese enlace (`sale`
         `_copy_data_extend_business_fields`). Las faltas creadas con el importador de hoja
-        de cálculo no lo llevan y no entran.
+        de cálculo no lo llevan y no entran, salvo en `action_enteza_ic_generar_historico`.
         """
         self.ensure_one()
+        if self.env.context.get('enteza_ic_historico'):
+            if self.journal_id != self.company_id.sudo().rental_missing_journal_id:
+                return self.env['account.move.line']
+            return self.invoice_line_ids.filtered(
+                lambda line: line.product_id.is_storable
+                and not any(line.sale_line_ids.mapped('is_rental')))
         return self.invoice_line_ids.filtered(
             lambda line: line.product_id.is_storable and line.sale_line_ids.filtered(
                 lambda sl: not sl.is_rental and sl.order_id.rental_order_id))
@@ -141,6 +162,35 @@ class AccountMove(models.Model):
                 product=product.display_name, company=owner.name))
         return cost
 
+    def _enteza_ic_descuento_general(self):
+        """% de descuento de la factura de faltas que no está en ninguna línea de artículo.
+
+        En las FAJ reales los artículos suelen ir sin descuento y el descuento al cliente lo
+        lleva la línea de servicio «Valoración de artículos soportados». Si las líneas que no
+        son material llevan descuentos distintos, no se adivina: queda pendiente.
+        """
+        self.ensure_one()
+        discounts = set(self.invoice_line_ids.filtered(
+            lambda line: line.display_type == 'product' and not line.product_id.is_storable
+            and line.discount).mapped('discount'))
+        if len(discounts) > 1:
+            raise UserError(_(
+                "La factura tiene varios descuentos generales distintos (%s): no se sabe "
+                "cuál trasladar a los artículos.",
+                ", ".join(f"{discount:g} %" for discount in sorted(discounts))))
+        return discounts.pop() if discounts else 0.0
+
+    def _enteza_ic_descuento(self, line, origin_lines, general_discount):
+        """% de descuento de la línea intercompañía (petición del cliente del 2026-10-07).
+
+        El de la propia línea de faltas o, si no tiene, el descuento general de la factura.
+        En una rectificativa, el de la factura intercompañía original, igual que el precio.
+        """
+        if self.move_type == 'out_refund':
+            return origin_lines.filtered(
+                lambda origin: origin.product_id == line.product_id)[:1].discount
+        return line.discount or general_discount
+
     def _enteza_ic_cantidades(self, lines):
         """Cantidad por producto, en su unidad de medida."""
         qty_by_product = defaultdict(float)
@@ -171,6 +221,7 @@ class AccountMove(models.Model):
                         "Se rectifican %(qty)s %(uom)s de %(product)s, más de las que se "
                         "facturaron a %(company)s.", qty=qty, uom=product.uom_id.name,
                         product=product.display_name, company=company.name))
+        general_discount = self._enteza_ic_descuento_general()
 
         # sudo(): la factura es de la compañía dueña, a la que el usuario que publica puede no
         # tener acceso.
@@ -179,7 +230,7 @@ class AccountMove(models.Model):
             'company_id': owner.id,
             'journal_id': journal.id,
             'partner_id': company.partner_id.id,
-            'invoice_date': self.invoice_date,
+            'invoice_date': self.env.context.get('enteza_ic_invoice_date') or self.invoice_date,
             'ref': self.name,
             'invoice_origin': self.name,
             'reversed_entry_id': origin_lines.move_id[:1].id,
@@ -190,6 +241,7 @@ class AccountMove(models.Model):
                     line.quantity, line.product_id.uom_id),
                 'product_uom_id': line.product_id.uom_id.id,
                 'price_unit': self._enteza_ic_precio(line.product_id, owner, origin_lines),
+                'discount': self._enteza_ic_descuento(line, origin_lines, general_discount),
             }) for sequence, line in enumerate(lines, start=1)],
         })
         invoice.message_post(body=_(

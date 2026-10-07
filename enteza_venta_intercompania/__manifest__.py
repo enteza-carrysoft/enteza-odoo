@@ -1,6 +1,6 @@
 {
     'name': 'Enteza - Venta intercompañía de material perdido',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'category': 'Sales/Sales',
     'summary': 'Material cedido entre compañías: al facturar sus faltas al cliente, la '
                'compañía dueña factura esas unidades a coste a la receptora',

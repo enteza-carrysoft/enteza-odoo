@@ -70,6 +70,65 @@ class TestVentaIntercompania(AccountTestInvoicingCommon):
         self.assertEqual(factura_ic.invoice_line_ids.quantity, 2)
         self.assertEqual(factura_ic.invoice_line_ids.price_unit, 1.5, 'a coste de la dueña')
 
+    def test_traslada_el_descuento_de_cada_linea(self):
+        invoice = self._factura_de_faltas(2)
+        invoice.invoice_line_ids.discount = 40.0
+        invoice.action_post()
+        linea_ic = invoice.enteza_ic_enlace_ids.invoice_line_id
+        self.assertEqual(linea_ic.discount, 40.0)
+        self.assertAlmostEqual(linea_ic.price_subtotal, 1.8, msg='2 x 1,5 con un 40 %')
+
+    def _con_valoracion(self, invoice, discount):
+        """Añade la línea de servicio que lleva el descuento general, como en las FAJ."""
+        valoracion = self.env['product.product'].create({
+            'name': 'Valoración de artículos soportados', 'type': 'service'})
+        invoice.invoice_line_ids = [(0, 0, {
+            'product_id': valoracion.id, 'price_unit': 100.0, 'discount': discount})]
+
+    def test_sin_descuento_propio_toma_el_general_de_la_factura(self):
+        invoice = self._factura_de_faltas(2)
+        self._con_valoracion(invoice, 99.0)
+        invoice.action_post()
+        self.assertEqual(invoice.enteza_ic_enlace_ids.invoice_line_id.discount, 99.0)
+
+    def test_el_descuento_propio_manda_sobre_el_general(self):
+        invoice = self._factura_de_faltas(2)
+        invoice.invoice_line_ids.discount = 40.0
+        self._con_valoracion(invoice, 99.0)
+        invoice.action_post()
+        self.assertEqual(invoice.enteza_ic_enlace_ids.invoice_line_id.discount, 40.0)
+
+    def test_varios_descuentos_generales_queda_pendiente(self):
+        invoice = self._factura_de_faltas(2)
+        self._con_valoracion(invoice, 99.0)
+        self._con_valoracion(invoice, 50.0)
+        invoice.action_post()
+        self.assertEqual(invoice.enteza_ic_estado, 'pendiente')
+
+    def test_rectificativa_conserva_el_descuento_original(self):
+        invoice = self._factura_de_faltas(5)
+        invoice.invoice_line_ids.discount = 40.0
+        invoice.action_post()
+        refund = invoice._reverse_moves()
+        refund.invoice_line_ids.write({'quantity': 2, 'discount': 0.0})
+        refund.action_post()
+        self.assertEqual(refund.enteza_ic_enlace_ids.invoice_line_id.discount, 40.0)
+
+    def test_historico_sin_enlace_al_alquiler_en_el_diario_de_faltas(self):
+        invoice = self._factura_de_faltas(2)
+        invoice.invoice_line_ids.sale_line_ids.order_id.rental_order_id = False
+        invoice.action_post()
+        self.assertFalse(invoice.enteza_ic_estado, 'sin enlace al alquiler no se detecta')
+
+        invoice.action_enteza_ic_generar_historico('2026-09-30')
+        self.assertFalse(invoice.enteza_ic_estado, 'tampoco fuera del diario de faltas')
+
+        self.receiver.rental_missing_journal_id = invoice.journal_id
+        invoice.action_enteza_ic_generar_historico('2026-09-30')
+        self.assertEqual(invoice.enteza_ic_estado, 'generada')
+        factura_ic = invoice.enteza_ic_enlace_ids.invoice_id
+        self.assertEqual(factura_ic.invoice_date, fields.Date.to_date('2026-09-30'))
+
     def test_sin_configuracion_no_hace_nada(self):
         self.receiver.enteza_ic_owner_company_id = False
         invoice = self._factura_de_faltas(2)

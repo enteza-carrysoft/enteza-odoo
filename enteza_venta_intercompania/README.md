@@ -5,6 +5,20 @@ Stileum no devuelve algo, Stileum le factura las faltas. Este módulo hace que, 
 esa factura de faltas**, Vimaple facture a Stileum las mismas unidades **a coste**, y que
 Stileum tenga su factura de proveedor, sin que nadie tenga que hacerlo a mano.
 
+## Cambio de la 19.0.2.1.0 (2026-10-07)
+
+- **Descuentos**: cada línea de la factura intercompañía lleva el % de descuento de su línea
+  de faltas o, si no tiene, el **descuento general** de la factura: el de las líneas que no
+  son material (en las FAJ, «Valoración de artículos soportados», que es donde suele ir el
+  descuento al cliente). Si esas líneas llevan descuentos distintos entre sí, queda
+  «Pendiente». En una rectificativa, el de la factura intercompañía original (igual que el
+  precio).
+- **Facturas de faltas anteriores al módulo**: `action_enteza_ic_generar_historico(fecha)`,
+  solo por RPC y solo para administradores de contabilidad. Crea la factura intercompañía
+  con la fecha indicada y, como esos pedidos de faltas pueden no llevar `rental_order_id`,
+  toma todo el material de la factura **si está en el diario de faltas de su compañía**
+  (`rental_missing_journal_id`). Se usó para las 17 FAJ del 01-08 al 22-09, a 30-09-2026.
+
 ## Cambio de la 19.0.2.0.0 (2026-10-03)
 
 La 19.0.1.x exigía un alquiler de «Cesión intercompañía» con su devolución pendiente y creaba
@@ -13,7 +27,7 @@ recogida para «Facturar las Faltas»), así que nunca había devolución pendie
 generaba nada. Ahora la factura **no depende de albaranes, existencias ni alquiler de
 cesión**: basta con la configuración de la compañía. Decisiones del usuario: precio = coste
 del artículo en Vimaple; factura publicada sola; solo facturas de faltas nuevas (las 17
-FAJ ya publicadas no se tocan); rectificativas en espejo.
+FAJ ya publicadas se generaron después con la 19.0.2.1.0); rectificativas en espejo.
 
 ## Flujo
 
@@ -30,7 +44,8 @@ FAJ ya publicadas no se tocan); rectificativas en espejo.
 - **Entran** las líneas de **material físico** (`is_storable`) que vienen de una venta de
   faltas (su pedido lleva `rental_order_id`, que pone «Facturar las Faltas»). Se copian las
   unidades **aunque la línea vaya a 0 €** al cliente (en las FAJ reales es habitual: se cobra
-  una «Valoración de artículos soportados» global).
+  una «Valoración de artículos soportados» global). El descuento se traslada
+  como se explica en el cambio de la 19.0.2.1.0.
 - **No entran** servicios (portes, fianza, «Valoración de artículos soportados»), facturas
   que no son de faltas, faltas creadas con el importador de hoja de cálculo (no llevan
   `rental_order_id`), ni rectificativas de facturas que no generaron factura intercompañía.
@@ -83,7 +98,7 @@ lo necesita**. Un alquiler en Vimaple con cliente Stileum marcado como cesión:
 ## Despliegue
 
 Commit → push → `invoke git-aggregate` → Actualizar lista de aplicaciones → actualizar este
-módulo. Comprobar por RPC `latest_version` = 19.0.2.0.0. Después, configuración y prueba
+módulo. Comprobar por RPC `latest_version` = 19.0.2.1.0. Después, configuración y prueba
 con una factura de faltas de un artículo.
 
 ## Pruebas
