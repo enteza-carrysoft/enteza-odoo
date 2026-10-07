@@ -423,3 +423,68 @@ class TestConfirmacionConPrestamo(TransactionCase):
             pedido.with_context(enteza_prestamo_aceptado=True).action_confirm()
         )
         self.assertEqual(pedido.state, 'sale')
+
+    # ------------------------------------------------------------------
+    # 19.0.10.1.0: nunca se reserva más de lo que pide la línea
+    # ------------------------------------------------------------------
+
+    def test_no_se_reserva_mas_de_lo_pedido(self):
+        """Caso real del pedido 11250529 (2026-10-07): el almacén propio ya está en déficit.
+
+        Otro pedido confirmado se ha comido el stock propio y más: el disponible es
+        negativo. El pedido nuevo tiene que pedir prestado lo SUYO, no el agujero ajeno.
+        """
+        self._dar_stock(50, self.almacen)
+        self._dar_stock(1000, self.almacen_otra)
+        anterior = self._pedido(300)
+        anterior.with_context(enteza_prestamo_aceptado=True).action_confirm()
+
+        pedido = self._pedido(40)
+        self.assertEqual(pedido.order_line.enteza_falta, 40)
+
+        asistente = self._abrir_dialogo(pedido)
+        self.assertEqual(asistente.line_ids.qty_falta, 40)
+        self.assertEqual(asistente.line_ids.qty_prestable, 40)
+
+        asistente.action_confirmar()
+        prestamo = self.env['enteza.stock.loan'].search([
+            ('origin_order_ids', 'in', pedido.ids),
+        ])
+        self.assertEqual(prestamo.line_ids.qty_reserved, 40)
+
+    # ------------------------------------------------------------------
+    # 19.0.10.1.0: un alquiler ya empezado no propone préstamo
+    # ------------------------------------------------------------------
+
+    def test_alquiler_ya_empezado_no_propone_prestamo(self):
+        """Regularizar un evento pasado no puede bloquear material de la otra compañía."""
+        self._dar_stock(100, self.almacen_otra)
+        pedido = self._pedido(
+            40,
+            desde=Datetime.now() - timedelta(days=5),
+            hasta=Datetime.now() - timedelta(days=4),
+        )
+
+        self.assertTrue(pedido.action_confirm())
+        self.assertEqual(pedido.state, 'sale')
+        self.assertFalse(self.env['enteza.stock.loan'].search([
+            ('origin_order_ids', 'in', pedido.ids),
+        ]))
+
+    def test_solo_se_proponen_las_lineas_futuras(self):
+        """El filtro mira la fecha de inicio de cada línea.
+
+        En la 19 las fechas son de la cabecera (`start_date` es related de
+        `rental_start_date`, comprobado por RPC el 2026-10-07), así que un mismo pedido no
+        mezcla líneas pasadas y futuras: se comprueba el filtro con dos pedidos.
+        """
+        pasado = self._pedido(
+            40,
+            desde=Datetime.now() - timedelta(hours=2),
+            hasta=Datetime.now() + timedelta(days=1),
+        )
+        futuro = self._pedido(40)
+
+        self.assertTrue(pasado.order_line.enteza_falta > 0)
+        self.assertFalse(pasado._enteza_lineas_con_deficit())
+        self.assertEqual(futuro._enteza_lineas_con_deficit(), futuro.order_line)

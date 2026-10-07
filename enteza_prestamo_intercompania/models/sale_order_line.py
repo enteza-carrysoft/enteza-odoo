@@ -102,7 +102,13 @@ class SaleOrderLine(models.Model):
                 ignorar_linea=linea,
             )[linea.product_id.id]
 
-            falta = linea.product_uom_qty - disponible - linea._enteza_cubierto_por_prestamo()
+            # 🔴 Acotado a cero (19.0.10.1.0). Un disponible negativo es el déficit de OTROS
+            # pedidos ya confirmados en este almacén, no de esta línea: a ella el almacén
+            # propio le aporta cero, y lo que le falta es como mucho lo que pide. Sin el
+            # acotado, el pedido 11250529 (2026-10-07) pedía 400 vasos y proponía reservar
+            # 5.280 en la otra compañía: heredaba el agujero de todo el almacén.
+            propio = max(disponible, 0.0)
+            falta = linea.product_uom_qty - propio - linea._enteza_cubierto_por_prestamo()
             if float_compare(falta, 0.0, precision_rounding=linea.product_uom_id.rounding) <= 0:
                 # Se sirve con lo propio: no se toca nada más. Este corte es el que mantiene
                 # el coste a raya —la consulta a la otra compañía es la cara— y es también lo

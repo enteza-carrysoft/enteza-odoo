@@ -117,6 +117,22 @@ class TestWidgetPrestamo(TransactionCase):
         self.assertIn(self.otra.name, linea.enteza_origen_prestamo)
         self.assertIn(self.almacen_otra.name, linea.enteza_origen_prestamo)
 
+    def test_falta_no_supera_lo_pedido_con_disponible_negativo(self):
+        """19.0.10.1.0, caso real del pedido 11250529: el almacén propio ya está en negativo.
+
+        Un pedido confirmado de 300 con 50 en casa deja el disponible en -250. Un
+        presupuesto nuevo de 40 necesita 40, no 290: el resto es déficit del otro pedido.
+        """
+        self._dar_stock(50, self.almacen)
+        self._dar_stock(1000, self.almacen_otra)
+        anterior = self._linea(300).order_id
+        anterior.with_context(enteza_prestamo_aceptado=True).action_confirm()
+
+        linea = self._linea(40)
+
+        self.assertEqual(linea.enteza_falta, 40)
+        self.assertEqual(linea.enteza_prestable_otra, 40)
+
     def test_cobertura_parcial(self):
         """Cubrir 8 de 15 se dice tal cual: nunca dar por resuelto lo que no lo está."""
         self._dar_stock(80, self.almacen)

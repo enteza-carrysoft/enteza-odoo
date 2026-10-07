@@ -217,6 +217,20 @@ class TestCicloVida(TransactionCase):
         )
         self.assertEqual(disponible[self.producto.id], 900)
 
+    def test_cancelar_aprobado_cancela_los_albaranes(self):
+        """19.0.10.1.0: antes se anulaba el documento y los albaranes seguían vivos."""
+        self._dar_stock(900)
+        prestamo = self._crear_prestamo(100)
+        prestamo.action_reservar()
+        prestamo.with_user(self.responsable).action_aprobar()
+        albaranes = prestamo.picking_out_id | prestamo.picking_in_id
+        self.assertEqual(len(albaranes), 2)
+
+        prestamo.with_user(self.responsable).action_cancelar()
+
+        self.assertEqual(prestamo.state, 'cancelled')
+        self.assertEqual(set(albaranes.mapped('state')), {'cancel'})
+
     def test_un_usuario_normal_no_puede_cancelar(self):
         self._dar_stock(900)
         prestamo = self._crear_prestamo(100)

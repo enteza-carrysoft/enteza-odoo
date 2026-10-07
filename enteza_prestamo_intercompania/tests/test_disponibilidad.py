@@ -305,6 +305,20 @@ class TestDisponibilidad(TransactionCase):
         )
         self.assertEqual(faltas.get(self.producto.id), 50)
 
+    def test_deficit_no_supera_lo_pedido(self):
+        """19.0.10.1.0: con el almacén ya en negativo, falta lo pedido y no más.
+
+        100 en casa y 300 comprometidas en préstamo: disponible -200. A quien pide 50 le
+        faltan 50, no 250; los otros 200 son déficit de otro compromiso.
+        """
+        self._dar_stock(100)
+        self._crear_prestamo(300)
+        faltas = self.motor.deficit(
+            self.productos, self.almacen, self.desde, self.hasta,
+            {self.producto.id: 50},
+        )
+        self.assertEqual(faltas.get(self.producto.id), 50)
+
     # ------------------------------------------------------------------
     # Fachada RPC
     # ------------------------------------------------------------------

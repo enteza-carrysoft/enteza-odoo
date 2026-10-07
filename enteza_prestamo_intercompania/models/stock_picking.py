@@ -38,6 +38,30 @@ class StockPicking(models.Model):
             albaran.enteza_loan_id.sudo()._enteza_albaran_validado(albaran)
         return resultado
 
+    def _create_backorder_picking(self):
+        """El backorder de un albarán del préstamo sigue siendo del préstamo (19.0.10.1.0).
+
+        El nativo crea el backorder con `copy()`, y los dos campos son `copy=False` para que
+        duplicar un albarán a mano no lo cuelgue de un préstamo. Sin esto, lo que el almacén
+        valida en una segunda entrega no llega nunca al préstamo: no cuenta como enviado y la
+        devolución propone devolver de menos.
+        """
+        backorder = super()._create_backorder_picking()
+        if self.enteza_loan_id:
+            backorder.write({
+                'enteza_loan_id': self.enteza_loan_id.id,
+                'enteza_devolucion': self.enteza_devolucion,
+            })
+        return backorder
+
+    def _enteza_albaran_raiz(self):
+        """El albarán original de una cadena de backorders (el propio si no lo es)."""
+        self.ensure_one()
+        albaran = self
+        while albaran.backorder_id:
+            albaran = albaran.backorder_id
+        return albaran
+
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
@@ -48,3 +72,14 @@ class StockMove(models.Model):
         help='Permite ampliar un albarán existente sin duplicar movimientos cuando se '
              'acumula material nuevo en un traslado ya aprobado.',
     )
+
+    def _prepare_move_split_vals(self, qty):
+        """La parte que pasa al backorder en una entrega parcial conserva su línea de préstamo.
+
+        Mismo motivo que `StockPicking._create_backorder_picking`: el campo es `copy=False`
+        y `_split` crea el movimiento nuevo con `copy_data()`.
+        """
+        vals = super()._prepare_move_split_vals(qty)
+        if self.enteza_loan_line_id:
+            vals['enteza_loan_line_id'] = self.enteza_loan_line_id.id
+        return vals

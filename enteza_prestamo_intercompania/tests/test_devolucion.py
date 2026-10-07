@@ -261,3 +261,44 @@ class TestDevolucionPrestamo(TransactionCase):
 
         with self.assertRaises(UserError):
             asistente.action_devolver()
+
+    # ------------------------------------------------------------------
+    # 19.0.10.1.0: lo que ya va de vuelta no se propone otra vez
+    # ------------------------------------------------------------------
+
+    def test_no_se_propone_dos_veces_lo_mismo(self):
+        """Una devolución sin recibir todavía cuenta: la segunda propuesta solo ve el resto."""
+        prestamo = self._prestamo_entregado(100)
+        accion = prestamo.action_proponer_devolucion()
+        asistente = self.env['enteza.prestamo.devolucion'].browse(accion['res_id'])
+        asistente.line_ids.qty_devolver = 70
+        asistente.action_devolver()
+
+        # Los albaranes de vuelta existen pero nadie los ha validado.
+        self.assertEqual(prestamo.line_ids.qty_pending, 100)
+        self.assertEqual(prestamo.line_ids._qty_devolvible(), 30)
+
+        accion = prestamo.action_proponer_devolucion()
+        segundo = self.env['enteza.prestamo.devolucion'].browse(accion['res_id'])
+        self.assertEqual(segundo.line_ids.qty_pendiente, 30)
+
+        segundo.line_ids.qty_devolver = 30
+        segundo.action_devolver()
+        with self.assertRaises(UserError):
+            prestamo.action_proponer_devolucion()
+
+    def test_aceptar_recalcula_lo_devolvible(self):
+        """Dos asistentes abiertos a la vez: el segundo en aceptar no puede pasarse."""
+        prestamo = self._prestamo_entregado(100)
+        primero = self.env['enteza.prestamo.devolucion'].browse(
+            prestamo.action_proponer_devolucion()['res_id']
+        )
+        segundo = self.env['enteza.prestamo.devolucion'].browse(
+            prestamo.action_proponer_devolucion()['res_id']
+        )
+        primero.line_ids.qty_devolver = 100
+        primero.action_devolver()
+
+        segundo.line_ids.qty_devolver = 100
+        with self.assertRaises(UserError):
+            segundo.action_devolver()

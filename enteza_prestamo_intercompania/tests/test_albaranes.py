@@ -163,6 +163,33 @@ class TestAlbaranesPrestamo(TransactionCase):
         )[self.producto.id]
         self.assertEqual(despues, 85, 'El descuento lo hace ahora el stock real')
 
+    def test_entrega_parcial_conserva_el_enlace_y_acumula_lo_enviado(self):
+        """19.0.10.1.0: el backorder sigue siendo del préstamo y lo que sale en él cuenta.
+
+        Antes el backorder nacía sin `enteza_loan_id` (campo `copy=False`) y lo que el
+        almacén validaba en la segunda entrega no llegaba nunca a `qty_sent`.
+        """
+        self._dar_stock(100, self.almacen_src)
+        prestamo = self._prestamo(15)
+        prestamo.action_aprobar()
+        salida = prestamo.picking_out_id
+
+        salida.move_ids.quantity = 6
+        salida.picked = True
+        salida._action_done()
+
+        self.assertEqual(prestamo.state, 'in_transit')
+        self.assertEqual(prestamo.line_ids.qty_sent, 6)
+        resto = self.env['stock.picking'].search([('backorder_id', '=', salida.id)])
+        self.assertEqual(len(resto), 1, 'Se esperaba un backorder')
+        self.assertEqual(resto.enteza_loan_id, prestamo)
+        self.assertEqual(resto.move_ids.enteza_loan_line_id, prestamo.line_ids)
+        self.assertEqual(resto._enteza_albaran_raiz(), salida)
+
+        self._validar(resto)
+
+        self.assertEqual(prestamo.line_ids.qty_sent, 15)
+
     def test_validar_la_entrada_pone_el_prestamo_en_prestado(self):
         self._dar_stock(100, self.almacen_src)
         prestamo = self._prestamo(15)

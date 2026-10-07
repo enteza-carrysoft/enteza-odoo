@@ -231,14 +231,17 @@ class EntezaDisponibilidad(models.AbstractModel):
     def deficit(self, productos, almacen, desde, hasta, cantidades, **kwargs):
         """Cuánto falta para cubrir `cantidades` (`{product_id: cantidad}`).
 
-        Devuelve solo los productos con déficit real.
+        Devuelve solo los productos con déficit real, y **nunca más de lo pedido**: un
+        disponible negativo es déficit de otros compromisos del almacén, no de esta
+        petición (ver `sale_order_line._compute_enteza_prestamo`).
         """
         disponible = self.disponible(productos, almacen, desde, hasta, **kwargs)
         # Misma precisión que usa `sale_renting` para comparar cantidades de alquiler.
         precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
         faltas = {}
         for producto in productos:
-            falta = cantidades.get(producto.id, 0.0) - disponible[producto.id]
+            propio = max(disponible[producto.id], 0.0)
+            falta = cantidades.get(producto.id, 0.0) - propio
             # Comparar con la precisión de la unidad y no con `> 0`: los arrastres de coma
             # flotante generarían déficits de 0,0000001 y propuestas de préstamo absurdas.
             if float_compare(falta, 0.0, precision_digits=precision) > 0:

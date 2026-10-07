@@ -347,6 +347,10 @@ class EntezaStockLoan(models.Model):
                     'material por el circuito de devolución, no cancelar el documento.',
                     prestamo.name,
                 ))
+            # 🔴 Desde `approved` ya existen los dos albaranes de ida (19.0.10.1.0). Antes se
+            # cancelaba solo el documento y los albaranes seguían confirmados: el almacén
+            # podía validar la salida de un préstamo anulado.
+            prestamo._enteza_cancelar_albaranes()
             prestamo.state = 'cancelled'
         return True
 
@@ -455,7 +459,8 @@ class EntezaStockLoan(models.Model):
                     '· %(producto)s: se piden %(pide)s y solo hay %(hay)s libres '
                     'entre el %(desde)s y el %(hasta)s',
                     producto=producto.display_name,
-                    pide=necesaria, hay=necesaria - falta, desde=desde, hasta=hasta,
+                    pide=necesaria, hay=max(0.0, necesaria - falta),
+                    desde=desde, hasta=hasta,
                 ))
 
         if faltas:
@@ -584,11 +589,20 @@ class EntezaStockLoan(models.Model):
         quedaran documentos vivos sin sentido.
         """
         self.ensure_one()
+        self._enteza_cancelar_albaranes()
+        self.state = 'cancelled'
+
+    def _enteza_cancelar_albaranes(self):
+        """Cancela los albaranes de ida que todavía no se han validado.
+
+        `sudo()`: cada albarán es de una compañía distinta y quien cancela solo pertenece a
+        una de ellas.
+        """
+        self.ensure_one()
         albaranes = (self.picking_out_id | self.picking_in_id).filtered(
             lambda albaran: albaran.state not in ('done', 'cancel')
         )
         albaranes.sudo().action_cancel()
-        self.state = 'cancelled'
 
     def _marcar_para_revision(self, motivo):
         self.ensure_one()
@@ -760,12 +774,19 @@ class EntezaStockLoan(models.Model):
             if albaran.location_dest_id == self.warehouse_src_id.lot_stock_id:
                 self._enteza_devolucion_recibida(albaran)
             return
-        if albaran == self.picking_out_id:
-            for movimiento in albaran.move_ids.filtered('enteza_loan_line_id'):
-                movimiento.enteza_loan_line_id.qty_sent = movimiento.quantity
+        # La raíz y no el albarán en sí: si el almacén validó en dos veces, el segundo es un
+        # backorder del original y también cuenta (19.0.10.1.0).
+        raiz = albaran._enteza_albaran_raiz()
+        if raiz == self.picking_out_id:
+            # Se ACUMULA: cada validación parcial suma lo que ha salido en ella. Solo los
+            # movimientos `done`; lo pendiente ya se ha ido al backorder.
+            for movimiento in albaran.move_ids.filtered(
+                lambda mov: mov.enteza_loan_line_id and mov.state == 'done'
+            ):
+                movimiento.enteza_loan_line_id.qty_sent += movimiento.quantity
             if self.state in ('reserved', 'approved'):
                 self.state = 'in_transit'
-        elif albaran == self.picking_in_id:
+        elif raiz == self.picking_in_id:
             if self.state in ('approved', 'in_transit'):
                 self.state = 'lent'
             # La propiedad del material ya es de la receptora (D1). Es el punto donde la
@@ -785,10 +806,12 @@ class EntezaStockLoan(models.Model):
                 'en estado «%s».',
                 self.name, dict(ESTADOS).get(self.state, self.state),
             ))
-        pendientes = self.line_ids.filtered(lambda linea: linea.qty_pending > 0)
+        pendientes = self.line_ids.filtered(lambda linea: linea._qty_devolvible() > 0)
         if not pendientes:
-            raise UserError(_('El préstamo %s no tiene nada pendiente de devolver.',
-                              self.name))
+            raise UserError(_(
+                'El préstamo %s no tiene nada pendiente de devolver, o todo lo pendiente '
+                'ya va en una devolución en curso.', self.name,
+            ))
 
         asistente = self.env['enteza.prestamo.devolucion'].create({
             'loan_id': self.id,
@@ -907,7 +930,9 @@ class EntezaStockLoan(models.Model):
         """La prestamista ha recibido el material de vuelta: se anota y se cierra si toca."""
         self.ensure_one()
         devueltas = self.env['enteza.stock.loan.line']
-        for movimiento in albaran.move_ids.filtered('enteza_loan_line_id'):
+        for movimiento in albaran.move_ids.filtered(
+            lambda mov: mov.enteza_loan_line_id and mov.state == 'done'
+        ):
             linea = movimiento.enteza_loan_line_id
             linea.qty_returned += movimiento.quantity
             devueltas |= linea

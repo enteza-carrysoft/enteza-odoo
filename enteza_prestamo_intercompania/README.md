@@ -19,6 +19,30 @@ entregas siguientes de esta misma fase, en este orden:
 
 Con esto la **fase 2 está completa**: el material se mueve de verdad de una sociedad a otra.
 
+## Correcciones de la revisión del 2026-10-07 (`19.0.10.1.0`)
+
+Spec `specs/001-prestamo-reserva-acotada`. Las pruebas están escritas y **no ejecutadas**
+(no hay `--test-enable` en este hosting).
+
+- 🔴 **Un pedido nunca reserva más de lo que pide.** El pedido `11250529` (Stileum, 400 vasos
+  maceta) proponía reservar 5.280 en Sevilla: el disponible de Jerez era −4.880 porque otros
+  pedidos confirmados ya superaban su stock, y `enteza_falta = cantidad - disponible` le
+  cargaba ese agujero ajeno. Ahora el almacén propio aporta `max(disponible, 0)` y la falta
+  queda acotada a lo pedido. Lo mismo en `enteza.disponibilidad.deficit()`.
+- **Alquileres ya empezados no proponen préstamo** (decisión del usuario): se confirman
+  directamente. El traslado ya no puede ocurrir y reservar solo bloquearía material.
+- **Cancelar un préstamo aprobado cancela sus albaranes de ida.** Antes seguían confirmados y
+  el almacén podía validar la salida de un préstamo anulado.
+- **Entregas parciales.** El backorder de un albarán del préstamo conserva el enlace al
+  préstamo y a sus líneas (`_create_backorder_picking`, `_prepare_move_split_vals`), y
+  `qty_sent` acumula cada validación en vez de sobrescribirse.
+- **Devoluciones.** Lo que ya va en una devolución sin recibir no se vuelve a proponer, y al
+  aceptar se revalida contra lo devolvible en ese momento.
+- `tests/test_buscador_producto.py` no estaba registrado y no se ejecutaba nunca.
+
+⚠️ Los préstamos reservados **antes** de esta versión pueden tener cantidades infladas por el
+primer fallo. No se corrigen solos: revisarlos a mano (los cancela o ajusta un responsable).
+
 ## El traslado se programa por día de la semana, no por días de antelación (`19.0.10.0.0`)
 
 Cambio de criterio pedido por el cliente, 2026-08-04. Hasta esta versión, `date_transfer`

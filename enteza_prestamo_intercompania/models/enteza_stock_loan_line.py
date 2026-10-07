@@ -104,7 +104,10 @@ class EntezaStockLoanLine(models.Model):
         self.ensure_one()
         prestamo = self.loan_id
         motor = self.env['enteza.disponibilidad'].sudo()
-        pendiente = self.qty_pending
+        # Lo que ya va en una devolución en curso no se vuelve a proponer (19.0.10.1.0):
+        # `qty_pending` solo baja cuando la prestamista RECIBE, y entre medias una segunda
+        # propuesta ofrecía devolver otra vez lo mismo.
+        pendiente = self._qty_devolvible()
 
         dias = prestamo._parametro('ventana_retencion', 7)
         desde = fields.Datetime.now()
@@ -116,8 +119,10 @@ class EntezaStockLoanLine(models.Model):
 
         necesita = motor.comprometido(producto, almacen_dest, desde, hasta)[producto.id]
         # Lo prestado está físicamente en la receptora y cuenta en su parque: hay que
-        # descontarlo para saber con cuánto se defiende ella sola.
-        propio = motor.parque(producto, almacen_dest)[producto.id] - pendiente
+        # descontarlo para saber con cuánto se defiende ella sola. Incluye lo que ya tiene
+        # devolución en curso pero todavía no ha salido de su almacén.
+        en_casa = pendiente + self._qty_devolucion_en(almacen_dest.lot_stock_id, origen=True)
+        propio = motor.parque(producto, almacen_dest)[producto.id] - en_casa
         retener = min(pendiente, max(0.0, necesita - propio))
 
         necesita_src = motor.comprometido(producto, almacen_src, desde, hasta)[producto.id]
@@ -133,6 +138,35 @@ class EntezaStockLoanLine(models.Model):
             'retener': retener_ajustado,
             'devolver': pendiente - retener_ajustado,
         }
+
+    def _qty_devolucion_en(self, ubicacion, origen):
+        """Cantidad de esta línea en devoluciones sin terminar que salen de (`origen=True`)
+        o llegan a (`origen=False`) `ubicacion`.
+
+        `sudo()`: cada albarán de la vuelta es de una compañía distinta. Solo se devuelve la
+        cifra agregada.
+        """
+        self.ensure_one()
+        campo = 'location_id' if origen else 'location_dest_id'
+        movimientos = self.env['stock.move'].sudo().search([
+            ('enteza_loan_line_id', '=', self.id),
+            ('picking_id.enteza_devolucion', '=', True),
+            (campo, '=', ubicacion.id),
+            ('state', 'not in', ('done', 'cancel')),
+        ])
+        return sum(movimientos.mapped('product_uom_qty'))
+
+    def _qty_devolvible(self):
+        """Lo que se puede proponer devolver ahora: lo pendiente menos lo que ya va de vuelta.
+
+        «Ya va de vuelta» es lo que tiene un movimiento abierto hacia el stock de la
+        prestamista: desde que se propone hasta que ella lo recibe.
+        """
+        self.ensure_one()
+        en_curso = self._qty_devolucion_en(
+            self.loan_id.sudo().warehouse_src_id.lot_stock_id, origen=False,
+        )
+        return max(0.0, self.qty_pending - en_curso)
 
     def _enteza_cancelar_movimientos(self):
         """Cancela los movimientos de stock que dependen de estas líneas.

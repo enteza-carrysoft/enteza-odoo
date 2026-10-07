@@ -21,7 +21,7 @@ Es decir, **el diálogo es una propuesta, no una reserva**. Si mientras el comer
 otro pedido se llevó el material, al aceptar no se reserva nada y se le dice qué ha cambiado.
 """
 
-from odoo import _, models
+from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 # Espacio de nombres de los bloqueos de asesoramiento de PostgreSQL. Es un número arbitrario;
@@ -84,9 +84,18 @@ class SaleOrder(models.Model):
     # ------------------------------------------------------------------
 
     def _enteza_lineas_con_deficit(self):
-        """Líneas que este almacén no puede servir, con o sin quien las preste."""
+        """Líneas que este almacén no puede servir, con o sin quien las preste.
+
+        Solo las de alquileres que **todavía no han empezado** (decisión del usuario,
+        2026-10-07). Para un evento en curso o ya pasado el traslado no puede ocurrir:
+        reservar material de la otra compañía solo lo bloquearía para nada. Es el caso de
+        regularizar a posteriori un pedido que no se confirmó a tiempo.
+        """
         self.ensure_one()
-        return self.order_line.filtered(lambda linea: linea.enteza_falta > 0)
+        ahora = fields.Datetime.now()
+        return self.order_line.filtered(
+            lambda linea: linea.enteza_falta > 0 and linea.start_date > ahora
+        )
 
     def _enteza_abrir_dialogo_prestamo(self):
         """Monta el asistente con la propuesta y devuelve la acción que lo abre."""

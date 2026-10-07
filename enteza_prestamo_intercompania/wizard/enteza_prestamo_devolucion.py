@@ -10,6 +10,7 @@ retención (parámetro, 7 días por defecto).
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import float_compare
 
 
 class EntezaPrestamoDevolucion(models.TransientModel):
@@ -36,14 +37,19 @@ class EntezaPrestamoDevolucion(models.TransientModel):
                 'No has marcado nada para devolver. Si quieres retener todo el material, '
                 'cierra esta ventana sin más.'
             ))
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
         for linea in self.line_ids:
-            if linea.qty_devolver > linea.qty_pendiente:
+            # Contra lo devolvible AHORA, no contra lo que se calculó al abrir: entre medias
+            # otro asistente ha podido generar ya una devolución (19.0.10.1.0).
+            devolvible = min(linea.qty_pendiente, linea.loan_line_id._qty_devolvible())
+            if float_compare(linea.qty_devolver, devolvible,
+                             precision_digits=precision) > 0:
                 raise UserError(_(
                     'No se pueden devolver %(pide)s de %(producto)s: solo quedan '
-                    '%(hay)s pendientes.',
+                    '%(hay)s pendientes que no vayan ya en otra devolución.',
                     pide=linea.qty_devolver,
                     producto=linea.product_id.display_name,
-                    hay=linea.qty_pendiente,
+                    hay=devolvible,
                 ))
 
         albaranes = self.loan_id.sudo()._crear_albaranes_devolucion(cantidades)
