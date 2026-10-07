@@ -126,7 +126,7 @@ Stileum la recepción (con propietario Vimaple) o la salida, sin validarlas.
 
 | Versión | Fecha | Cambio |
 |---|---|---|
-| 19.0.2.1.0 | 2026-10-07 | Los **descuentos** pasan a la factura de Vimaple (el de la línea o, si no tiene, el de «Valoración»). Acción para **facturas anteriores al módulo** con fecha a elegir. Con ella, las 17 FAJ previas (01-08 a 22-09) se facturan a 30-09-2026: 9 corregidas el mismo día y 8 pendientes de desplegar la versión |
+| 19.0.2.1.0 | 2026-10-07 | Los **descuentos** pasan a la factura de Vimaple (el de la línea o, si no tiene, el de «Valoración»). Acción para **facturas anteriores al módulo** con fecha a elegir. Con ella, las 17 FAJ previas (01-08 a 22-09) se facturan a 30-09-2026: las 9 que ya existían se corrigieron (ST/2026/00002–00010) y las 8 restantes se generaron (ST/2026/00011–00018), con sus facturas de proveedor en borrador |
 | 19.0.2.0.0 | 2026-10-03 | Rehecho a **«solo facturación»**: la factura ya no depende de albaranes ni de la cesión. Precio a coste, publicada sola, rectificativas en espejo. Configuración en la ficha de Stileum |
 | 19.0.1.1.0 | 2026-09-28 | Albaranes espejo de la cesión; la venta de Vimaple se confirma y su factura queda en borrador |
 | 19.0.1.0.0 | 2026-09-28 | Primera versión: venta de Vimaple a Stileum del material perdido en una cesión |
