@@ -14,8 +14,11 @@ módulos con su estado real y dónde está el código fuente de Odoo.
 
 Enteza alquila material para eventos (sillas, mesas, vajilla), con dos sociedades
 independientes: **Visueña de Material Plegable ("Vimaple")** y **Stileum**. Migraron de Odoo
-15 a Odoo 19 EE en agosto de 2026. Desde el 2026-08-07 **el stock se controla desde Odoo**:
-ya no llevan el almacén en paralelo con la aplicación externa.
+15 a Odoo 19 EE en agosto de 2026. **El almacén físico NO se gestiona en Odoo** (corregido el
+2026-10-07: lo que se anotó el 2026-08-07 era falso). Siguen con la aplicación legacy y los
+pedidos en papel. En Odoo las existencias solo se tocan con ajustes (altas por compra, bajas
+por faltas), y desde el 2026-10-07 el ajuste **«Traslado de alquiler»
+(`group_rental_stock_picking`) está desactivado**: los alquileres ya no generan albaranes.
 
 Consecuencia para cualquier desarrollo: **nada se mueve sin aprobación humana**, y todo tiene
 que ser reversible y trazable. Eso pesa más que la automatización.
@@ -34,10 +37,19 @@ que ser reversible y trazable. Eso pesa más que la automatización.
    skill, igual que el detalle completo de este fallo (medido el 2026-09-13).
 3. **No se pueden ejecutar pruebas automatizadas.** Se escriben igualmente, pero al entregar
    hay que decir siempre que están validadas por sintaxis y **no ejecutadas**.
-4. **Apenas hay existencias.** La carga de inventario empezó a primeros de agosto de 2026: el
-   2026-08-01 había 4 `stock.quant` con cantidad. Cualquier cálculo de disponibilidad dirá
-   "no hay stock" de casi todo, y **no es un fallo del código**. Comprobarlo por RPC antes de
-   dar por rota una cifra.
+4. **Las existencias de Odoo no son fiables todavía.** Hay cantidades cargadas, pero con
+   errores: 104.017 uds fantasma en `Customers/Alquiler`, más de 1.000 quants negativos y
+   datos imposibles como 1.000.009 kg de mantelería en Jerez. El 2026-10-07 se cancelaron
+   los 503 albaranes de alquileres pasados que nadie había validado. Retenían 631.545 uds
+   reservadas y dejaban negativa la disponibilidad futura de casi todo. Falta el
+   **inventario de partida** desde el Excel del legacy (plan aparcado en la memoria del
+   proyecto). Antes de dar por rota una cifra de disponibilidad, comprobar por RPC
+   `qty_available`, `virtual_available` y la reserva: el fallo suele estar en los datos,
+   no en el código.
+5. **Las faltas se registran desde el pedido.** Sin albaranes de alquiler, el camino es
+   «Registrar faltas» del pedido (`rental_custom` ≥ 19.0.1.16.0). Al confirmar el pedido de
+   faltas se valida sola su salida, y esa es la baja del material. El botón «Facturar las
+   Faltas» del albarán sigue existiendo para los pedidos que todavía tengan albaranes.
 
 ## Antes de crear un módulo
 

@@ -157,15 +157,20 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
 - **El material alquilado sigue siendo inventario de su compañía**: `rental_loc_id` apunta a
   una ubicación con `usage='internal'` bajo `Customers`. Por eso `qty_available` no responde
   "¿puedo alquilar esto el día 15?" — esa pregunta es temporal, no de existencias.
-- **Albaranes de alquiler activos**: el grupo `sale_stock_renting.group_rental_stock_picking`
-  está implicado por `base.group_user`, así que **todos** los usuarios internos lo tienen: los
-  alquileres generan albaranes reales por la ruta `route_rental`.
-- **Módulos propios de Enteza instalados** (verificado por RPC el 2026-08-04):
-  `enteza_calendario_eventos` (`19.0.1.2.0`, vista calendario nativa pivotada en
-  `event_date`), `enteza_panel_eventos` (`19.0.4.0.0` instalado; hay `19.0.5.0.0` en el
-  repositorio sin desplegar — filtro de material a solo Bienes/alquilables y fuente más
-  compacta) y **`enteza_prestamo_intercompania`** (`19.0.10.0.2` instalado; `19.0.10.0.3` en
-  el repositorio sin desplegar). `enteza_panel_eventos` **depende de**
+- **Albaranes de alquiler DESACTIVADOS desde el 2026-10-07**: «Traslado de alquiler»
+  (`sale_stock_renting.group_rental_stock_picking`, grupo id 65) ya no está implicado por
+  `base.group_user` y lo tienen 0 usuarios, así que los pedidos nuevos no generan albaranes.
+  Con el ajuste apagado, escribir `qty_delivered`/`qty_returned` en una línea de alquiler
+  hace que `sale_stock_renting` cree movimientos `done` Stock ↔ Alquiler
+  (`_write_rental_lines`, leído en el código de la 18 EE). Se puede volver a activar en
+  Alquiler → Ajustes, pero antes hace falta un inventario real. Los 503 albaranes de
+  alquileres pasados se cancelaron ese día.
+- **Módulos propios de Enteza instalados** (versiones verificadas por RPC el 2026-10-07; las
+  anteriores pueden haber cambiado, comprobar siempre): `enteza_calendario_eventos` (vista
+  calendario nativa pivotada en `event_date`), `enteza_panel_eventos` (`19.0.5.0.0`),
+  **`enteza_prestamo_intercompania`** (`19.0.10.1.0`: un pedido nunca reserva más de lo que
+  pide y un alquiler ya empezado no propone préstamo) y `rental_custom` (`19.0.1.16.1`:
+  «Registrar faltas» desde el pedido). `enteza_panel_eventos` **depende de**
   `enteza_prestamo_intercompania` desde su `19.0.4.0.0` (columna «Prestados» del bloque de
   material): no se puede desinstalar el segundo sin romper el primero. Un intento anterior de
   subir el módulo de préstamo falló por un `<group expand=…>` en la vista de búsqueda: ver
@@ -198,21 +203,39 @@ Cómo consultar el repositorio sin bajárselo entero, y qué ficheros son los qu
   heredar `primary` del de alquiler sale más barato. La etiqueta de cada evento se cambia con
   `create_name_field`, que **necesita un campo de texto**: un many2one llega al cliente web
   como `[id, nombre]` y se vería el array entero.
-- **Existencias: ya no están a cero.** El 2026-08-01 había **4 `stock.quant` con cantidad**
-  (antes 0). La carga de inventario ha empezado. Aun así siguen siendo casi nada: un cálculo
-  de disponibilidad dirá "no hay stock" de casi todo, y **no es un fallo del código**.
+- **Existencias: cargadas pero no fiables** (2026-10-07). Hay cantidades reales en SEV/Stock
+  (por ejemplo, 58.928 vasos maceta), pero también 104.017 uds fantasma en
+  `Customers/Alquiler`, más de 1.000 quants negativos y errores de carga. Falta el
+  inventario de partida desde el Excel del legacy. Las 25 categorías tienen valoración
+  **periódica**: un ajuste de inventario no genera asientos. 🔴 Lección del 2026-10-07: los
+  albaranes pasados sin validar cuentan como salidas pendientes en `virtual_available` para
+  **cualquier fecha futura**. Dejaban la disponibilidad negativa de casi todo (vaso maceta
+  en Sevilla −53.502 para marzo de 2027) y el módulo de préstamo lo atribuía a pedidos que
+  se pisaban. Antes de diagnosticar una disponibilidad rara, mirar `outgoing_qty`,
+  `incoming_qty` y la reserva de los quants.
 - **Dos almacenes** (verificado el 2026-08-01, corrige el estado anterior): `Sevilla` (`SEV`,
   compañía 1 Vimaple) y `Jerez` (`JER`, compañía 2 Stileum). Stileum **ya tiene almacén**. El
   cliente ha confirmado que **habrá más**, así que nada debe asumir uno por compañía.
-- **Hay demanda futura real**: 3 pedidos de alquiler confirmados con `rental_start_date`
-  posterior al 2026-08-01 (aparte de los 1.153 migrados, todos ya pasados y `returned`).
+- **Demanda real**: unos 400 pedidos de alquiler confirmados desde agosto de 2026, aparte de
+  los 1.153 migrados, todos ya pasados y `returned`. Casi todos se quedan en
+  `rental_status = 'pickup'` porque nadie registra la recogida ni la devolución. «Registrar
+  faltas» los pasa a `returned`.
 - **Direcciones de cliente**: el grupo es `account.group_delivery_invoice_address` — en la 19
   vive en `account`, **no** en `sale`. Referenciarlo con el prefijo antiguo rompe la
   instalación. Está activado desde el 2026-08-01.
-- **Contexto del equipo**: arrancaron en Odoo 19 la primera semana de agosto de 2026. Desde el
-  2026-08-07 **el stock se controla desde Odoo** — dejaron de llevar el almacén en paralelo
-  con la aplicación externa. Priorizar que nada se mueva sin aprobación humana, y que todo sea
-  reversible y trazable, por encima de la automatización.
+- **Contexto del equipo**: arrancaron en Odoo 19 la primera semana de agosto de 2026. **El
+  almacén físico NO se gestiona en Odoo** (corregido el 2026-10-07: lo anotado el 2026-08-07,
+  «el stock se controla desde Odoo», era falso). Usan la aplicación legacy y los pedidos en
+  papel. En Odoo solo hay ajustes de inventario y la baja automática de los pedidos de
+  faltas. Priorizar que nada se mueva sin aprobación humana, y que todo sea reversible y
+  trazable, por encima de la automatización.
+- **Facturación de alquiler**: el ingreso va a `70555100 ALQUILER PENDIENTE DESGLOSAR` (es la
+  cuenta de alquiler de todas las categorías) y Contabilidad lo desglosa a mano por familia
+  con un asiento por factura. El 94 % de las líneas de material va a 0 € y se cobra con
+  servicios: «PRECIO POR PLAZA», «TOTAL ALQUILER», «SOBRE VENTA FAMILIA…», «KG MANTELERIA».
+  La analítica y las tarifas están instaladas pero desactivadas. Hay un informe para
+  Gerencia y una propuesta de módulo pendiente de que Contabilidad conteste el
+  cuestionario.
 
 ## Ficheros de referencia
 

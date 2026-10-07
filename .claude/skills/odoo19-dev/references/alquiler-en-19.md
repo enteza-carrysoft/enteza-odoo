@@ -232,17 +232,31 @@ medida detrás, se salía del ancho de la columna del desplegable casi siempre.
 El grupo `sale_stock_renting.group_rental_stock_picking` decide si los alquileres generan
 albaranes reales o si solo se manejan cantidades a mano.
 
-**En `enteza` está implicado por `base.group_user`**, así que lo tienen todos los usuarios
-internos: los alquileres **sí** generan albaranes, por la ruta `route_rental`
-(`rental_loc → lot_stock` del almacén).
+**En `enteza` está DESACTIVADO desde el 2026-10-07** («Traslado de alquiler» en Alquiler →
+Ajustes, grupo id 65, 0 usuarios). Hasta ese día lo implicaba `base.group_user` y los
+alquileres generaban albaranes por la ruta `route_rental`, pero el almacén **no los validaba
+nunca** porque el almacén físico se lleva en papel. Así se acumularon 503 albaranes pasados
+que dejaban negativa toda la disponibilidad futura. Se cancelaron ese mismo día.
+
+Con el grupo apagado:
+- Los pedidos nuevos no lanzan reglas de stock (`_action_launch_stock_rule` se salta las
+  líneas de alquiler).
+- Escribir `qty_delivered`/`qty_returned` en una línea de alquiler crea movimientos `done`
+  Stock → ubicación de alquiler → Stock (`_write_rental_lines`, `_move_qty`). Es lo que
+  hace «Registrar faltas» de `rental_custom` al marcar el pedido como devuelto.
+- El `write` del ajuste ejecuta `stock.warehouse.update_rental_rules()`.
+
+Todo lo anterior está leído en el código de la 18 EE; en la 19 solo se ha confirmado por RPC
+que el campo `res.config.settings.group_rental_stock_picking` existe.
 
 ## Estado de la instancia que condiciona cualquier prueba
 
-⚠️ Esto cambia rápido: la carga de inventario está en curso. **Comprobarlo por RPC** en vez
-de fiarse de esta lista. Última verificación, **2026-08-01**:
+⚠️ **Comprobarlo por RPC** en vez de fiarse de esta lista. Última verificación,
+**2026-10-07**:
 
-- `stock.quant` con cantidad: **4**. Ya no es cero, pero es casi nada: la mayoría de los
-  cálculos seguirán diciendo "no hay stock" y no es un fallo del código.
+- Existencias cargadas pero no fiables: 104.017 uds fantasma en `Customers/Alquiler`, más de
+  1.000 quants negativos y errores de carga. Falta el inventario de partida desde el legacy.
+- La reserva en quants internos bajó de 631.545 a 706 tras cancelar los albaranes pasados.
 - **Dos almacenes**: `Sevilla` (`SEV`, compañía 1) y `Jerez` (`JER`, compañía 2). Corrige el
   estado anterior, en el que Stileum no tenía almacén. **Y habrá más**, confirmado por el
   cliente: nada debe asumir uno por compañía.
