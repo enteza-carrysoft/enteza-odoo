@@ -12,6 +12,13 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
                         type="object"
                         string="Cambiar número"
                         invisible="not is_rental_order or state not in ['draft', 'sent']"/>
+                <!-- Camino de faltas sin albarán (19.0.1.16.0): solo cuando el alquiler no
+                     tiene albaranes abiertos. Si los tiene, se usa el botón del albarán. -->
+                <field name="missing_from_order_allowed" invisible="1"/>
+                <button name="action_open_missing_wizard"
+                        type="object"
+                        string="Registrar faltas"
+                        invisible="not missing_from_order_allowed"/>
             </xpath>
             <xpath expr="//field[@name='date_order']" position="after">
                 <!-- Obligatoria: esta vista es la del formulario de ALQUILER

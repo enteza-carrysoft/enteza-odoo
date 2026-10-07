@@ -71,49 +71,27 @@ class StockPicking(models.Model):
         if not partner:
             raise UserError(_('No se pudo determinar el cliente a facturar.'))
 
-        order_line = [(0, 0, {
-            'product_id': move.product_id.id,
-            'product_uom_qty': move.qty_missing if partial else move.product_uom_qty,
-            'product_uom_id': move.product_uom.id,
-            # Sin `price_unit`: lo calcula Odoo con la tarifa del cliente (2026-09-28). Sin
-            # tarifas activas, o con una tarifa sin reglas, sale el mismo precio de venta del
-            # producto que antes se forzaba aquí. Con la tarifa especial de una compañía del
-            # grupo, sale el precio intercompañía.
-            #
-            # El producto es alquilable (rent_ok) y sale_renting marca la línea como alquiler
-            # por defecto en cuanto lo detecta, arrastrando al pedido entero a is_rental_order.
-            # Esto es una venta normal de material perdido, no un alquiler.
-            'is_rental': False,
-        }) for move in moves]
+        SaleOrder = self.env['sale.order']
+        order_line = [
+            SaleOrder._prepare_missing_line_vals(
+                move.product_id,
+                move.qty_missing if partial else move.product_uom_qty,
+                move.product_uom,
+            )
+            for move in moves
+        ]
 
         # Las unidades sólo siguen en la ubicación de Alquiler si el albarán de devolución no
         # llegó a validarse. Si se validó, Odoo ya las dio por devueltas a Stock.
         from_rental_location = self.state != 'done' and bool(self.company_id.rental_loc_id) \
             and self.location_id == self.company_id.rental_loc_id
 
-        sale_order = self.env['sale.order'].create({
-            'partner_id': partner.id,
-            'company_id': self.company_id.id,
-            'origin': self.sale_id.name or self.name,
-            'order_line': order_line,
-            'rental_order_id': self.sale_id.id,
-            # Vacío si la compañía no lo tiene configurado: Odoo usa entonces su diario de
-            # ventas por defecto, que en Enteza es el de alquiler (2026-10-03).
-            'journal_id': self.company_id.rental_missing_journal_id.id,
-            # Al confirmar, el albarán de salida sale de Alquiler y no de Stock (ver
-            # `stock_rule.py`): las unidades perdidas dejan de figurar en existencias al
-            # validarlo. Antes salía de Stock y había que cancelarlo a mano (12/08/2026).
-            'missing_from_rental_location': from_rental_location,
-            # Forzado explícito: el botón se pulsa desde un albarán de la app de Alquiler, y
-            # ese contexto trae un `default_is_rental_order` ambiental que, si no se anula
-            # aquí, cuela el pedido en la app de Alquiler aunque ninguna línea sea de alquiler
-            # (is_rental=False en todas). No basta con las líneas, hay que fijarlo también en
-            # la cabecera.
-            'is_rental_order': False,
-            # No es un pedido de alquiler, así que este campo queda libre para anotar la fecha
-            # del evento de origen: sirve de dimensión de periodo en los informes de pérdidas.
-            'event_date': self.sale_id.event_date,
-        })
+        # Cabecera compartida con «Registrar faltas» del pedido (`sale.order`), para que los
+        # dos caminos den exactamente el mismo pedido de faltas.
+        sale_order = SaleOrder.create(self.sale_id._prepare_missing_sale_order_vals(
+            partner, self.company_id, self.sale_id.name or self.name, order_line,
+            from_rental_location,
+        ))
         # También en parcial, si es la primera: al validar una recogida con faltas, Odoo copia
         # «Faltas» al albarán pendiente que crea con esas unidades. Al facturarlo, todas sus
         # líneas se cancelan; sin este enlace, un segundo clic lo facturaría otra vez entero.

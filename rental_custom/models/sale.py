@@ -42,12 +42,159 @@ class SaleOrder(models.Model):
         help="Venta de material no devuelto cuyas unidades siguen en la ubicación de "
              "Alquiler: el albarán de salida sale de ahí y no de Stock.",
     )
+    missing_auto_validate = fields.Boolean(
+        string="Baja automática de faltas",
+        copy=False,
+        readonly=True,
+        # Mismo motivo que `missing_from_rental_location`.
+        prefetch=False,
+        help="Pedido de faltas creado desde el pedido de alquiler: al confirmarlo, su "
+             "albarán de salida se valida solo y las unidades quedan dadas de baja.",
+    )
+    missing_from_order_allowed = fields.Boolean(
+        compute="_compute_missing_from_order_allowed",
+        help="Las faltas se registran desde el pedido cuando no tiene albaranes abiertos. "
+             "Si los tiene, se usa «Facturar las Faltas» en la recogida.",
+    )
     compensation_order_ids = fields.One2many(
         "sale.order",
         "rental_order_id",
         string="Ventas por material no devuelto",
         help="Pedidos de venta que facturan material de este alquiler que no se devolvió.",
     )
+
+    @api.depends("is_rental_order", "state", "picking_ids.state")
+    def _compute_missing_from_order_allowed(self):
+        for order in self:
+            order.missing_from_order_allowed = (
+                order.is_rental_order
+                and order.state == "sale"
+                and not order.picking_ids.filtered(
+                    lambda p: p.state not in ("done", "cancel")
+                )
+            )
+
+    # ------------------------------------------------------------------
+    # Faltas: piezas comunes a los dos caminos (albarán y pedido)
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _prepare_missing_line_vals(self, product, qty, uom):
+        return (0, 0, {
+            "product_id": product.id,
+            "product_uom_qty": qty,
+            "product_uom_id": uom.id,
+            # Sin `price_unit`: lo calcula Odoo con la tarifa del cliente (2026-09-28). Sin
+            # tarifas activas, o con una tarifa sin reglas, sale el mismo precio de venta del
+            # producto que antes se forzaba aquí. Con la tarifa especial de una compañía del
+            # grupo, sale el precio intercompañía.
+            #
+            # El producto es alquilable (rent_ok) y sale_renting marca la línea como alquiler
+            # por defecto en cuanto lo detecta, arrastrando al pedido entero a is_rental_order.
+            # Esto es una venta normal de material perdido, no un alquiler.
+            "is_rental": False,
+        })
+
+    def _prepare_missing_sale_order_vals(self, partner, company, origin, order_lines,
+                                         from_rental_location):
+        """Cabecera del pedido de faltas. `self` es el alquiler de origen (puede ir vacío)."""
+        return {
+            "partner_id": partner.id,
+            "company_id": company.id,
+            "origin": origin,
+            "order_line": order_lines,
+            "rental_order_id": self.id,
+            # Vacío si la compañía no lo tiene configurado: Odoo usa entonces su diario de
+            # ventas por defecto, que en Enteza es el de alquiler (2026-10-03).
+            "journal_id": company.rental_missing_journal_id.id,
+            # Al confirmar, el albarán de salida sale de Alquiler y no de Stock (ver
+            # `stock_rule.py`): las unidades perdidas dejan de figurar en existencias al
+            # validarlo. Antes salía de Stock y había que cancelarlo a mano (12/08/2026).
+            "missing_from_rental_location": from_rental_location,
+            # Forzado explícito: el botón se pulsa desde la app de Alquiler, y ese contexto
+            # trae un `default_is_rental_order` ambiental que, si no se anula aquí, cuela el
+            # pedido en la app de Alquiler aunque ninguna línea sea de alquiler
+            # (is_rental=False en todas). No basta con las líneas, hay que fijarlo también en
+            # la cabecera.
+            "is_rental_order": False,
+            # No es un pedido de alquiler, así que este campo queda libre para anotar la fecha
+            # del evento de origen: sirve de dimensión de periodo en los informes de pérdidas.
+            "event_date": self.event_date,
+        }
+
+    # ------------------------------------------------------------------
+    # Faltas desde el pedido (sin albarán de recogida, 19.0.1.16.0)
+    # ------------------------------------------------------------------
+
+    def action_open_missing_wizard(self):
+        """Abre «Registrar faltas». Es el camino cuando el alquiler no tiene albaranes:
+        con «Traslado de alquiler» apagado, o con los albaranes ya cancelados.
+        """
+        self.ensure_one()
+        if not self.missing_from_order_allowed:
+            raise UserError(_(
+                "El pedido %s tiene albaranes abiertos o no es un alquiler confirmado. "
+                "Las faltas se facturan desde su albarán de recogida, con «Facturar las "
+                "Faltas».", self.name,
+            ))
+        wizard = self.env["rental.missing.wizard"].create({
+            "order_id": self.id,
+            "line_ids": [
+                (0, 0, {"sale_line_id": line.id})
+                for line in self.order_line
+                if line.is_rental and line.product_id.type == "consu"
+            ],
+        })
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Registrar faltas"),
+            "res_model": "rental.missing.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def _mark_rental_returned(self):
+        """Deja todas las líneas de alquiler recogidas y devueltas: el pedido pasa a Devuelto.
+
+        Lo perdido cuenta como «devuelto» y queda anotado en `qty_lost`, igual que en el
+        camino del albarán (`stock_picking._mark_rental_line_lost`). Con «Traslado de
+        alquiler» apagado, `sale_stock_renting` crea por este `write` los movimientos Stock →
+        Alquiler → Stock, que se compensan; la baja real la hace el pedido de faltas.
+        """
+        for line in self.order_line.filtered("is_rental"):
+            vals = {}
+            if line.qty_delivered < line.product_uom_qty:
+                vals["qty_delivered"] = line.product_uom_qty
+            if line.qty_returned < line.product_uom_qty:
+                vals["qty_returned"] = line.product_uom_qty
+            if vals:
+                line.write(vals)
+
+    def _validate_missing_pickings(self):
+        """Valida la salida de los pedidos de faltas creados desde el pedido (decisión b).
+
+        `sudo()` acotado a estos albaranes: quien confirma la venta de faltas suele ser de
+        ventas, sin permisos de almacén, y la baja tiene que quedar hecha igualmente.
+        """
+        for order in self:
+            pickings = order.sudo().picking_ids.filtered(
+                lambda p: p.state not in ("done", "cancel")
+                and p.picking_type_code == "outgoing"
+            )
+            for picking in pickings:
+                picking = picking.with_company(picking.company_id)
+                for move in picking.move_ids.filtered(
+                    lambda m: m.state not in ("done", "cancel")
+                ):
+                    move.quantity = move.product_uom_qty
+                    move.picked = True
+                picking._action_done()
+            if pickings:
+                order.message_post(body=_(
+                    "Baja de material hecha al confirmar: %s.",
+                    ", ".join(pickings.mapped("name")),
+                ))
 
     @api.onchange("event_date")
     def event_date_change(self):
@@ -130,7 +277,14 @@ class SaleOrder(models.Model):
         # Regla que deja el incidente: el valor que devuelve `action_confirm` es parte del
         # contrato —puede ser un `dict` de acción— y se propaga TAL CUAL. Nada de combinarlo
         # con `and`/`or` ni de sustituirlo por un booleano propio.
-        return super().action_confirm()
+        result = super().action_confirm()
+        # La baja automática solo con la confirmación hecha (`True`): si la cadena devolvió un
+        # diálogo, el pedido aún no está confirmado y no hay albarán que validar.
+        if result is True:
+            self.filtered(
+                lambda o: o.missing_auto_validate and o.state == "sale"
+            )._validate_missing_pickings()
+        return result
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"

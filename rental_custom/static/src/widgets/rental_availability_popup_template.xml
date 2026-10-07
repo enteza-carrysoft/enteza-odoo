@@ -4,7 +4,7 @@
     <t t-name="sale_stock_renting.QtyAtDate" t-inherit="sale_stock.QtyAtDate" t-inherit-mode="extension">
         <xpath expr="//a" position="attributes">
             <!-- Modificar la clase CSS para incluir la validación de disponibilidad total -->
-            <attribute name="t-attf-class">fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || calcData.total_availability <= 0) ? 'text-danger' : '' }}</attribute>
+            <attribute name="t-attf-class">fa fa-area-chart cursor-pointer {{ (calcData.forecasted_issue || calcData.total_availability &lt;= 0) ? 'text-danger' : '' }}</attribute>
         </xpath>
     </t>
 
