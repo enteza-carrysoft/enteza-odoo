@@ -15,6 +15,17 @@ from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 
+def missing_line_sort_key(sale_line):
+    """Orden de las líneas del asistente (19.0.1.17.0): por referencia interna, las que no
+    tienen al final por nombre, y a igualdad, por línea del pedido. Las faltas se copian de un
+    papel que identifica el material por su referencia.
+    """
+    product = sale_line.product_id
+    code = product.default_code or ""
+    name = "" if code else (product.name or "").lower()
+    return (not code, code, name, sale_line.id)
+
+
 class RentalMissingWizard(models.TransientModel):
     _name = "rental.missing.wizard"
     _description = "Registrar faltas de un alquiler"
@@ -90,6 +101,7 @@ class RentalMissingWizardLine(models.TransientModel):
     wizard_id = fields.Many2one("rental.missing.wizard", required=True, ondelete="cascade")
     sale_line_id = fields.Many2one("sale.order.line", required=True, readonly=True)
     product_id = fields.Many2one(related="sale_line_id.product_id", string="Producto")
+    default_code = fields.Char(related="product_id.default_code", string="Referencia")
     qty_rented = fields.Float(related="sale_line_id.product_uom_qty", string="Alquilado")
     qty_lost_prev = fields.Float(related="sale_line_id.qty_lost",
                                  string="Ya facturado como faltas")

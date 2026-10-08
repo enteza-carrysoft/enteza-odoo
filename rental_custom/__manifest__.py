@@ -1,6 +1,6 @@
 {
     'name': 'Crear Orden de Venta desde Albarán',
-    'version': '19.0.1.16.1',
+    'version': '19.0.1.17.0',
     'category': 'Sales/Sales',
     'summary': 'Permite crear órdenes de venta a partir de albaranes',
     'author': 'Francisco Jose Carrion',
@@ -21,6 +21,12 @@
         'views/stock_picking_views.xml',
         'views/rental_loss_report_views.xml',
     ],
+    # Solo el widget de «Registrar faltas»: static/src/js y static/src/widgets no se cargan.
+    'assets': {
+        'web.assets_backend': [
+            'rental_custom/static/src/rental_missing_lines/*',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

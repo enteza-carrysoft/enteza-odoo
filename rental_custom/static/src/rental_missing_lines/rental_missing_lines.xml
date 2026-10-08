@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rental_custom.RentalMissingLinesField" t-inherit="web.X2ManyField"
+       t-inherit-mode="primary">
+        <xpath expr="//ListRenderer" position="before">
+            <div class="o_rental_missing_toolbar d-flex flex-wrap align-items-center gap-3 mb-2">
+                <input type="search" class="form-control o_rental_missing_search"
+                       style="max-width: 22rem;" autocomplete="off"
+                       t-ref="search" t-model="filter.search"
+                       t-att-placeholder="searchPlaceholder"
+                       t-on-keydown="onSearchKeydown"/>
+                <div class="form-check form-switch mb-0">
+                    <input type="checkbox" class="form-check-input"
+                           id="o_rental_missing_only" t-model="filter.onlyMissing"/>
+                    <label class="form-check-label" for="o_rental_missing_only"
+                           t-esc="onlyMissingLabel"/>
+                </div>
+                <span class="text-muted ms-auto" t-esc="countLabel"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

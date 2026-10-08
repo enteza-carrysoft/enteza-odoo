@@ -10,11 +10,17 @@
                     solo se marca como devuelto. Con faltas, se crea el pedido de faltas y, al
                     confirmarlo, esas unidades se dan de baja del almacén.
                 </div>
+                <div class="text-muted mb-2">
+                    Escribe la referencia en el buscador y pulsa Intro para ir a sus faltas; Intro
+                    otra vez vuelve al buscador. Las flechas ↑ ↓ recorren la columna «Faltas».
+                </div>
                 <field name="order_id" invisible="1"/>
-                <field name="line_ids">
-                    <list editable="bottom" create="false" delete="false">
+                <field name="line_ids" widget="rental_missing_lines">
+                    <list editable="bottom" create="false" delete="false" limit="1000">
                         <field name="sale_line_id" column_invisible="1"/>
-                        <field name="product_id" readonly="1"/>
+                        <field name="default_code" readonly="1"/>
+                        <field name="product_id" readonly="1"
+                               context="{'display_default_code': False}"/>
                         <field name="qty_rented" readonly="1"/>
                         <field name="qty_lost_prev" readonly="1"/>
                         <field name="qty_missing"/>

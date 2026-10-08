@@ -5,6 +5,8 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from datetime import datetime, timedelta
 
+from ..wizard.rental_missing_wizard import missing_line_sort_key
+
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -141,13 +143,12 @@ class SaleOrder(models.Model):
                 "Las faltas se facturan desde su albarán de recogida, con «Facturar las "
                 "Faltas».", self.name,
             ))
+        lines = self.order_line.filtered(
+            lambda l: l.is_rental and l.product_id.type == "consu"
+        ).sorted(missing_line_sort_key)
         wizard = self.env["rental.missing.wizard"].create({
             "order_id": self.id,
-            "line_ids": [
-                (0, 0, {"sale_line_id": line.id})
-                for line in self.order_line
-                if line.is_rental and line.product_id.type == "consu"
-            ],
+            "line_ids": [(0, 0, {"sale_line_id": line.id}) for line in lines],
         })
         return {
             "type": "ir.actions.act_window",

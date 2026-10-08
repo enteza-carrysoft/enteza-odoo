@@ -16,6 +16,18 @@ cambio de número del presupuesto y facturación del material no devuelto («fal
 Los dos caminos acumulan en «No devueltas (facturadas)» de la línea y no dejan facturar más
 faltas que lo alquilado.
 
+## Registrar faltas con muchas líneas (desde la `19.0.1.17.0`)
+
+Las líneas salen ordenadas por referencia interna y todas en una página. Encima de la lista:
+
+- **Buscador**: deja solo los artículos cuya referencia empieza por lo escrito o cuyo nombre
+  lo contiene. Intro salta a las faltas del primero; Intro en «Faltas» vuelve al buscador
+  vacío. Escape con texto solo vacía el buscador.
+- **Flechas ↑ ↓** en «Faltas»: recorren la columna como en una hoja de cálculo.
+- **«Solo con faltas»** y el contador, para repasar antes de facturar.
+
+Filtrar no borra nada: lo escrito en artículos ocultos también se factura.
+
 ## Volver a trabajar con albaranes
 
 Reactivar «Traslado de alquiler» en Alquiler → Ajustes. Los pedidos nuevos vuelven a generar
