@@ -52,19 +52,17 @@ class TestFaltasBuscador(TransactionCase):
 
     # AC1 --------------------------------------------------------------
 
-    def test_lineas_ordenadas_por_referencia(self):
-        pedido = self._alquiler([self.banco, self.vaso, self.mesa, self.atril, self.silla,
-                                 self.vaso])
+    def test_lineas_en_el_orden_del_pedido(self):
+        """19.0.1.17.1: mismo orden que el pedido impreso, no por referencia."""
+        productos = [self.banco, self.vaso, self.mesa, self.atril, self.silla, self.vaso]
+        pedido = self._alquiler(productos)
         asistente = self._asistente(pedido)
         self.assertEqual(
-            asistente.line_ids.mapped('product_id'),
-            self.silla | self.vaso | self.mesa | self.atril | self.banco,
+            asistente.line_ids.mapped('product_id').ids,
+            [p.id for p in productos],
         )
-        vasos = asistente.line_ids.filtered(lambda l: l.product_id == self.vaso)
-        self.assertEqual(len(vasos), 2)
-        self.assertLess(vasos[0].sale_line_id.id, vasos[1].sale_line_id.id,
-                        "A igual referencia, por línea del pedido")
-        self.assertEqual(asistente.line_ids[1:3], vasos)
+        self.assertEqual(asistente.line_ids.mapped('sale_line_id'),
+                         pedido.order_line.filtered('is_rental'))
 
     # AC2 --------------------------------------------------------------
 

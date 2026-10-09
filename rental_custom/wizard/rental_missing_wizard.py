@@ -15,17 +15,6 @@ from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 
-def missing_line_sort_key(sale_line):
-    """Orden de las líneas del asistente (19.0.1.17.0): por referencia interna, las que no
-    tienen al final por nombre, y a igualdad, por línea del pedido. Las faltas se copian de un
-    papel que identifica el material por su referencia.
-    """
-    product = sale_line.product_id
-    code = product.default_code or ""
-    name = "" if code else (product.name or "").lower()
-    return (not code, code, name, sale_line.id)
-
-
 class RentalMissingWizard(models.TransientModel):
     _name = "rental.missing.wizard"
     _description = "Registrar faltas de un alquiler"

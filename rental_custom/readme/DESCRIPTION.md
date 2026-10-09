@@ -18,7 +18,8 @@ faltas que lo alquilado.
 
 ## Registrar faltas con muchas líneas (desde la `19.0.1.17.0`)
 
-Las líneas salen ordenadas por referencia interna y todas en una página. Encima de la lista:
+Las líneas salen en el mismo orden que el pedido de alquiler (el del papel impreso, desde la
+`19.0.1.17.1`) y todas en una página. Encima de la lista:
 
 - **Buscador**: deja solo los artículos cuya referencia empieza por lo escrito o cuyo nombre
   lo contiene. Intro salta a las faltas del primero; Intro en «Faltas» vuelve al buscador
