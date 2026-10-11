@@ -219,8 +219,15 @@ class SaleOrder(models.Model):
             if order.rental_billable_days > 0:
                 order._recompute_rental_prices()
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        orders = super().create(vals_list)
+        orders._enteza_keep_missing_as_sale()
+        return orders
+
     def write(self, vals):
         result = super().write(vals)
+        self._enteza_keep_missing_as_sale()
         if "rental_billable_days" in vals:
             self.filtered(
                 lambda order: order.is_rental_order
@@ -228,6 +235,34 @@ class SaleOrder(models.Model):
                 and order.state in ("draft", "sent")
             )._recompute_rental_prices()
         return result
+
+    def _enteza_keep_missing_as_sale(self):
+        """Un pedido de faltas (`rental_order_id`) nunca puede ser de alquiler.
+
+        El wizard de «Registrar faltas» crea el pedido correctamente como venta
+        (`is_rental_order=False`, líneas `is_rental=False`). Pero si luego se le EDITAN las
+        líneas desde la app de Alquiler, el material alquilable (`rent_ok`) entra con
+        `is_rental=True` y arrastra al pedido entero a `is_rental_order=True`: pasó con S00390,
+        S00392 y S00394 el 2026-10-10, cuyas líneas se recrearon minutos después de crearse el
+        pedido (verificado por `create_date`).
+
+        `rental_order_id` es la marca permanente y `copy=False` del pedido de faltas. Se
+        autocorrige en silencio al guardar: se fuerza `is_rental=False` en sus líneas y
+        `is_rental_order=False` en la cabecera. El flag de contexto evita recursión, ya que
+        estos `write` vuelven a pasar por aquí.
+        """
+        if self.env.context.get("_enteza_skip_missing_guard"):
+            return
+        faltas = self.filtered("rental_order_id")
+        if not faltas:
+            return
+        guard = faltas.with_context(_enteza_skip_missing_guard=True)
+        bad_lines = guard.order_line.filtered("is_rental")
+        if bad_lines:
+            bad_lines.write({"is_rental": False})
+        bad_orders = guard.filtered("is_rental_order")
+        if bad_orders:
+            bad_orders.write({"is_rental_order": False})
 
     def action_open_rental_order_rename_wizard(self):
         self.ensure_one()
@@ -307,6 +342,37 @@ class SaleOrderLine(models.Model):
              "que el pedido de alquiler pueda cerrarse como devuelto: este número es sólo la "
              "anotación de cuántas de esas unidades son en realidad una pérdida facturada.",
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._enteza_keep_missing_line_as_sale()
+        return lines
+
+    def write(self, vals):
+        result = super().write(vals)
+        if "is_rental" in vals or "order_id" in vals:
+            self._enteza_keep_missing_line_as_sale()
+        return result
+
+    def _enteza_keep_missing_line_as_sale(self):
+        """Las líneas de un pedido de faltas (`order_id.rental_order_id`) nunca son de alquiler.
+
+        Complementa a `sale.order._enteza_keep_missing_as_sale` para el caso de editar las
+        líneas directamente (añadir material alquilable desde la app de Alquiler), que no
+        siempre pasa por `sale.order.write`. Autocorrige en silencio y deja consistente la
+        cabecera. El flag de contexto evita recursión.
+        """
+        if self.env.context.get("_enteza_skip_missing_guard"):
+            return
+        bad = self.filtered(lambda l: l.order_id.rental_order_id and l.is_rental)
+        if not bad:
+            return
+        guard = bad.with_context(_enteza_skip_missing_guard=True)
+        guard.write({"is_rental": False})
+        orders = guard.order_id.filtered("is_rental_order")
+        if orders:
+            orders.write({"is_rental_order": False})
 
     def _get_rental_order_line_description(self):
         """No repetir el periodo común del pedido en cada línea de alquiler."""
