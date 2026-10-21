@@ -1,6 +1,5 @@
-"""Envases en el portal (spec 005, AC15). Escritas SIN ejecutar: ver README del módulo."""
+"""Envases en el portal (spec 005, AC15; spec 006: solo avisan, no bloquean). Escritas SIN ejecutar: ver README del módulo."""
 from odoo import Command
-from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 MSG_30 = "BOL BARCO (25): 30 uds no es múltiplo del envase de 25. Prueba con 25 o 50."
@@ -34,27 +33,38 @@ class TestEnvasesPortal(TransactionCase):
         })
         return plantilla.product_variant_id
 
-    def test_guardar_no_multiplo_rechazado(self):
+    def test_guardar_no_multiplo_guarda_y_avisa(self):
+        """AC5: se guarda lo tecleado y se devuelve el aviso (texto del backend)."""
         pedido = self.env['sale.order']._enteza_portal_get_or_create(self.partner)
-        with self.assertRaises(UserError) as cm:
-            pedido._enteza_portal_guardar(lines=[
-                {'product_id': self.barco.id, 'qty': 30}])
-        self.assertEqual(cm.exception.args[0], MSG_30)
-        self.assertFalse(pedido.order_line.filtered('product_id'))
+        resultado = pedido._enteza_portal_guardar(lines=[
+            {'product_id': self.barco.id, 'qty': 30}])
+        self.assertEqual(pedido.order_line.filtered('product_id').product_uom_qty, 30)
+        self.assertIn(MSG_30, resultado['warnings'])
+        self.assertEqual(len(resultado['box_warnings']), 1)
 
-    def test_guardar_rechazo_no_borra_ni_modifica(self):
+    def test_guardar_cambio_a_no_multiplo_modifica(self):
         pedido = self.env['sale.order']._enteza_portal_get_or_create(self.partner)
         pedido._enteza_portal_guardar(lines=[{'product_id': self.barco.id, 'qty': 50}])
-        with self.assertRaises(UserError):
-            pedido._enteza_portal_guardar(lines=[{'product_id': self.barco.id, 'qty': 30}])
-        self.assertEqual(pedido.order_line.filtered('product_id').product_uom_qty, 50)
+        pedido._enteza_portal_guardar(lines=[{'product_id': self.barco.id, 'qty': 30}])
+        self.assertEqual(pedido.order_line.filtered('product_id').product_uom_qty, 30)
+
+    def test_create_api_no_multiplo(self):
+        """Pedido creado por API con `order_line` (como la integración): sin error."""
+        pedido = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': self.warehouse.id,
+            'order_line': [Command.create({
+                'product_id': self.barco.id, 'product_uom_qty': 30, 'is_rental': True})],
+        })
+        self.assertEqual(pedido.order_line.product_uom_qty, 30)
 
     def test_guardar_multiplo_aceptado(self):
         pedido = self.env['sale.order']._enteza_portal_get_or_create(self.partner)
         pedido._enteza_portal_guardar(lines=[{'product_id': self.barco.id, 'qty': 75}])
         self.assertEqual(pedido.order_line.filtered('product_id').product_uom_qty, 75)
 
-    def test_repetir_omite_y_avisa(self):
+    def test_repetir_copia_todo_y_avisa(self):
+        """AC6: «Repetir pedido» copia todas las líneas y avisa de las no múltiplo."""
         antiguo = self._producto("Plato antiguo (25)", [])
         origen = self.env['sale.order'].with_context(in_rental_app=True).create({
             'partner_id': self.partner.id,
@@ -67,14 +77,15 @@ class TestEnvasesPortal(TransactionCase):
                       'product_uom_qty': 50, 'is_rental': True})
         Linea.create({'order_id': origen.id, 'product_id': antiguo.id,
                       'product_uom_qty': 30, 'is_rental': True})
-        # El envase se asigna DESPUÉS: la línea de 30 queda fuera de regla.
+        # El envase se asigna DESPUÉS: la línea de 30 queda no múltiplo.
         antiguo.product_tmpl_id.uom_ids = [Command.set([self.envase_25.id])]
 
-        omitidas = []
-        nueva = origen.action_enteza_portal_repetir(omitidas)
+        omitidas, avisos = [], []
+        nueva = origen.action_enteza_portal_repetir(omitidas, avisos)
         lineas = nueva.order_line.filtered('product_id')
-        self.assertEqual(lineas.product_id, self.barco)
-        self.assertEqual(lineas.product_uom_qty, 50)
-        self.assertEqual(omitidas, [
+        self.assertEqual(lineas.product_id, self.barco | antiguo)
+        self.assertEqual(sorted(lineas.mapped('product_uom_qty')), [30, 50])
+        self.assertFalse(omitidas)
+        self.assertEqual(avisos, [
             "Plato antiguo (25): 30 uds no es múltiplo del envase de 25. "
             "Prueba con 25 o 50."])

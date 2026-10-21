@@ -1,6 +1,7 @@
-"""Envases y múltiplos en las líneas de alquiler (19.0.1.19.0).
+"""Envases y múltiplos en las líneas de alquiler (19.0.1.20.0).
 
-Spec `specs/005-envases-multiplos-alquiler`. Escritas SIN ejecutar: la instancia `enteza` es
+Specs `specs/005-envases-multiplos-alquiler` y `specs/006-envases-advertencia-no-bloqueo`
+(el múltiplo es solo una advertencia). Escritas SIN ejecutar: la instancia `enteza` es
 producción, sin `odoo -u` ni `--test-enable`; solo validadas por sintaxis.
 """
 
@@ -100,28 +101,46 @@ class TestEnvases(TransactionCase):
         self.assertFalse(pedido.order_line.enteza_envase_count)
         self.assertEqual(pedido.order_line.product_uom_qty, 30)
 
-    # AC3 / AC4 ----------------------------------------------------------
+    # Spec 006: el múltiplo es una advertencia, no un bloqueo ----------------
 
-    def test_no_multiplo_rechazado(self):
-        pedido = self._alquiler()
-        with self.assertRaises(ValidationError) as cm:
-            self._linea(pedido, self.barco, 30)
-        self.assertEqual(cm.exception.args[0], MSG_30)
-        # Cambiar la cantidad, el producto o la unidad de una línea válida.
-        linea = self._linea(pedido, self.barco, 50)
-        with self.assertRaises(ValidationError):
-            linea.product_uom_qty = 30
+    def _onchange(self, pedido, producto, qty, **extra):
+        """Resultado del onchange de una línea nueva (como el formulario del pedido)."""
+        vals = {'order_id': pedido.id, 'product_id': producto.id,
+                'product_uom_qty': qty, 'is_rental': True}
+        vals.update(extra)
+        linea = self.env['sale.order.line'].with_context(in_rental_app=True).new(vals)
+        return linea._onchange_enteza_envase_multiplo()
+
+    def test_no_multiplo_se_guarda_sin_error(self):
+        """AC1: crear y modificar (también por `create` con `order_line`, como hace la
+        integración) una cantidad no múltiplo guarda la línea sin lanzar error."""
+        pedido = self._alquiler([(self.barco, 30)])
+        self.assertEqual(pedido.order_line.product_uom_qty, 30)
+        linea = self._linea(pedido, self.barco, 30)
+        self.assertEqual(linea.product_uom_qty, 30)
+        linea.product_uom_qty = 31
         otra = self._linea(pedido, self.sin_envase, 30)
-        with self.assertRaises(ValidationError):
-            otra.product_id = self.barco
-        con_unidad = self._linea(pedido, self.sin_envase, 50)
-        with self.assertRaises(ValidationError):
-            con_unidad.write({'product_id': self.barco.id, 'product_uom_qty': 30})
-        # Precisión: 50,0000001 se acepta; el cero también; los negativos no.
+        otra.product_id = self.barco
+        linea.write({'product_uom_qty': 0})
         linea.product_uom_qty = 50.0000001
-        linea.product_uom_qty = 0
-        with self.assertRaises(ValidationError):
-            linea.product_uom_qty = -25
+        self.assertEqual(otra.product_id, self.barco)
+
+    def test_onchange_avisa_no_multiplo(self):
+        """AC2: el onchange devuelve el aviso con el texto de siempre."""
+        pedido = self._alquiler()
+        resultado = self._onchange(pedido, self.barco, 30)
+        self.assertEqual(resultado['warning']['message'], MSG_30)
+
+    def test_onchange_sin_aviso(self):
+        """AC3: múltiplo, sin envase, venta normal y pedido de faltas no avisan."""
+        pedido = self._alquiler([(self.barco, 50)])
+        self.assertFalse(self._onchange(pedido, self.barco, 50))
+        self.assertFalse(self._onchange(pedido, self.sin_envase, 30))
+        venta = self.env['sale.order'].create({'partner_id': self.cliente.id})
+        self.assertFalse(self._onchange(venta, self.barco, 30, is_rental=False))
+        faltas = self.env['sale.order'].create({
+            'partner_id': self.cliente.id, 'rental_order_id': pedido.id})
+        self.assertFalse(self._onchange(faltas, self.barco, 30))
 
     def test_proponer_solo_envase_si_menos_de_uno(self):
         mensaje = self.barco._enteza_envase_error_multiplo(10, self.unidad)
@@ -245,10 +264,8 @@ class TestEnvases(TransactionCase):
         _pedido, antigua, _producto = self._linea_antigua(30)
         antigua.write({'price_unit': 5.0, 'name': 'Otro nombre', 'discount': 10.0})
         self.assertEqual(antigua.price_unit, 5.0)
-        with self.assertRaises(ValidationError):
-            antigua.product_uom_qty = 31
-        antigua.product_uom_qty = 50
-        self.assertEqual(antigua.product_uom_qty, 50)
+        antigua.product_uom_qty = 31  # spec 006: ya no se rechaza
+        self.assertEqual(antigua.product_uom_qty, 31)
 
     # AC13 ---------------------------------------------------------------
 
@@ -264,13 +281,10 @@ class TestEnvases(TransactionCase):
 
     # AC14 ---------------------------------------------------------------
 
-    def test_copy_rechazado(self):
+    def test_copy_no_multiplo_permitido(self):
         _pedido, antigua, producto = self._linea_antigua(30)
-        with self.assertRaises(ValidationError) as cm:
-            antigua.order_id.copy()
-        self.assertEqual(
-            cm.exception.args[0],
-            "Plato antiguo (25): 30 uds no es múltiplo del envase de 25. Prueba con 25 o 50.")
+        copia = antigua.order_id.copy()
+        self.assertEqual(copia.order_line.product_uom_qty, 30)
 
     # AC16 ---------------------------------------------------------------
 

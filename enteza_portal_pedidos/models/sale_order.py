@@ -132,7 +132,7 @@ class SaleOrder(models.Model):
             vals['user_id'] = comercial.id
         return vals
 
-    def action_enteza_portal_repetir(self, omitidas=None):
+    def action_enteza_portal_repetir(self, omitidas=None, avisos=None):
         """Solicitud nueva copiando las líneas de un pedido pasado (PRP §9.4).
 
         Cantidades incluidas, fechas vacías: el cliente solo tiene que revisarlas y enviar.
@@ -163,17 +163,19 @@ class SaleOrder(models.Model):
             destino.order_line.filtered(lambda l: l.product_id).sudo().unlink()
 
         for linea in lineas_copiables:
-            # Spec 005 (AC15): se omite (sin redondear) lo que ya no cumple los envases y
-            # se anota el porqué en `omitidas`, para avisar al cliente.
             producto = linea.product_id
-            motivo = (
-                producto._enteza_envase_error_multiplo(
-                    linea.product_uom_qty, linea.product_uom_id)
-                or producto._enteza_envase_error_unidad(linea.product_uom_id))
+            # Spec 006: la cantidad no múltiplo NO se omite; se copia tal cual y se anota
+            # en `avisos` para avisar al cliente. Solo se omite (y se anota en `omitidas`)
+            # una unidad distinta de la base con envase: el ORM la rechazaría al crearla.
+            motivo = producto._enteza_envase_error_unidad(linea.product_uom_id)
             if motivo:
                 if omitidas is not None:
                     omitidas.append(motivo)
                 continue
+            aviso = producto._enteza_envase_error_multiplo(
+                linea.product_uom_qty, linea.product_uom_id)
+            if aviso and avisos is not None:
+                avisos.append(aviso)
             self.env['sale.order.line'].sudo().with_context(in_rental_app=True).create({
                 'order_id': destino.id,
                 'product_id': linea.product_id.id,
@@ -453,7 +455,8 @@ class SaleOrder(models.Model):
         (nunca se acepta un producto que el portal no serviría) y lo anota en `warnings`.
 
         :param warnings: lista donde se acumulan avisos que NO bloquean (se modifica in situ).
-        :return: avisos de múltiplo de caja, uno por producto con la cantidad mal redondeada.
+        :return: avisos de múltiplo de caja, uno por producto con la cantidad mal redondeada
+            (y, en `warnings`, el mismo aviso en texto, spec 006).
         """
         self.ensure_one()
         Product = self.env['product.product'].sudo()
@@ -478,50 +481,40 @@ class SaleOrder(models.Model):
                 "Algunos artículos de tu cesto ya no están disponibles en el portal y no "
                 "se han guardado."))
 
-        # Spec 005 (AC15): validar el cesto ANTES de tocar nada. Solo cuentan las líneas
-        # nuevas o con cantidad distinta (las guardadas que no cambian no se revalidan).
-        cambios = [
-            (Product.browse(pid), qty) for pid, qty in cesto.items()
-            if pid not in lineas_por_producto
-            or float_compare(lineas_por_producto[pid].product_uom_qty, qty,
-                             precision_digits=precision) != 0
-        ]
-        errores = self._enteza_portal_errores_envase(cambios)
-        if errores:
-            raise UserError("\n".join(errores))
+        # Spec 006: la cantidad no múltiplo del envase se guarda tal cual y solo se avisa,
+        # con el mismo texto que el backend (la rejilla muestra `warnings`).
+        warnings.extend(self._enteza_portal_errores_envase(
+            [(Product.browse(pid), qty) for pid, qty in cesto.items()]))
 
         box_warnings = []
-        # Savepoint: el endpoint captura las excepciones y la transacción se confirma; si la
-        # restricción del ORM saltase igualmente, no puede quedar media reconciliación.
-        with self.env.cr.savepoint():
-            for pid in list(lineas_por_producto):
-                if pid not in cesto:
-                    lineas_por_producto.pop(pid).unlink()
+        for pid in list(lineas_por_producto):
+            if pid not in cesto:
+                lineas_por_producto.pop(pid).unlink()
 
-            for pid, qty in cesto.items():
-                linea = lineas_por_producto.get(pid)
-                if linea:
-                    if float_compare(linea.product_uom_qty, qty, precision_digits=precision) != 0:
-                        linea.write({'product_uom_qty': qty})
-                else:
-                    producto = Product.browse(pid)
-                    linea = self.env['sale.order.line'].sudo().with_context(
-                        in_rental_app=True
-                    ).create({
-                        'order_id': self.id,
-                        'product_id': pid,
-                        'product_uom_qty': qty,
-                        'product_uom_id': producto.uom_id.id,
-                        # El portal solo sirve productos `rent_ok`, así que este valor siempre
-                        # es correcto — no se depende de que `in_rental_app` fije un default en
-                        # la línea, porque verificado por RPC el 2026-08-08 no lo hace.
-                        'is_rental': True,
-                    })
-                    lineas_por_producto[pid] = linea
+        for pid, qty in cesto.items():
+            linea = lineas_por_producto.get(pid)
+            if linea:
+                if float_compare(linea.product_uom_qty, qty, precision_digits=precision) != 0:
+                    linea.write({'product_uom_qty': qty})
+            else:
+                producto = Product.browse(pid)
+                linea = self.env['sale.order.line'].sudo().with_context(
+                    in_rental_app=True
+                ).create({
+                    'order_id': self.id,
+                    'product_id': pid,
+                    'product_uom_qty': qty,
+                    'product_uom_id': producto.uom_id.id,
+                    # El portal solo sirve productos `rent_ok`, así que este valor siempre
+                    # es correcto — no se depende de que `in_rental_app` fije un default en
+                    # la línea, porque verificado por RPC el 2026-08-08 no lo hace.
+                    'is_rental': True,
+                })
+                lineas_por_producto[pid] = linea
 
-                aviso = self._enteza_portal_check_multiplo(linea.product_id, qty)
-                if aviso:
-                    box_warnings.append(aviso)
+            aviso = self._enteza_portal_check_multiplo(linea.product_id, qty)
+            if aviso:
+                box_warnings.append(aviso)
 
         return box_warnings
 
@@ -638,12 +631,8 @@ class SaleOrder(models.Model):
             raise UserError(_(
                 "La solicitud está vacía: indica alguna cantidad antes de enviarla."))
 
-        # Spec 005: el mismo mensaje que el backend, también para solicitudes antiguas con
-        # cantidades no múltiplo guardadas antes del despliegue.
-        errores = self._enteza_portal_errores_envase(
-            [(linea.product_id, linea.product_uom_qty) for linea in lineas])
-        if errores:
-            raise UserError("\n".join(errores))
+        # Spec 006: una cantidad no múltiplo del envase ya NO bloquea el envío (el aviso se
+        # da al guardar); el comercial la ve en el pedido.
 
         semaforo_activo = self.company_id.enteza_portal_semaforo
         almacen, desde, hasta = self.warehouse_id, self.rental_start_date, self.rental_return_date

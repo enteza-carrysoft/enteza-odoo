@@ -1,5 +1,4 @@
 """Cajas y múltiplos (PRP §7, §15). No ejecutados: ver README del módulo."""
-from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -67,20 +66,23 @@ class TestPackaging(TransactionCase):
             self.producto_sin_caja.product_variant_id, 7)
         self.assertIsNone(aviso)
 
-    def test_lines_update_rejects_non_multiple(self):
-        """Spec 005 (AC15): `guardar` RECHAZA la cantidad que no es múltiplo del envase, con
-        el mensaje del backend y sin dejar nada a medias. Antes (PRP §7) la guardaba tal
-        cual y solo avisaba; ese comportamiento ya no vale."""
+    def test_lines_update_reports_warning_without_blocking(self):
+        """Spec 006 (AC5): `guardar` avisa del múltiplo (en `box_warnings` y, con el texto
+        del backend, en `warnings`) pero SÍ guarda la cantidad tal cual, como en el PRP §7."""
         partner = self.env['res.partner'].create({
             'name': 'Cliente packaging',
             'enteza_portal_pedidos_ok': True,
             'enteza_portal_warehouse_id': self.warehouse.id,
         })
         pedido = self.env['sale.order']._enteza_portal_get_or_create(partner)
-        with self.assertRaises(UserError) as cm:
-            pedido._enteza_portal_guardar(lines=[
-                {'product_id': self.producto_con_caja.product_variant_id.id, 'qty': 90},
-            ])
-        self.assertIn("90 uds no es múltiplo del envase de 25", cm.exception.args[0])
-        self.assertIn("Prueba con 75 o 100", cm.exception.args[0])
-        self.assertFalse(pedido.order_line.filtered('product_id'))
+        resultado = pedido._enteza_portal_guardar(lines=[
+            {'product_id': self.producto_con_caja.product_variant_id.id, 'qty': 90},
+        ])
+        self.assertEqual(len(resultado['box_warnings']), 1)
+        self.assertEqual(resultado['box_warnings'][0]['round_down'], 75)
+        self.assertTrue(any(
+            "90 uds no es múltiplo del envase de 25" in w and "Prueba con 75 o 100" in w
+            for w in resultado['warnings']))
+        linea = pedido.order_line.filtered(
+            lambda l: l.product_id == self.producto_con_caja.product_variant_id)
+        self.assertEqual(linea.product_uom_qty, 90)

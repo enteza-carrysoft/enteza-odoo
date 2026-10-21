@@ -62,7 +62,8 @@ class TestSubmitFlow(TransactionCase):
         with self.assertRaises(UserError):
             pedido.action_enteza_portal_submit()
 
-    def test_submit_with_box_violation_raises_and_lists_it(self):
+    def test_submit_with_box_violation_is_not_rejected(self):
+        """Spec 006: una cantidad no múltiplo del envase ya no bloquea el envío."""
         caja_25 = self.env['uom.uom'].create({
             'name': 'CAJA 25 UDS (test submit)',
             'relative_factor': 25,
@@ -77,13 +78,10 @@ class TestSubmitFlow(TransactionCase):
             'rental_return_date': '2026-09-13 18:00:00',
         })
 
-        with self.assertRaises(UserError) as contexto:
-            # No es múltiplo de 25: `_enteza_portal_guardar` la habría escrito igual (no
-            # bloquea), pero `action_enteza_portal_submit` sí bloquea al enviar.
-            pedido.action_enteza_portal_submit(
-                lines=[{'product_id': self.product.id, 'qty': 90}])
-        self.assertIn('75', str(contexto.exception))
-        self.assertIn('100', str(contexto.exception))
+        pedido.action_enteza_portal_submit(
+            lines=[{'product_id': self.product.id, 'qty': 90}])
+        self.assertEqual(pedido.enteza_portal_state, 'submitted')
+        self.assertEqual(pedido.order_line.filtered('product_id').product_uom_qty, 90)
 
     def test_submit_success(self):
         pedido = self._pedido_composing()

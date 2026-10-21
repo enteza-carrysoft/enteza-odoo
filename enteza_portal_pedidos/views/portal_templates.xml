@@ -176,8 +176,14 @@
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
             <script type="application/json" id="enteza_portal_pedidos_data">{"orderId": <t t-esc="order.id"/>}</script>
+            <div t-if="avisos_repetir" class="alert alert-warning" role="alert">
+                <p class="mb-1">Se han copiado todas las líneas, pero estas cantidades no son múltiplo del envase. Revísalas:</p>
+                <ul class="mb-0">
+                    <li t-foreach="avisos_repetir" t-as="mensaje"><t t-esc="mensaje"/></li>
+                </ul>
+            </div>
             <div t-if="omitidas" class="alert alert-warning" role="alert">
-                <p class="mb-1">Al repetir el pedido se han omitido estas líneas porque ya no cumplen los envases:</p>
+                <p class="mb-1">Al repetir el pedido se han omitido estas líneas porque su unidad no es la unidad base del artículo:</p>
                 <ul class="mb-0">
                     <li t-foreach="omitidas" t-as="mensaje"><t t-esc="mensaje"/></li>
                 </ul>

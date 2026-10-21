@@ -60,10 +60,10 @@ con el semáforo mintiendo, o ni siquiera se monta:
 3. **Cargar los packagings** (cajas): `uom.uom` de caja (`relative_uom_id` = unidad base,
    `relative_factor` = unidades por caja) en «Packagings». Sin packaging, cualquier
    cantidad es válida (verificado por RPC: 0 productos con caja configurada hoy).
-   Desde la `19.0.2.1.0` (spec 005) el guardado **rechaza** las cantidades no múltiplo con el
-   mismo mensaje del backend («BOL BARCO (25): 30 uds no es múltiplo del envase de 25. Prueba
-   con 25 o 50.»), sin guardar nada de ese envío; y «Repetir pedido» omite las líneas de
-   pedidos antiguos que ya no cumplen la regla y avisa de cuáles y por qué. La definición de
+   Desde la `19.0.2.2.0` (spec 006) las cantidades no múltiplo **no se rechazan**: se guardan
+   y se avisa con el mismo mensaje del backend («BOL BARCO (25): 30 uds no es múltiplo del
+   envase de 25. Prueba con 25 o 50.»); el envío tampoco se rechaza y «Repetir pedido» copia
+   todas las líneas y avisa de las que no son múltiplo (la 19.0.2.1.0, spec 005, las rechazaba). La definición de
    envase vive en `rental_custom` (`product_envase.py`).
 4. **Comercial por defecto** (opcional pero recomendado): Ajustes → Ventas → Alquiler →
    «Comercial por defecto del portal», para los clientes sin comercial propio en su ficha.
