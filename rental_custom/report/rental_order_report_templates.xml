@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+     Parte de recogida («Pickup and Return Receipt», sale_renting.report_rental_order_document,
+     vista 1712 en `enteza`): imprime TODAS las líneas de alquiler y añade la columna
+     «Pedido» («50 uds (2 envases de 25)»). Anclas fijadas leyendo el arch_db de la vista
+     1712 y de su heredera sale_stock_renting (que añade «Serial Numbers» con
+     `//div/table/tbody/tr`, sin tocar los nodos que usamos aquí). -->
+<odoo>
+    <template id="report_rental_order_document_envases"
+              inherit_id="sale_renting.report_rental_order_document">
+        <xpath expr="//tr[@t-foreach=&quot;doc.order_line.filtered('qty_delivered')&quot;]"
+               position="attributes">
+            <attribute name="t-foreach">doc._enteza_pickup_lines()</attribute>
+        </xpath>
+        <xpath expr="//thead/tr/th[normalize-space()='Pickedup']" position="before">
+            <th class="text-end">Pedido</th>
+        </xpath>
+        <xpath expr="//td[span[@t-field='line.qty_delivered']]" position="before">
+            <td class="text-end"><span t-out="line._enteza_envase_label()"/></td>
+        </xpath>
+    </template>
+</odoo>

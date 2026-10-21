@@ -34,3 +34,28 @@ Filtrar no borra nada: lo escrito en artículos ocultos también se factura.
 Reactivar «Traslado de alquiler» en Alquiler → Ajustes. Los pedidos nuevos vuelven a generar
 entrega y recogida, y el botón del pedido se oculta solo en cuanto el pedido tiene
 albaranes. Antes conviene un inventario de corte con las existencias reales.
+
+## Envases en las líneas de alquiler (desde la `19.0.1.19.0`)
+
+Muchos artículos se alquilan por envases completos (bandejas, cestas, cajas): «BOL BARCO (25)».
+Un **envase** es una unidad de medida («Envase de 25», unidad de referencia Units, contiene 25)
+añadida en «Envases» de la ficha del artículo. La línea sigue yendo en **unidades** y al precio
+de la **unidad suelta**; el módulo no toca el cálculo de precios.
+
+- **Regla de múltiplos**: en una línea de alquiler de un artículo con envase, la cantidad tiene
+  que ser múltiplo del envase (25, 50, 75…; el cero se acepta). Si no, el guardado se rechaza
+  con un mensaje que dice el artículo, la cantidad y los múltiplos más cercanos. La unidad de la
+  línea tiene que ser la unidad base del artículo (Units), no el envase.
+- **«Nº envases»**: columna de solo lectura junto a la cantidad en el pedido de alquiler
+  (50 uds con envase de 25 → 2; 30 uds en una línea antigua → 1,2). Vacía si el artículo no
+  tiene envase.
+- **Parte de recogida** («Pickup and Return Receipt»): imprime ahora **todas** las líneas de
+  alquiler (antes solo las ya recogidas), con una columna nueva «Pedido» («50 uds (2 envases de
+  25)») antes de «Recogido» y «Devuelto». Se siguen imprimiendo las líneas no de alquiler con
+  algo entregado.
+- **Portal de clientes** (`enteza_portal_pedidos`): rechaza las cantidades no múltiplo con el
+  mismo mensaje y «Repetir pedido» omite y avisa de las líneas que ya no cumplen.
+
+Qué NO cambia: el precio (por unidad suelta), la venta normal, los pedidos de faltas, los
+artículos sin envase y las líneas ya existentes (solo se validan al cambiar su cantidad,
+producto o unidad).

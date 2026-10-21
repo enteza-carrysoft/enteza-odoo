@@ -42,6 +42,15 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
                     <field name="compensation_order_ids" widget="many2many_tags" readonly="1"/>
                 </div>
             </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="after">
+                <!-- Spec 005: solo en la vista de ALQUILER (primary); el pedido de venta
+                     normal no la tiene. Vacío si el artículo no tiene envase. -->
+                <field name="enteza_envase_count"
+                       string="Nº envases"
+                       optional="show"
+                       options="{'hide_trailing_zeros': true}"
+                       invisible="not enteza_envase_count"/>
+            </xpath>
             <xpath expr="//field[@name='qty_returned']" position="after">
                 <field name="qty_lost"
                        string="No devueltas"

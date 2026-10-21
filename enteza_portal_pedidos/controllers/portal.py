@@ -115,10 +115,16 @@ class PortalPedidos(CustomerPortal):
         if order.enteza_portal_state != 'composing':
             return request.redirect('/my/solicitud/%d/resumen' % order.id)
 
+        # Spec 005: líneas omitidas por «Repetir pedido»; se muestran una sola vez.
+        omitidas = request.session.pop('enteza_portal_omitidas', None)
+        if not omitidas or omitidas.get('order_id') != order.id:
+            omitidas = None
+
         values = self._prepare_portal_layout_values()
         values.update({
             'page_name': 'solicitud',
             'order': order,
+            'omitidas': omitidas['lineas'] if omitidas else [],
         })
         return request.render('enteza_portal_pedidos.portal_solicitud_grid', values)
 
@@ -226,5 +232,10 @@ class PortalPedidos(CustomerPortal):
         if not valido:
             raise MissingError(_("Este pedido no existe o no tienes acceso a él."))
 
-        nueva = origen.action_enteza_portal_repetir()
+        omitidas = []
+        nueva = origen.action_enteza_portal_repetir(omitidas)
+        if omitidas:
+            # Solo textos de error del propio pedido del cliente (spec 005, AC15).
+            request.session['enteza_portal_omitidas'] = {
+                'order_id': nueva.id, 'lineas': omitidas}
         return request.redirect('/my/solicitud/%d' % nueva.id)

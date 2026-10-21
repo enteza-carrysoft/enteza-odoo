@@ -37,11 +37,7 @@ class ProductTemplate(models.Model):
     @api.depends('uom_ids', 'uom_ids.relative_factor', 'uom_ids.relative_uom_id', 'uom_id')
     def _compute_enteza_box(self):
         for plantilla in self:
-            candidatas = plantilla.uom_ids.filtered(
-                lambda uom, base=plantilla.uom_id:
-                    uom.relative_uom_id == base and uom.relative_factor > 1
-            )
-            caja = min(candidatas, key=lambda uom: uom.relative_factor) if candidatas \
-                else self.env['uom.uom']
+            # Definición única del envase en `rental_custom` (spec 005, DRY).
+            caja = plantilla._enteza_envase_uom()
             plantilla.enteza_box_uom_id = caja
             plantilla.enteza_units_per_box = caja.relative_factor if caja else 0.0

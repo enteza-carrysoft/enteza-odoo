@@ -176,6 +176,12 @@
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
             <script type="application/json" id="enteza_portal_pedidos_data">{"orderId": <t t-esc="order.id"/>}</script>
+            <div t-if="omitidas" class="alert alert-warning" role="alert">
+                <p class="mb-1">Al repetir el pedido se han omitido estas líneas porque ya no cumplen los envases:</p>
+                <ul class="mb-0">
+                    <li t-foreach="omitidas" t-as="mensaje"><t t-esc="mensaje"/></li>
+                </ul>
+            </div>
             <owl-component name="enteza_portal_pedidos.RequestGrid" class="d-block"/>
         </t>
     </template>
@@ -317,7 +323,7 @@
                                     <strong t-esc="mensaje['author']"/>
                                     <span t-esc="mensaje['date']"/>
                                 </div>
-                                <div t-raw="mensaje['body']"/>
+                                <div t-out="mensaje['body']"/>
                             </div>
                         </t>
                     </div>
@@ -333,7 +339,7 @@
                                         <strong t-esc="mensaje['author']"/>
                                         <span t-esc="mensaje['date']"/>
                                     </div>
-                                    <div t-raw="mensaje['body']"/>
+                                    <div t-out="mensaje['body']"/>
                                 </div>
                             </t>
                         </div>
