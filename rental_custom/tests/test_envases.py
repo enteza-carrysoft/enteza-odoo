@@ -1,8 +1,8 @@
-"""Envases y múltiplos en las líneas de alquiler (19.0.1.20.0).
+"""Envases y múltiplos en las líneas de alquiler (19.0.1.21.0).
 
 Specs `specs/005-envases-multiplos-alquiler` y `specs/006-envases-advertencia-no-bloqueo`
-(el múltiplo es solo una advertencia). Escritas SIN ejecutar: la instancia `enteza` es
-producción, sin `odoo -u` ni `--test-enable`; solo validadas por sintaxis.
+(el múltiplo es solo una advertencia) y `specs/007-envases-aviso-visual-sin-ventana`
+(indicador visual, sin ventana). Escritas SIN ejecutar: la instancia `enteza` es producción, sin `odoo -u` ni `--test-enable`; solo validadas por sintaxis.
 """
 
 from datetime import timedelta
@@ -11,8 +11,6 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import Form, new_test_user, tagged
 from odoo.tests.common import TransactionCase
-
-MSG_30 = "BOL BARCO (25): 30 uds no es múltiplo del envase de 25. Prueba con 25 o 50."
 
 
 @tagged('post_install', '-at_install')
@@ -103,14 +101,6 @@ class TestEnvases(TransactionCase):
 
     # Spec 006: el múltiplo es una advertencia, no un bloqueo ----------------
 
-    def _onchange(self, pedido, producto, qty, **extra):
-        """Resultado del onchange de una línea nueva (como el formulario del pedido)."""
-        vals = {'order_id': pedido.id, 'product_id': producto.id,
-                'product_uom_qty': qty, 'is_rental': True}
-        vals.update(extra)
-        linea = self.env['sale.order.line'].with_context(in_rental_app=True).new(vals)
-        return linea._onchange_enteza_envase_multiplo()
-
     def test_no_multiplo_se_guarda_sin_error(self):
         """AC1: crear y modificar (también por `create` con `order_line`, como hace la
         integración) una cantidad no múltiplo guarda la línea sin lanzar error."""
@@ -125,22 +115,50 @@ class TestEnvases(TransactionCase):
         linea.product_uom_qty = 50.0000001
         self.assertEqual(otra.product_id, self.barco)
 
-    def test_onchange_avisa_no_multiplo(self):
-        """AC2: el onchange devuelve el aviso con el texto de siempre."""
-        pedido = self._alquiler()
-        resultado = self._onchange(pedido, self.barco, 30)
-        self.assertEqual(resultado['warning']['message'], MSG_30)
+    def _indicador(self, pedido, producto, qty, **extra):
+        """Valor de `enteza_envase_no_multiplo` de una línea nueva (sin guardar)."""
+        vals = {'order_id': pedido.id, 'product_id': producto.id,
+                'product_uom_qty': qty, 'is_rental': True}
+        vals.update(extra)
+        linea = self.env['sale.order.line'].with_context(in_rental_app=True).new(vals)
+        return linea.enteza_envase_no_multiplo
 
-    def test_onchange_sin_aviso(self):
-        """AC3: múltiplo, sin envase, venta normal y pedido de faltas no avisan."""
+    def test_sin_onchange_con_aviso(self):
+        """Spec 007 AC1: ya no existe el onchange de la spec 006 ni ningún warning."""
+        Linea = self.env['sale.order.line']
+        self.assertFalse(hasattr(Linea, '_onchange_enteza_envase_multiplo'))
+        self.assertFalse([m for m in dir(Linea) if m.startswith('_onchange_enteza')])
+
+    def test_indicador_verdadero(self):
+        """AC2: 1 ud y 30 uds con envase de 25."""
+        pedido = self._alquiler()
+        self.assertTrue(self._indicador(pedido, self.barco, 1))
+        self.assertTrue(self._indicador(pedido, self.barco, 30))
+        self.assertTrue(self._linea(pedido, self.barco, 30).enteza_envase_no_multiplo)
+
+    def test_indicador_falso(self):
+        """AC3 y AC4: múltiplo, tolerancia, sin envase, venta, sección/nota y faltas."""
         pedido = self._alquiler([(self.barco, 50)])
-        self.assertFalse(self._onchange(pedido, self.barco, 50))
-        self.assertFalse(self._onchange(pedido, self.sin_envase, 30))
+        self.assertFalse(pedido.order_line.enteza_envase_no_multiplo)
+        self.assertFalse(self._indicador(pedido, self.barco, 50))
+        self.assertFalse(self._indicador(pedido, self.barco, 25.0000001))
+        self.assertFalse(self._indicador(pedido, self.sin_envase, 30))
         venta = self.env['sale.order'].create({'partner_id': self.cliente.id})
-        self.assertFalse(self._onchange(venta, self.barco, 30, is_rental=False))
+        self.assertFalse(self._indicador(venta, self.barco, 30, is_rental=False))
+        seccion = self.env['sale.order.line'].create({
+            'order_id': pedido.id, 'display_type': 'line_section', 'name': 'Sección'})
+        self.assertFalse(seccion.enteza_envase_no_multiplo)
         faltas = self.env['sale.order'].create({
             'partner_id': self.cliente.id, 'rental_order_id': pedido.id})
-        self.assertFalse(self._onchange(faltas, self.barco, 30))
+        self.assertFalse(self._indicador(faltas, self.barco, 30))
+
+    def test_indicador_campo_calculado(self):
+        campo = self.env['sale.order.line']._fields['enteza_envase_no_multiplo']
+        self.assertTrue(campo.compute)
+        self.assertFalse(campo.store)
+        self.assertFalse(campo.inverse)
+        self.assertTrue(campo.readonly)
+        self.assertFalse(campo.compute_sudo)
 
     def test_proponer_solo_envase_si_menos_de_uno(self):
         mensaje = self.barco._enteza_envase_error_multiplo(10, self.unidad)

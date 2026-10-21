@@ -1,7 +1,7 @@
-**Pedir en múltiplos (aviso, no bloqueo).** Al elegir el artículo o cambiar la cantidad de una
-línea de alquiler con envase que no es múltiplo, sale el aviso «BOL BARCO (25): 30 uds no es
-múltiplo del envase de 25. Prueba con 25 o 50.»; se puede guardar igualmente. Los pedidos que
-llegan por la integración (API) se crean sin aviso ni error. Lo que sí se rechaza es una unidad
+**Pedir en múltiplos (aviso visual, no bloqueo).** No sale ninguna ventana. Si en una línea de
+alquiler con envase la cantidad no es múltiplo (por ejemplo 30 uds con envase de 25), la celda
+«Nº envases» se muestra en naranja; al pasar el ratón por la cabecera se explica. Se puede
+guardar igualmente. Los pedidos que llegan por la integración (API) se crean sin error. Lo que sí se rechaza es una unidad
 distinta de la base: la línea tiene que ir en Units (los envases se calculan solos en «Nº
 envases»).
 

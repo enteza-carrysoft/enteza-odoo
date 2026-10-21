@@ -45,9 +45,11 @@ License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html). -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="after">
                 <!-- Spec 005: solo en la vista de ALQUILER (primary); el pedido de venta
                      normal no la tiene. Vacío si el artículo no tiene envase. -->
+                <field name="enteza_envase_no_multiplo" column_invisible="1"/>
                 <field name="enteza_envase_count"
                        string="Nº envases"
                        optional="show"
+                       decoration-warning="enteza_envase_no_multiplo"
                        options="{'hide_trailing_zeros': true}"
                        invisible="not enteza_envase_count"/>
             </xpath>

@@ -3,8 +3,9 @@
 
 La línea va SIEMPRE en unidades y al precio de la unidad suelta (no se toca el cálculo de
 precios); el almacén necesita saber cuántos envases coger, así que se muestra «Nº envases».
-Spec 006: pedir en múltiplos del envase es solo una ADVERTENCIA (onchange), no un bloqueo:
-la integración con el sistema legacy crea pedidos por API con cantidades sueltas.
+Specs 006/007: pedir en múltiplos del envase no bloquea ni abre ventana: la integración con
+el sistema legacy crea pedidos por API con cantidades sueltas. Solo se colorea «Nº envases»
+(`enteza_envase_no_multiplo`) en la lista de líneas.
 """
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -19,8 +20,13 @@ class SaleOrderLine(models.Model):
         string="Nº envases",
         compute='_compute_enteza_envase_count',
         digits=(16, 2),
-        help="Cantidad ÷ unidades del envase del artículo. Vacío si el artículo no tiene "
-             "envase. Solo informativo: no modifica la cantidad.",
+        help="Nº de envases de la línea (unidades ÷ unidades del envase). En naranja: la "
+             "cantidad no es múltiplo del envase.",
+    )
+    enteza_envase_no_multiplo = fields.Boolean(
+        string="Cantidad no múltiplo del envase",
+        compute='_compute_enteza_envase_no_multiplo',
+        help="Solo visual (spec 007): colorea «Nº envases» en la lista de líneas.",
     )
 
     @api.depends(
@@ -54,16 +60,22 @@ class SaleOrderLine(models.Model):
             lambda l: l.is_rental and l.product_id and not l.display_type
             and not l.order_id.rental_order_id)
 
-    @api.onchange('product_id', 'product_uom_qty')
-    def _onchange_enteza_envase_multiplo(self):
-        """Advertencia (no bloqueante, spec 006) si la cantidad no es múltiplo del envase.
-        Solo en el formulario: por API (`create`/`write`) no se avisa ni se rechaza."""
-        for line in self._enteza_envase_lineas_a_validar():
-            mensaje = line.product_id._enteza_envase_error_multiplo(
-                line.product_uom_qty, line.product_uom_id)
-            if mensaje:
-                return {'warning': {'title': _("Cantidad no múltiplo del envase"),
-                                    'message': mensaje}}
+    @api.depends(
+        'product_id', 'product_uom_qty', 'product_uom_id', 'is_rental', 'display_type',
+        'order_id.rental_order_id',
+        'product_id.product_tmpl_id.uom_id',
+        'product_id.product_tmpl_id.uom_ids.relative_factor',
+        'product_id.product_tmpl_id.uom_ids.relative_uom_id')
+    def _compute_enteza_envase_no_multiplo(self):
+        """Indicador visual (spec 007): True si la línea de alquiler no va en múltiplos del
+        envase. Misma comparación que la regla de la spec 006 (`_enteza_envase_error_multiplo`).
+        Sin `compute_sudo`; siempre se asigna el valor."""
+        validables = self._enteza_envase_lineas_a_validar()
+        for line in self:
+            line.enteza_envase_no_multiplo = bool(
+                line in validables
+                and line.product_id._enteza_envase_error_multiplo(
+                    line.product_uom_qty, line.product_uom_id))
 
     @api.constrains('product_id', 'product_uom_id', 'is_rental')
     def _check_enteza_envase_unidad(self):
